@@ -1,205 +1,24 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prenotazione Carichi</title>
-
-<style>
-body { font-family: Arial; margin:0; background:#f4f4f4;}
-
-h1 {
-  background:#0078D4;
-  color:white;
-  padding:15px;
-  text-align:center;
-}
-
-.container { padding:10px;}
-
-.calendar {
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:5px;
-  margin-bottom:15px;
-}
-
-.day {
-  background:white;
-  padding:15px;
-  text-align:center;
-  border:1px solid #ccc;
-  cursor:pointer;
-}
-
-.weekend {
-  background:#eee;
-  color:#999;
-}
-
-.selected {
-  background:#0078D4;
-  color:white;
-}
-
-input {
-  width:100%;
-  padding:10px;
-  margin:5px 0;
-}
-
-.grid {
-  display:grid;
-  grid-template-columns:70px 1fr 1fr;
-}
-
-.slot {
-  border:1px solid #ccc;
-  padding:10px;
-  text-align:center;
-}
-
-.free {background:#c8f7c5;}
-.busy {background:#f7c5c5;}
-</style>
-
-</head>
-
-<body>
-
-<h1>Prenotazione Carichi</h1>
-
-<div class="container">
-
-<div id="calendar" class="calendar"></div>
-
-<input id="company" placeholder="Azienda">
-<input id="truck" placeholder="Targa camion">
-
-<div class="grid" id="grid"></div>
-
-</div>
-
-<script>
-
-let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
-let selectedDate = null;
-
-// SALVA
-function save(){
-  localStorage.setItem("bookings", JSON.stringify(bookings));
-}
-
-// CALENDARIO
-function generateCalendar(){
-  const cal = document.getElementById("calendar");
-  cal.innerHTML="";
-
-  let today = new Date();
-  let year = today.getFullYear();
-  let month = today.getMonth();
-
-  let days = new Date(year, month+1, 0).getDate();
-
-  for(let i=1;i<=days;i++){
-    let date = new Date(year, month, i);
-    let div = document.createElement("div");
-
-    div.className="day";
-    div.innerText = i;
-
-    if(date.getDay()==0 || date.getDay()==6){
-      div.classList.add("weekend");
-    } else {
-      div.onclick = () => selectDate(date, div);
-    }
-
-    cal.appendChild(div);
-  }
-}
-
-function selectDate(date, el){
-  selectedDate = date.toISOString().split("T")[0];
-
-  document.querySelectorAll(".day").forEach(d=>d.classList.remove("selected"));
-  el.classList.add("selected");
-
-  generateGrid();
-}
-
-// SLOT
-function generateGrid(){
-  const grid = document.getElementById("grid");
-
-  grid.innerHTML="";
-  grid.innerHTML += "<div>Ora</div><div>Fogli</div><div>Scatole</div>";
-
-  let h=6,m=0;
-
-  while(true){
-    let time = h.toString().padStart(2,'0')+":"+m.toString().padStart(2,'0');
-
-    grid.innerHTML += `<div class='slot'>${time}</div>`;
-
-    ["Fogli","Scatole"].forEach(zone=>{
-      let cell = document.createElement("div");
-      cell.className="slot free";
-
-      let b = bookings.find(x =>
-        x.date==selectedDate &&
-        x.time==time &&
-        x.zone==zone
-      );
-
-      if(b){
-        cell.classList.remove("free");
-        cell.classList.add("busy");
-        cell.innerHTML = b.company+"<br>"+b.truck;
-      } else {
-        cell.innerText="LIBERO";
-        cell.onclick=()=>prenota(time,zone);
-      }
-
-      grid.appendChild(cell);
-    });
-
-    m+=30;
-    if(m==60){m=0;h++;}
-    if(h==20) break;
-  }
-}
-
-// PRENOTA
 function prenota(time,zone){
   if(!selectedDate){
     alert("Seleziona un giorno");
-    return; 
-  }
-
-  let companyVal = document.getElementById("company").value;
-  let truckVal = document.getElementById("truck").value;
-
-  if(!companyVal){
-    alert("Inserisci azienda");
     return;
   }
+
+  // 👉 NUOVO POPUP 
+  let trasportatore = prompt("Nome trasportatore:");
+  if(!trasportatore) return;
+
+  let destinazione = prompt("Destinazione:");
+  if(!destinazione) return;
 
   bookings.push({
     date:selectedDate,
     time:time,
     zone:zone,
-    company:companyVal,
-    truck:truckVal
+    trasportatore:trasportatore,
+    destinazione:destinazione
   });
 
   save();
   generateGrid();
 }
-
-// AVVIO
-generateCalendar();
-
-</script>
-
-</body>
-</html>
