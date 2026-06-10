@@ -1,24 +1,132 @@
-function prenota(time,zone){
-  if(!selectedDate){
-    alert("Seleziona un giorno");
-    return;
-  }
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prenotazione Carichi</title>
 
-  // 👉 NUOVO POPUP 
-  let trasportatore = prompt("Nome trasportatore:");
-  if(!trasportatore) return;
-
-  let destinazione = prompt("Destinazione:");
-  if(!destinazione) return;
-
-  bookings.push({
-    date:selectedDate,
-    time:time,
-    zone:zone,
-    trasportatore:trasportatore,
-    destinazione:destinazione
-  });
-
-  save();
-  generateGrid();
+<style>
+body {
+  font-family: Arial;
+  margin:0;
+  background:#f4f4f4;
 }
+
+h1 {
+  background:#0078D4;
+  color:white;
+  padding:15px;
+  text-align:center;
+}
+
+.container { padding:10px; }
+
+.calendar {
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:5px;
+  margin-bottom:15px;
+}
+
+.day {
+  background:white;
+  padding:12px;
+  text-align:center;
+  border-radius:6px;
+  border:1px solid #ccc;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.weekend {
+  background:#eee;
+  color:#aaa;
+}
+
+.selected {
+  background:#0078D4;
+  color:white;
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:70px 1fr 1fr;
+  margin-top:10px;
+}
+
+.slot {
+  border:1px solid #ddd;
+  padding:12px;
+  text-align:center;
+  border-radius:6px;
+  font-size:14px;
+}
+
+.free {
+  background:#c8f7c5;
+  cursor:pointer;
+}
+
+.busy {
+  background:#f7c5c5;
+}
+
+.header {
+  font-weight:bold;
+  background:#ddd;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>Prenotazione Carichi</h1>
+
+<div class="container">
+
+<div id="calendar" class="calendar"></div>
+
+<div class="grid" id="grid"></div>
+
+</div>
+
+<script>
+
+let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+let selectedDate = null;
+
+// salva dati
+function save(){
+  localStorage.setItem("bookings", JSON.stringify(bookings));
+}
+
+// calendario 
+function generateCalendar(){
+  const cal = document.getElementById("calendar");
+  cal.innerHTML="";
+
+  let today = new Date();
+  let year = today.getFullYear();
+  let month = today.getMonth();
+
+  let days = new Date(year, month+1, 0).getDate();
+
+  for(let i=1;i<=days;i++){
+    let date = new Date(year, month, i);
+    let div = document.createElement("div");
+
+    div.className="day";
+    div.innerText = i;
+
+    // blocco weekend
+    if(date.getDay()==0 || date.getDay()==6){
+      div.classList.add("weekend");
+    } else {
+      div.onclick = () => selectDate(date, div);
+    }
+
+    cal.appendChild(div);
+  }
+}
+
