@@ -6,77 +6,49 @@
 <title>Prenotazione Carichi</title>
 
 <style>
-body {
-  font-family: Arial;
-  margin:0;
-  background:#f4f4f4;
-}
-
-h1 {
-  background:#0078D4;
-  color:white;
-  padding:15px;
-  text-align:center;
-}
-
-.container { padding:10px; }
+body { font-family: Arial; margin:0; background:#f4f4f4;}
+h1 { background:#0078D4; color:white; padding:15px; text-align:center;}
+.container { padding:10px;}
 
 .calendar {
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:5px;
-  margin-bottom:15px;
+ display:grid;
+ grid-template-columns:repeat(7,1fr);
+ gap:5px;
+ margin-bottom:15px;
 }
 
 .day {
-  background:white;
-  padding:12px;
-  text-align:center;
-  border-radius:6px;
-  border:1px solid #ccc;
-  cursor:pointer;
-  font-weight:bold;
+ background:white;
+ padding:12px;
+ text-align:center;
+ border-radius:6px;
+ border:1px solid #ccc;
+ cursor:pointer;
+ font-weight:bold;
 }
 
-.weekend {
-  background:#eee;
-  color:#aaa;
-}
-
-.selected {
-  background:#0078D4;
-  color:white;
-}
+.weekend { background:#eee; color:#aaa;}
+.selected { background:#0078D4; color:white;}
 
 .grid {
-  display:grid;
-  grid-template-columns:70px 1fr 1fr;
-  margin-top:10px;
+ display:grid;
+ grid-template-columns:70px 1fr 1fr;
+ margin-top:10px;
 }
 
 .slot {
-  border:1px solid #ddd;
-  padding:12px;
-  text-align:center;
-  border-radius:6px;
-  font-size:14px;
+ border:1px solid #ddd;
+ padding:12px;
+ text-align:center;
+ border-radius:6px;
+ font-size:14px;
 }
 
-.free {
-  background:#c8f7c5;
-  cursor:pointer;
-}
+.free { background:#c8f7c5; cursor:pointer;}
+.busy { background:#f7c5c5;}
 
-.busy {
-  background:#f7c5c5;
-}
-
-.header {
-  font-weight:bold;
-  background:#ddd;
-}
+.header { font-weight:bold; background:#ddd;}
 </style>
-
 </head>
 
 <body>
@@ -84,11 +56,8 @@ h1 {
 <h1>Prenotazione Carichi</h1>
 
 <div class="container">
-
 <div id="calendar" class="calendar"></div>
-
-<div class="grid" id="grid"></div>
-
+<div id="grid" class="grid"></div>
 </div>
 
 <script>
@@ -96,37 +65,116 @@ h1 {
 let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
 let selectedDate = null;
 
-// salva dati
 function save(){
-  localStorage.setItem("bookings", JSON.stringify(bookings));
+ localStorage.setItem("bookings", JSON.stringify(bookings));
 }
 
-// calendario 
 function generateCalendar(){
-  const cal = document.getElementById("calendar");
-  cal.innerHTML="";
+ const cal = document.getElementById("calendar");
+ cal.innerHTML="";
 
-  let today = new Date();
-  let year = today.getFullYear();
-  let month = today.getMonth();
+ let today = new Date();
+ let year = today.getFullYear();
+ let month = today.getMonth();
+ let days = new Date(year, month+1, 0).getDate();
 
-  let days = new Date(year, month+1, 0).getDate();
+ for(let i=1;i<=days;i++){
+   let date = new Date(year, month, i);
+   let div = document.createElement("div");
 
-  for(let i=1;i<=days;i++){
-    let date = new Date(year, month, i);
-    let div = document.createElement("div");
+   div.className="day";
+   div.innerText = i;
 
-    div.className="day";
-    div.innerText = i;
+   if(date.getDay()==0 || date.getDay()==6){
+     div.classList.add("weekend");
+   } else {
+     div.onclick = () => selectDate(date, div);
+   }
 
-    // blocco weekend
-    if(date.getDay()==0 || date.getDay()==6){
-      div.classList.add("weekend");
-    } else {
-      div.onclick = () => selectDate(date, div);
-    }
-
-    cal.appendChild(div);
-  }
+   cal.appendChild(div);
+ }
 }
 
+function selectDate(date, el){
+ selectedDate = date.toISOString().split("T")[0];
+
+ document.querySelectorAll(".day").forEach(d=>d.classList.remove("selected"));
+ el.classList.add("selected");
+
+ generateGrid();
+}
+
+function generateGrid(){
+ const grid = document.getElementById("grid");
+
+ grid.innerHTML = `
+ <div class="header">Ora</div>
+ <div class="header">Fogli</div>
+ <div class="header">Scatole</div>
+ `;
+
+ let h=6,m=0;
+
+ while(true){
+   let time = h.toString().padStart(2,'0')+":"+m.toString().padStart(2,'0');
+
+   grid.innerHTML += `<div class="slot">${time}</div>`;
+
+   ["Fogli","Scatole"].forEach(zone=>{
+     let cell = document.createElement("div");
+
+     let b = bookings.find(x =>
+       x.date==selectedDate &&
+       x.time==time &&
+       x.zone==zone
+     );
+
+     if(b){
+       cell.className="slot busy";
+       cell.innerHTML = `<b>${b.trasportatore}</b><br>${b.destinazione}`;
+     } else {
+       cell.className="slot free";
+       cell.innerText="LIBERO";
+       cell.onclick=()=>prenota(time,zone);
+     }
+
+     grid.appendChild(cell);
+   });
+
+   m+=30;
+   if(m==60){m=0;h++;}
+   if(h==20) break;
+ }
+}
+
+function prenota(time,zone){
+
+ if(!selectedDate){
+   alert("Seleziona un giorno");
+   return;
+ }
+
+ let trasportatore = prompt("Nome trasportatore:");
+ if(!trasportatore) return;
+
+ let destinazione = prompt("Destinazione:");
+ if(!destinazione) return;
+
+ bookings.push({
+   date:selectedDate,
+   time:time,
+   zone:zone,
+   trasportatore:trasportatore,
+   destinazione:destinazione
+ });
+
+ save();
+ generateGrid();
+}
+
+generateCalendar();
+
+</script>
+
+</body>
+</html>
