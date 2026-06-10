@@ -6,22 +6,9 @@
 <title>Prenotazione Carichi</title>
 
 <style>
-body {
-  font-family: Arial;
-  margin:0;
-  background:#f4f4f4;
-}
-
-h1 {
-  background:#0078D4;
-  color:white;
-  padding:15px;
-  text-align:center;
-}
-
-.container {
-  padding:10px;
-}
+body { font-family: Arial; margin:0; background:#f4f4f4;}
+h1 { background:#0078D4; color:white; padding:15px; text-align:center;}
+.container { padding:10px;}
 
 #calendar {
   display:grid;
@@ -35,7 +22,6 @@ h1 {
   border:1px solid #ccc;
   text-align:center;
   cursor:pointer;
-  border-radius:5px;
 }
 
 .weekend {
@@ -59,26 +45,23 @@ h1 {
 }
 
 .free {
-  background:#c8f7c5;
+  background:#b9f7b9;
   cursor:pointer;
 }
 
 .busy {
-  background:#f7c5c5;
+  background:#f5b5b5;
 }
 </style>
-</head>
 
+</head>
 <body>
 
 <h1>Prenotazione Carichi</h1>
 
 <div class="container">
-
 <div id="calendar"></div>
-
 <div id="slots"></div>
-
 </div>
 
 <script>
@@ -86,7 +69,7 @@ h1 {
 let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
 let selectedDate = "";
 
-// -------- CALENDARIO --------
+// CALENDARIO
 function creaCalendario() {
 
   let cal = document.getElementById("calendar");
@@ -95,7 +78,6 @@ function creaCalendario() {
   let oggi = new Date();
   let anno = oggi.getFullYear();
   let mese = oggi.getMonth();
-
   let giorni = new Date(anno, mese+1, 0).getDate();
 
   for(let i=1;i<=giorni;i++){
@@ -109,19 +91,19 @@ function creaCalendario() {
     if(data.getDay()==0 || data.getDay()==6){
       div.classList.add("weekend");
     } else {
-      div.onclick = function(){
+      div.addEventListener("click", function(){
         selectedDate = data.toISOString().split("T")[0];
         document.querySelectorAll(".day").forEach(d => d.classList.remove("selected"));
         div.classList.add("selected");
         creaSlot();
-      };
+      });
     }
 
     cal.appendChild(div);
   }
 }
 
-// -------- SLOT --------
+// SLOT
 function creaSlot(){
 
   let container = document.getElementById("slots");
@@ -149,10 +131,12 @@ function creaSlot(){
         div.innerHTML = "<b>"+b.trasportatore+"</b><br>"+b.destinazione;
       } else {
         div.className = "slot free";
-        div.innerText = time + " - " + zona + " (LIBERO)";
-        div.onclick = function(){
+        div.innerHTML = time + " - " + zona + " (LIBERO)";
+
+        // ✅ CLICK SICURO
+        div.addEventListener("click", function(){
           prenota(time, zona);
-        };
+        });
       }
 
       container.appendChild(div);
@@ -161,12 +145,11 @@ function creaSlot(){
 
     minuti +=30;
     if(minuti==60){ minuti=0; ora++; }
-
     if(ora==20) break;
   }
 }
 
-// -------- PRENOTA --------
+// PRENOTAZIONE
 function prenota(time, zona){
 
   if(!selectedDate){
@@ -174,18 +157,18 @@ function prenota(time, zona){
     return;
   }
 
-  let t = prompt("Trasportatore:");
-  if(!t) return;
+  let trasportatore = prompt("Inserisci trasportatore:");
+  if(!trasportatore) return;
 
-  let d = prompt("Destinazione:");
-  if(!d) return;
+  let destinazione = prompt("Inserisci destinazione:");
+  if(!destinazione) return;
 
   bookings.push({
     date: selectedDate,
     time: time,
     zone: zona,
-    trasportatore: t,
-    destinazione: d
+    trasportatore: trasportatore,
+    destinazione: destinazione
   });
 
   localStorage.setItem("bookings", JSON.stringify(bookings));
@@ -193,7 +176,7 @@ function prenota(time, zona){
   creaSlot();
 }
 
-// AVVIO
+// START
 creaCalendario();
 
 </script>
