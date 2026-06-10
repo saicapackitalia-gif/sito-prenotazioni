@@ -6,51 +6,75 @@
 <title>Prenotazione Carichi</title>
 
 <style>
-body { font-family: Arial; margin:0; background:#f4f4f4;}
-h1 { background:#0078D4; color:white; padding:15px; text-align:center;}
-.container { padding:10px;}
+body {font-family:Arial;margin:0;background:#f4f4f4;}
 
-#calendar {
+h1 {
+  background:#0078D4;
+  color:white;
+  padding:15px;
+  text-align:center;
+}
+
+.container {padding:10px;}
+
+.controls {
+  text-align:center;
+  margin-bottom:10px;
+}
+
+button {
+  padding:10px 15px;
+  margin:5px;
+  font-size:16px;
+}
+
+.calendar {
   display:grid;
-  grid-template-columns: repeat(7,1fr);
+  grid-template-columns:repeat(7,1fr);
   gap:5px;
 }
 
 .day {
   background:white;
-  padding:12px;
-  border:1px solid #ccc;
+  padding:10px;
   text-align:center;
+  border:1px solid #ccc;
   cursor:pointer;
 }
 
-.weekend {
-  background:#eee;
-  color:#999;
-}
+.weekend { background:#eee;color:#aaa; }
+.selected { background:#0078D4;color:white; }
 
-.selected {
-  background:#0078D4;
-  color:white;
-}
-
-#slots {
-  margin-top:15px;
+.grid {
+  display:grid;
+  grid-template-columns:80px 1fr 1fr;
+  margin-top:10px;
 }
 
 .slot {
+  border:1px solid #ccc;
   padding:10px;
-  margin:5px 0;
-  border-radius:5px;
+  text-align:center;
 }
 
-.free {
-  background:#b9f7b9;
-  cursor:pointer;
+.free { background:#b9f7b9; cursor:pointer; }
+.busy { background:#f5b5b5; }
+
+.modal {
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.5);
 }
 
-.busy {
-  background:#f5b5b5;
+.modal-content {
+  background:white;
+  padding:20px;
+  margin:100px auto;
+  width:90%;
+  max-width:300px;
+  border-radius:8px;
 }
 </style>
 
@@ -60,124 +84,174 @@ h1 { background:#0078D4; color:white; padding:15px; text-align:center;}
 <h1>Prenotazione Carichi</h1>
 
 <div class="container">
-<div id="calendar"></div>
-<div id="slots"></div>
+
+<div class="controls">
+  <button onclick="prevMonth()">◀</button>
+  <span id="monthLabel"></span>
+  <button onclick="nextMonth()">▶</button>
+</div>
+
+<div id="calendar" class="calendar"></div>
+
+<div class="grid" id="grid"></div>
+
+</div>
+
+<!-- POPUP -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h3>Nuova Prenotazione</h3>
+    <input id="trasportatore" placeholder="Trasportatore"><br><br>
+    <input id="destinazione" placeholder="Destinazione"><br><br>
+    <button onclick="salvaPrenotazione()">✅ Salva</button>
+    <button onclick="chiudiModal()">❌ Annulla</button>
+  </div>
 </div>
 
 <script>
 
 let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
 let selectedDate = "";
+let selectedTime = "";
+let selectedZone = "";
 
-// CALENDARIO
-function creaCalendario() {
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+
+// -------- CALENDARIO --------
+function aggiornaCalendario(){
 
   let cal = document.getElementById("calendar");
-  cal.innerHTML = "";
+  cal.innerHTML="";
 
-  let oggi = new Date();
-  let anno = oggi.getFullYear();
-  let mese = oggi.getMonth();
-  let giorni = new Date(anno, mese+1, 0).getDate();
+  document.getElementById("monthLabel").innerText =
+    new Date(currentYear,currentMonth).toLocaleString('it',{month:'long',year:'numeric'});
+
+  let giorni = new Date(currentYear,currentMonth+1,0).getDate();
 
   for(let i=1;i<=giorni;i++){
 
-    let data = new Date(anno, mese, i);
+    let data = new Date(currentYear,currentMonth,i);
     let div = document.createElement("div");
 
     div.innerText = i;
-    div.className = "day";
+    div.className="day";
 
     if(data.getDay()==0 || data.getDay()==6){
       div.classList.add("weekend");
     } else {
-      div.addEventListener("click", function(){
-        selectedDate = data.toISOString().split("T")[0];
-        document.querySelectorAll(".day").forEach(d => d.classList.remove("selected"));
+      div.onclick=function(){
+        selectedDate=data.toISOString().split("T")[0];
+        document.querySelectorAll(".day").forEach(d=>d.classList.remove("selected"));
         div.classList.add("selected");
         creaSlot();
-      });
+      };
     }
 
     cal.appendChild(div);
   }
 }
 
-// SLOT
+function prevMonth(){
+  currentMonth--;
+  if(currentMonth<0){currentMonth=11; currentYear--;}
+  aggiornaCalendario();
+}
+
+function nextMonth(){
+  currentMonth++;
+  if(currentMonth>11){currentMonth=0; currentYear++;}
+  aggiornaCalendario();
+}
+
+// -------- SLOT --------
 function creaSlot(){
 
-  let container = document.getElementById("slots");
-  container.innerHTML = "";
+  let grid = document.getElementById("grid");
 
-  let ora = 6;
-  let minuti = 0;
+  grid.innerHTML=`
+    <div><b>Ora</b></div>
+    <div><b>Fogli</b></div>
+    <div><b>Scatole</b></div>
+  `;
+
+  let h=6,m=0;
 
   while(true){
 
-    let time = String(ora).padStart(2,'0') + ":" + String(minuti).padStart(2,'0');
+    let time = String(h).padStart(2,'0')+":"+String(m).padStart(2,'0');
 
-    ["Fogli","Scatole"].forEach(zona => {
+    grid.innerHTML+=`<div class="slot">${time}</div>`;
 
-      let div = document.createElement("div");
+    ["Fogli","Scatole"].forEach(zona=>{
 
-      let b = bookings.find(x =>
-        x.date == selectedDate &&
-        x.time == time &&
-        x.zone == zona
-      );
+      let div=document.createElement("div");
+
+      let b=bookings.find(x=>x.date==selectedDate && x.time==time && x.zone==zona);
 
       if(b){
-        div.className = "slot busy";
-        div.innerHTML = "<b>"+b.trasportatore+"</b><br>"+b.destinazione;
+        div.className="slot busy";
+        div.innerHTML=`<b>${b.trasportatore}</b><br>${b.destinazione}
+        <br><button onclick="cancella('${b.id}')">🗑</button>`;
       } else {
-        div.className = "slot free";
-        div.innerHTML = time + " - " + zona + " (LIBERO)";
-
-        // ✅ CLICK SICURO
-        div.addEventListener("click", function(){
-          prenota(time, zona);
-        });
+        div.className="slot free";
+        div.innerText="LIBERO";
+        div.onclick=function(){
+          selectedTime=time;
+          selectedZone=zona;
+          document.getElementById("modal").style.display="block";
+        };
       }
 
-      container.appendChild(div);
+      grid.appendChild(div);
 
     });
 
-    minuti +=30;
-    if(minuti==60){ minuti=0; ora++; }
-    if(ora==20) break;
+    m+=30;
+    if(m==60){m=0;h++;}
+    if(h==20) break;
+
   }
 }
 
-// PRENOTAZIONE
-function prenota(time, zona){
+// -------- SALVA --------
+function salvaPrenotazione(){
 
-  if(!selectedDate){
-    alert("Seleziona un giorno");
-    return;
-  }
+  let t=document.getElementById("trasportatore").value;
+  let d=document.getElementById("destinazione").value;
 
-  let trasportatore = prompt("Inserisci trasportatore:");
-  if(!trasportatore) return;
-
-  let destinazione = prompt("Inserisci destinazione:");
-  if(!destinazione) return;
+  if(!t || !d){ alert("Compila tutto"); return; }
 
   bookings.push({
-    date: selectedDate,
-    time: time,
-    zone: zona,
-    trasportatore: trasportatore,
-    destinazione: destinazione
+    id: Date.now(),
+    date:selectedDate,
+    time:selectedTime,
+    zone:selectedZone,
+    trasportatore:t,
+    destinazione:d
   });
 
-  localStorage.setItem("bookings", JSON.stringify(bookings));
+  localStorage.setItem("bookings",JSON.stringify(bookings));
 
+  chiudiModal();
   creaSlot();
 }
 
-// START
-creaCalendario();
+// -------- CANCELLA --------
+function cancella(id){
+  bookings=bookings.filter(b=>b.id!=id);
+  localStorage.setItem("bookings",JSON.stringify(bookings));
+  creaSlot();
+}
+
+function chiudiModal(){
+  document.getElementById("modal").style.display="none";
+  document.getElementById("trasportatore").value="";
+  document.getElementById("destinazione").value="";
+}
+
+// AVVIO
+aggiornaCalendario();
 
 </script>
 
