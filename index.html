@@ -2,52 +2,70 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prenotazione Carichi</title>
 
 <style>
-body { font-family: Arial; margin:0; background:#f4f4f4;}
-h1 { background:#0078D4; color:white; padding:15px; text-align:center;}
-.container { padding:10px;}
+body {
+  font-family: Arial;
+  margin:0;
+  background:#f4f4f4;
+}
 
-.calendar {
- display:grid;
- grid-template-columns:repeat(7,1fr);
- gap:5px;
- margin-bottom:15px;
+h1 {
+  background:#0078D4;
+  color:white;
+  padding:15px;
+  text-align:center;
+}
+
+.container {
+  padding:10px;
+}
+
+#calendar {
+  display:grid;
+  grid-template-columns: repeat(7,1fr);
+  gap:5px;
 }
 
 .day {
- background:white;
- padding:12px;
- text-align:center;
- border-radius:6px;
- border:1px solid #ccc;
- cursor:pointer;
- font-weight:bold;
+  background:white;
+  padding:12px;
+  border:1px solid #ccc;
+  text-align:center;
+  cursor:pointer;
+  border-radius:5px;
 }
 
-.weekend { background:#eee; color:#aaa;}
-.selected { background:#0078D4; color:white;}
+.weekend {
+  background:#eee;
+  color:#999;
+}
 
-.grid {
- display:grid;
- grid-template-columns:70px 1fr 1fr;
- margin-top:10px;
+.selected {
+  background:#0078D4;
+  color:white;
+}
+
+#slots {
+  margin-top:15px;
 }
 
 .slot {
- border:1px solid #ddd;
- padding:12px;
- text-align:center;
- border-radius:6px;
- font-size:14px;
+  padding:10px;
+  margin:5px 0;
+  border-radius:5px;
 }
 
-.free { background:#c8f7c5; cursor:pointer;}
-.busy { background:#f7c5c5;}
+.free {
+  background:#c8f7c5;
+  cursor:pointer;
+}
 
-.header { font-weight:bold; background:#ddd;}
+.busy {
+  background:#f7c5c5;
+}
 </style>
 </head>
 
@@ -56,123 +74,127 @@ h1 { background:#0078D4; color:white; padding:15px; text-align:center;}
 <h1>Prenotazione Carichi</h1>
 
 <div class="container">
-<div id="calendar" class="calendar"></div>
-<div id="grid" class="grid"></div>
+
+<div id="calendar"></div>
+
+<div id="slots"></div>
+
 </div>
 
 <script>
 
 let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
-let selectedDate = null;
+let selectedDate = "";
 
-function save(){
- localStorage.setItem("bookings", JSON.stringify(bookings));
+// -------- CALENDARIO --------
+function creaCalendario() {
+
+  let cal = document.getElementById("calendar");
+  cal.innerHTML = "";
+
+  let oggi = new Date();
+  let anno = oggi.getFullYear();
+  let mese = oggi.getMonth();
+
+  let giorni = new Date(anno, mese+1, 0).getDate();
+
+  for(let i=1;i<=giorni;i++){
+
+    let data = new Date(anno, mese, i);
+    let div = document.createElement("div");
+
+    div.innerText = i;
+    div.className = "day";
+
+    if(data.getDay()==0 || data.getDay()==6){
+      div.classList.add("weekend");
+    } else {
+      div.onclick = function(){
+        selectedDate = data.toISOString().split("T")[0];
+        document.querySelectorAll(".day").forEach(d => d.classList.remove("selected"));
+        div.classList.add("selected");
+        creaSlot();
+      };
+    }
+
+    cal.appendChild(div);
+  }
 }
 
-function generateCalendar(){
- const cal = document.getElementById("calendar");
- cal.innerHTML="";
+// -------- SLOT --------
+function creaSlot(){
 
- let today = new Date();
- let year = today.getFullYear();
- let month = today.getMonth();
- let days = new Date(year, month+1, 0).getDate();
+  let container = document.getElementById("slots");
+  container.innerHTML = "";
 
- for(let i=1;i<=days;i++){
-   let date = new Date(year, month, i);
-   let div = document.createElement("div");
+  let ora = 6;
+  let minuti = 0;
 
-   div.className="day";
-   div.innerText = i;
+  while(true){
 
-   if(date.getDay()==0 || date.getDay()==6){
-     div.classList.add("weekend");
-   } else {
-     div.onclick = () => selectDate(date, div);
-   }
+    let time = String(ora).padStart(2,'0') + ":" + String(minuti).padStart(2,'0');
 
-   cal.appendChild(div);
- }
+    ["Fogli","Scatole"].forEach(zona => {
+
+      let div = document.createElement("div");
+
+      let b = bookings.find(x =>
+        x.date == selectedDate &&
+        x.time == time &&
+        x.zone == zona
+      );
+
+      if(b){
+        div.className = "slot busy";
+        div.innerHTML = "<b>"+b.trasportatore+"</b><br>"+b.destinazione;
+      } else {
+        div.className = "slot free";
+        div.innerText = time + " - " + zona + " (LIBERO)";
+        div.onclick = function(){
+          prenota(time, zona);
+        };
+      }
+
+      container.appendChild(div);
+
+    });
+
+    minuti +=30;
+    if(minuti==60){ minuti=0; ora++; }
+
+    if(ora==20) break;
+  }
 }
 
-function selectDate(date, el){
- selectedDate = date.toISOString().split("T")[0];
+// -------- PRENOTA --------
+function prenota(time, zona){
 
- document.querySelectorAll(".day").forEach(d=>d.classList.remove("selected"));
- el.classList.add("selected");
+  if(!selectedDate){
+    alert("Seleziona un giorno");
+    return;
+  }
 
- generateGrid();
+  let t = prompt("Trasportatore:");
+  if(!t) return;
+
+  let d = prompt("Destinazione:");
+  if(!d) return;
+
+  bookings.push({
+    date: selectedDate,
+    time: time,
+    zone: zona,
+    trasportatore: t,
+    destinazione: d
+  });
+
+  localStorage.setItem("bookings", JSON.stringify(bookings));
+
+  creaSlot();
 }
 
-function generateGrid(){
- const grid = document.getElementById("grid");
-
- grid.innerHTML = `
- <div class="header">Ora</div>
- <div class="header">Fogli</div>
- <div class="header">Scatole</div>
- `;
-
- let h=6,m=0;
-
- while(true){
-   let time = h.toString().padStart(2,'0')+":"+m.toString().padStart(2,'0');
-
-   grid.innerHTML += `<div class="slot">${time}</div>`;
-
-   ["Fogli","Scatole"].forEach(zone=>{
-     let cell = document.createElement("div");
-
-     let b = bookings.find(x =>
-       x.date==selectedDate &&
-       x.time==time &&
-       x.zone==zone
-     );
-
-     if(b){
-       cell.className="slot busy";
-       cell.innerHTML = `<b>${b.trasportatore}</b><br>${b.destinazione}`;
-     } else {
-       cell.className="slot free";
-       cell.innerText="LIBERO";
-       cell.onclick=()=>prenota(time,zone);
-     }
-
-     grid.appendChild(cell);
-   });
-
-   m+=30;
-   if(m==60){m=0;h++;}
-   if(h==20) break;
- }
-}
-
-function prenota(time,zone){
-
- if(!selectedDate){
-   alert("Seleziona un giorno");
-   return;
- }
-
- let trasportatore = prompt("Nome trasportatore:");
- if(!trasportatore) return;
-
- let destinazione = prompt("Destinazione:");
- if(!destinazione) return;
-
- bookings.push({
-   date:selectedDate,
-   time:time,
-   zone:zone,
-   trasportatore:trasportatore,
-   destinazione:destinazione
- });
-
- save();
- generateGrid();
-}
-
-generateCalendar();
+// AVVIO
+creaCalendario();
 
 </script>
 
