@@ -6,14 +6,15 @@
 <title>Gestione Carichi</title>
 
 <style>
+
 body {
-  font-family: Arial;
   margin:0;
-  background:#eef1f5;
+  font-family: Arial;
+  background:#eef1f6;
 }
 
 header {
-  background:#1e3a8a;
+  background:#1e40af;
   color:white;
   padding:15px;
   text-align:center;
@@ -24,37 +25,39 @@ header {
   padding:10px;
 }
 
+/* CALENDARIO */
 .calendar {
   display:flex;
-  overflow-x:auto;
   gap:8px;
-  margin-bottom:10px;
+  overflow-x:auto;
+  padding-bottom:10px;
 }
 
 .day {
-  min-width:60px;
+  min-width:65px;
   padding:10px;
-  background:white;
   text-align:center;
-  border-radius:8px;
+  background:white;
+  border-radius:10px;
   cursor:pointer;
   border:2px solid transparent;
 }
 
 .day.active {
-  border:2px solid #1e3a8a;
+  border:2px solid #1e40af;
   background:#dbeafe;
 }
 
-.dayslot {
+/* SLOT */
+.grid {
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
 }
 
-.slot {
+.card {
   padding:15px;
-  border-radius:10px;
+  border-radius:12px;
   text-align:center;
   font-size:14px;
 }
@@ -67,17 +70,13 @@ header {
   background:#fecaca;
 }
 
-.slot button {
-  margin-top:5px;
-}
-
+/* MODAL */
 .modal {
   display:none;
   position:fixed;
   top:0;left:0;
   width:100%;height:100%;
   background:rgba(0,0,0,0.5);
-
   align-items:center;
   justify-content:center;
 }
@@ -101,6 +100,7 @@ header {
   margin-top:10px;
   padding:12px;
 }
+
 </style>
 </head>
 
@@ -111,44 +111,51 @@ header {
 <div class="container">
 
 <div id="calendar" class="calendar"></div>
-<div id="slots" class="dayslot"></div>
+
+<div id="slots" class="grid"></div>
 
 </div>
 
-<!-- MODAL -->
+<!-- POPUP -->
 <div id="modal" class="modal">
   <div class="modal-box">
-    <h3>Prenotazione</h3>
+    <h3>Nuova Prenotazione</h3>
     <input id="trasp" placeholder="Trasportatore">
     <input id="dest" placeholder="Destinazione">
-    <button onclick="saveBooking()">✅ Conferma</button>
-    <button onclick="closeModal()">❌ Annulla</button>
+    <button onclick="salva()">✅ Conferma</button>
+    <button onclick="chiudi()">❌ Annulla</button>
   </div>
 </div>
 
 <script>
 
+// DATI
 let bookings = JSON.parse(localStorage.getItem("bookings")||"[]");
 
 let selectedDate="";
 let selectedTime="";
 let selectedZone="";
 
-// -------- CALENDARIO MOBILE --------
-function createCalendar(){
+// CALENDARIO
+function creaCalendario(){
 
   let cal=document.getElementById("calendar");
   cal.innerHTML="";
 
   let today=new Date();
 
-  for(let i=0;i<10;i++){
+  for(let i=0;i<14;i++){
+
     let d=new Date();
     d.setDate(today.getDate()+i);
 
     let div=document.createElement("div");
     div.className="day";
-    div.innerText=d.getDate();
+
+    div.innerHTML = `
+      <b>${d.getDate()}</b><br>
+      ${d.toLocaleDateString('it',{weekday:'short'})}
+    `;
 
     if(d.getDay()!=0 && d.getDay()!=6){
 
@@ -158,7 +165,7 @@ function createCalendar(){
         document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
         div.classList.add("active");
 
-        loadSlots();
+        caricaSlot();
       };
 
     } else {
@@ -169,13 +176,13 @@ function createCalendar(){
   }
 }
 
-// -------- SLOT --------
-function loadSlots(){
+// SLOT
+function caricaSlot(){
 
   let container=document.getElementById("slots");
   container.innerHTML="";
 
-  let h=6, m=0;
+  let h=6,m=0;
 
   while(true){
 
@@ -183,30 +190,38 @@ function loadSlots(){
 
     ["Fogli","Scatole"].forEach(zone=>{
 
-      let slot=document.createElement("div");
+      let div=document.createElement("div");
 
       let b=bookings.find(x=>x.date==selectedDate && x.time==time && x.zone==zone);
 
       if(b){
-        slot.className="slot busy";
-        slot.innerHTML = `
+
+        div.className="card busy";
+        div.innerHTML = `
           <b>${b.trasp}</b><br>
           ${b.dest}<br>
-          ${time} ${zone}<br>
-          <button onclick="deleteBooking(${b.id})">🗑</button>
+          ${time} ${zone}<br><br>
+          <button onclick="cancella(${b.id})">🗑 Cancella</button>
         `;
-      } else {
-        slot.className="slot free";
-        slot.innerHTML = `${time}<br>${zone}<br>LIBERO`;
 
-        slot.onclick=()=>{
+      } else {
+
+        div.className="card free";
+        div.innerHTML = `
+          ${time}<br>
+          ${zone}<br><br>
+          <b>LIBERO</b>
+        `;
+
+        div.onclick=()=>{
           selectedTime=time;
           selectedZone=zone;
-          openModal();
+          apri();
         };
+
       }
 
-      container.appendChild(slot);
+      container.appendChild(div);
 
     });
 
@@ -216,22 +231,22 @@ function loadSlots(){
   }
 }
 
-// -------- MODAL --------
-function openModal(){
+// MODAL
+function apri(){
   document.getElementById("modal").style.display="flex";
 }
 
-function closeModal(){
+function chiudi(){
   document.getElementById("modal").style.display="none";
 }
 
-// -------- SAVE --------
-function saveBooking(){
+// SALVA
+function salva(){
 
   let t=document.getElementById("trasp").value;
   let d=document.getElementById("dest").value;
 
-  if(!t||!d){ alert("Compila i campi"); return; }
+  if(!t||!d){ alert("Compila tutto"); return; }
 
   bookings.push({
     id:Date.now(),
@@ -244,19 +259,19 @@ function saveBooking(){
 
   localStorage.setItem("bookings",JSON.stringify(bookings));
 
-  closeModal();
-  loadSlots();
+  chiudi();
+  caricaSlot();
 }
 
-// -------- DELETE --------
-function deleteBooking(id){
+// CANCELLA
+function cancella(id){
   bookings=bookings.filter(x=>x.id!=id);
   localStorage.setItem("bookings",JSON.stringify(bookings));
-  loadSlots();
+  caricaSlot();
 }
 
 // START
-createCalendar();
+creaCalendario();
 
 </script>
 
