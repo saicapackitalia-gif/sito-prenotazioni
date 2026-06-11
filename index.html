@@ -2,9 +2,10 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestione Carichi</title>
 
+<style>
 body {
   margin:0;
   font-family: Arial;
@@ -20,14 +21,14 @@ header {
 }
 
 .container {
-  padding:12px;
+  padding:10px;
 }
 
-/* calendario */
+/* CALENDARIO */
 .calendar {
   display:flex;
-  overflow-x:auto;
   gap:10px;
+  overflow-x:auto;
   padding-bottom:10px;
 }
 
@@ -38,7 +39,7 @@ header {
   text-align:center;
   border-radius:12px;
   cursor:pointer;
-  font-size:14px;
+  font-weight:bold;
   box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
@@ -47,7 +48,7 @@ header {
   color:white;
 }
 
-/* slot */
+/* SLOT */
 .grid {
   display:grid;
   grid-template-columns:1fr;
@@ -71,6 +72,13 @@ header {
   background:#fecaca;
 }
 
+label {
+  font-size:12px;
+  display:block;
+  margin-top:5px;
+  color:#333;
+}
+
 button {
   padding:10px;
   margin-top:8px;
@@ -79,9 +87,10 @@ button {
   border-radius:6px;
   background:#1e40af;
   color:white;
+  font-size:14px;
 }
 
-/* popup */
+/* MODAL */
 .modal {
   display:none;
   position:fixed;
@@ -108,6 +117,10 @@ button {
   border-radius:6px;
   border:1px solid #ccc;
 }
+</style>
+
+</head>
+
 <body>
 
 <header>Gestione Carichi</header>
@@ -117,9 +130,10 @@ button {
 <div id="slots" class="grid"></div>
 </div>
 
+<!-- POPUP -->
 <div id="modal" class="modal">
   <div class="box">
-    <h3>Prenota</h3>
+    <h3>Nuova prenotazione</h3>
     <input id="trasp" placeholder="Trasportatore">
     <input id="dest" placeholder="Destinazione">
     <button onclick="salva()">✅ Conferma</button>
@@ -131,124 +145,157 @@ button {
 
 let bookings = JSON.parse(localStorage.getItem("bookings")||"[]");
 
-let selectedDate="", selectedTime="", selectedZone="";
+let selectedDate="";
+let selectedTime="";
+let selectedZone="";
 
-// calendario
+// CALENDARIO
 function calendar(){
- let cal=document.getElementById("calendar");
- cal.innerHTML="";
 
- let today=new Date();
+  let cal=document.getElementById("calendar");
+  cal.innerHTML="";
+  let oggi=new Date();
 
- for(let i=0;i<10;i++){
-  let d=new Date();
-  d.setDate(today.getDate()+i);
+  for(let i=0;i<10;i++){
 
-  let div=document.createElement("div");
-  div.className="day";
-  div.innerText=d.getDate();
-
-  if(d.getDay()!=0 && d.getDay()!=6){
-    div.onclick=()=>{
-      selectedDate=d.toISOString().split("T")[0];
-      document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
-      div.classList.add("active");
-      load();
-    };
-  } else {
-    div.style.opacity="0.4";
-  }
-
-  cal.appendChild(div);
- }
-}
-
-// carica slot
-function load(){
-
- let cont=document.getElementById("slots");
- cont.innerHTML="";
-
- let h=6,m=0;
-
- while(true){
-
-  let time=h.toString().padStart(2,"0")+":"+m.toString().padStart(2,"0");
-
-  ["Fogli","Scatole"].forEach(zone=>{
+    let d=new Date();
+    d.setDate(oggi.getDate()+i);
 
     let div=document.createElement("div");
+    div.className="day";
 
-    let b=bookings.find(x=>x.date==selectedDate && x.time==time && x.zone==zone);
+    div.innerHTML = `
+      ${d.getDate()}<br>
+      <small>${d.toLocaleDateString("it",{weekday:"short"})}</small>
+    `;
 
-    if(b){
-      div.className="card busy";
-      div.innerHTML=`${b.trasp}<br>${b.dest}<br>
-      <button onclick="del(${b.id})">🗑</button>`;
-    } else {
-      div.className="card free";
-      div.innerHTML=`${time}<br>${zone}<br><b>LIBERO</b>`;
+    if(d.getDay()!=0 && d.getDay()!=6){
+
       div.onclick=()=>{
-        selectedTime=time;
-        selectedZone=zone;
-        apri();
+        selectedDate = d.toISOString().split("T")[0];
+
+        document.querySelectorAll(".day").forEach(el=>el.classList.remove("active"));
+        div.classList.add("active");
+
+        load();
       };
+
+    } else {
+      div.style.opacity="0.4";
     }
 
-    cont.appendChild(div);
-
-  });
-
-  m+=30;
-  if(m==60){m=0;h++;}
-  if(h==20) break;
- }
+    cal.appendChild(div);
+  }
 }
 
-// salva
+// CARICA SLOT
+function load(){
+
+  let cont=document.getElementById("slots");
+  cont.innerHTML="";
+
+  let h=6,m=0;
+
+  while(true){
+
+    let time = h.toString().padStart(2,"0")+":"+m.toString().padStart(2,"0");
+
+    ["Fogli","Scatole"].forEach(zone=>{
+
+      let div=document.createElement("div");
+
+      let b=bookings.find(x=>x.date==selectedDate && x.time==time && x.zone==zone);
+
+      if(b){
+
+        div.className="card busy";
+
+        div.innerHTML = `
+          ${time} - ${zone}<br><br>
+          ${b.trasp}<br>
+          ${b.dest}
+          <button onclick="del(${b.id})">🗑 Cancella</button>
+        `;
+
+      } else {
+
+        div.className="card free";
+
+        div.innerHTML = `
+          ${time} - ${zone}<br><br>
+          LIBERO
+        `;
+
+        div.onclick=()=>{
+          selectedTime=time;
+          selectedZone=zone;
+          apri();
+        };
+
+      }
+
+      cont.appendChild(div);
+
+    });
+
+    m+=30;
+    if(m==60){m=0;h++;}
+    if(h==20) break;
+  }
+}
+
+// SALVA
 function salva(){
 
- let t=document.getElementById("trasp").value;
- let d=document.getElementById("dest").value;
+  let t=document.getElementById("trasp").value;
+  let d=document.getElementById("dest").value;
 
- if(!t || !d){
-   alert("Compila tutti i campi");
-   return;
- }
+  if(!t || !d){
+    alert("Compila tutti i campi");
+    return;
+  }
 
- // ✅ blocco doppione
- let check=bookings.find(x=>x.date==selectedDate && x.time==selectedTime && x.zone==selectedZone);
+  let esiste=bookings.find(x=>x.date==selectedDate && x.time==selectedTime && x.zone==selectedZone);
 
- if(check){
-   alert("Slot già occupato!");
-   return;
- }
+  if(esiste){
+    alert("Slot già occupato!");
+    return;
+  }
 
- bookings.push({
-  id:Date.now(),
-  date:selectedDate,
-  time:selectedTime,
-  zone:selectedZone,
-  trasp:t,
-  dest:d
- });
+  bookings.push({
+    id:Date.now(),
+    date:selectedDate,
+    time:selectedTime,
+    zone:selectedZone,
+    trasp:t,
+    dest:d
+  });
 
- localStorage.setItem("bookings",JSON.stringify(bookings));
+  localStorage.setItem("bookings", JSON.stringify(bookings));
 
- chiudi();
- load();
+  chiudi();
+  load();
 }
 
-// cancella
+// CANCELLA
 function del(id){
- bookings=bookings.filter(x=>x.id!=id);
- localStorage.setItem("bookings",JSON.stringify(bookings));
- load();
+  bookings = bookings.filter(x=>x.id!=id);
+  localStorage.setItem("bookings", JSON.stringify(bookings));
+  load();
 }
 
-function apri(){document.getElementById("modal").style.display="flex";}
-function chiudi(){document.getElementById("modal").style.display="none";}
+// MODAL
+function apri(){
+  document.getElementById("modal").style.display="flex";
+}
 
+function chiudi(){
+  document.getElementById("modal").style.display="none";
+  document.getElementById("trasp").value="";
+  document.getElementById("dest").value="";
+}
+
+// AVVIO
 calendar();
 
 </script>
