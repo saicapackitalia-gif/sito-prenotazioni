@@ -1,81 +1,88 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestione Baie Carico</title>
+<meta name="viewport" content="width=device-width">
+<title>Planning Baie</title>
+
+https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js>
+https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js
+https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
 <style>
-body {
-  margin:0;
-  font-family: system-ui;
-  background:#eef3f8;
-}
+body {margin:0;font-family:Arial;background:#f2f5f9;}
 
 header {
   background:#1e3a8a;
   color:white;
+  padding:12px;
   text-align:center;
-  padding:15px;
-  font-size:20px;
-  font-weight:bold;
+  font-size:18px;
 }
 
-.container {
-  padding:10px;
+/* login */
+.login {
+  padding:20px;
+}
+
+.login input {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
 }
 
 /* calendario */
 .calendar {
   display:flex;
-  gap:10px;
   overflow-x:auto;
+  padding:10px;
+  gap:8px;
 }
 
 .day {
   min-width:70px;
-  padding:10px;
   background:white;
+  padding:10px;
   text-align:center;
-  border-radius:10px;
-  cursor:pointer;
+  border-radius:8px;
+  border:2px solid transparent;
 }
 
 .day.active {
-  background:#1e3a8a;
-  color:white;
+  border:2px solid #1e3a8a;
+  background:#dbeafe;
 }
 
-/* slot grid */
-.grid {
-  margin-top:10px;
+/* planning */
+.table {
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
+  grid-template-columns:80px 1fr 1fr;
 }
 
-.card {
-  padding:15px;
-  border-radius:10px;
+.header {
+  background:#ddd;
+  padding:10px;
   text-align:center;
-  font-size:14px;
+  font-weight:bold;
 }
 
-.free { background:#bbf7d0; }
-.busy { background:#fecaca; }
+.cell {
+  border:1px solid #ccc;
+  padding:10px;
+  text-align:center;
+}
 
-/* bottoni */
+.free {background:#bbf7d0;}
+.busy {background:#fecaca;}
+
 button {
-  margin-top:6px;
-  padding:8px;
   width:100%;
-  border:none;
-  border-radius:6px;
+  padding:8px;
+  margin-top:5px;
   background:#1e3a8a;
   color:white;
+  border:none;
 }
 
-/* popup */
 .modal {
   display:none;
   position:fixed;
@@ -88,7 +95,6 @@ button {
 .box {
   background:white;
   padding:20px;
-  border-radius:10px;
   width:90%;
   max-width:300px;
 }
@@ -103,181 +109,191 @@ button {
 
 <body>
 
-<header>Gestione Baie</header>
+<header>Planning Baie Carico</header>
 
-<div class="container">
-  <div id="calendar" class="calendar"></div>
-  <div id="slots" class="grid"></div>
+<!-- LOGIN -->
+<div id="login" class="login">
+<h3>Accesso</h3>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<button onclick="register()">Registrati</button>
 </div>
 
+<!-- APP -->
+<div id="app" style="display:none">
+
+<div class="calendar" id="calendar"></div>
+
+<div id="table" class="table"></div>
+
+<button onclick="logout()">Logout</button>
+
+</div>
+
+<!-- MODAL -->
 <div id="modal" class="modal">
-  <div class="box">
-    <h3>Nuova prenotazione</h3>
-    <input id="trasp" placeholder="Trasportatore">
-    <input id="dest" placeholder="Destinazione">
-    <button onclick="save()">Salva</button>
-    <button onclick="closeModal()">Chiudi</button>
-  </div>
+<div class="box">
+<input id="trasp" placeholder="Trasportatore">
+<input id="dest" placeholder="Destinazione">
+<button onclick="save()">Salva</button>
+<button onclick="closeModal()">Chiudi</button>
+</div>
 </div>
 
 <script>
 
-/* ✅ DATABASE AUTOMATICO (senza setup) */
-const STORAGE_KEY = "BOOKINGS_GLOBAL";
+/* 🔑 INSERISCI LE TUE CHIAVI FIREBASE */
+const firebaseConfig = {
+  apiKey: "INSERISCI QUI",
+  authDomain: "INSERISCI QUI",
+  projectId: "INSERISCI QUI"
+};
 
-/* Simulazione sincronizzazione */
-function getBookings(){
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const ADMIN = "admin@azienda.com";
+
+let selectedDate="", selectedTime="", selectedZone="";
+
+/* LOGIN */
+function login(){
+ auth.signInWithEmailAndPassword(email.value,password.value)
+ .catch(e=>alert(e.message));
 }
 
-function setBookings(data){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function register(){
+ auth.createUserWithEmailAndPassword(email.value,password.value)
+ .catch(e=>alert(e.message));
 }
 
-/* stato */
-let bookings = getBookings();
+function logout(){
+ auth.signOut();
+ location.reload();
+}
 
-let selectedDate="";
-let selectedTime="";
-let selectedZone="";
-
-/* ascolta aggiornamenti tra schede */
-window.addEventListener("storage", () => {
-  bookings = getBookings();
-  load();
+auth.onAuthStateChanged(user=>{
+ if(user){
+  login.style.display="none";
+  app.style.display="block";
+  loadCalendar();
+ }
 });
 
-/* calendario */
-function calendar(){
-  let cal = document.getElementById("calendar");
-  cal.innerHTML="";
+/* CALENDARIO */
+function loadCalendar(){
+ let cal=document.getElementById("calendar");
+ cal.innerHTML="";
+ let today=new Date();
 
-  let today=new Date();
+ for(let i=0;i<10;i++){
+  let d=new Date();
+  d.setDate(today.getDate()+i);
 
-  for(let i=0;i<10;i++){
-    let d=new Date();
-    d.setDate(today.getDate()+i);
+  let div=document.createElement("div");
+  div.className="day";
 
-    let el=document.createElement("div");
-    el.className="day";
+  div.innerHTML = `${d.getDate()}<br>${d.toLocaleDateString("it",{weekday:"short"})}`;
 
-    el.innerHTML = `
-      <b>${d.getDate()}</b><br>
-      ${d.toLocaleDateString("it",{weekday:"short"})}
-    `;
-
-    if(d.getDay()!=0 && d.getDay()!=6){
-      el.onclick=()=>{
-        selectedDate=d.toISOString().split("T")[0];
-
-        document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
-        el.classList.add("active");
-
-        load();
-      };
-    } else {
-      el.style.opacity=0.4;
-    }
-
-    cal.appendChild(el);
+  if(d.getDay()!=0 && d.getDay()!=6){
+   div.onclick=()=>{
+    selectedDate=d.toISOString().split("T")[0];
+    document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
+    div.classList.add("active");
+    loadTable();
+   };
   }
+
+  cal.appendChild(div);
+ }
 }
 
-/* slot */
-function load(){
+/* TABLE */
+async function loadTable(){
 
-  bookings = getBookings();
+ let snap = await db.collection("bookings").where("date","==",selectedDate).get();
+ let data = snap.docs.map(d=>({id:d.id,...d.data()}));
 
-  let cont=document.getElementById("slots");
-  cont.innerHTML="";
+ let table=document.getElementById("table");
+ table.innerHTML="";
 
-  let h=6,m=0;
+ table.innerHTML += `<div class="header">Ora</div><div class="header">Fogli</div><div class="header">Scatole</div>`;
 
-  while(true){
+ let h=6,m=0;
 
-    let time = (h+"").padStart(2,"0")+":"+ (m+"").padStart(2,"0");
+ while(true){
 
-    ["Fogli","Scatole"].forEach(zone=>{
+  let time = h.toString().padStart(2,"0")+":"+m.toString().padStart(2,"0");
 
-      let el=document.createElement("div");
+  table.innerHTML += `<div class="cell">${time}</div>`;
 
-      let found = bookings.find(b=>b.date===selectedDate && b.time===time && b.zone===zone);
+  ["Fogli","Scatole"].forEach(zone=>{
 
-      if(found){
-        el.className="card busy";
-        el.innerHTML = `
-          ${time} ${zone}<br><br>
-          <b>${found.trasp}</b><br>
-          ${found.dest}
-          <button onclick="remove(${found.id})">Cancella</button>
-        `;
-      } else {
-        el.className="card free";
-        el.innerHTML = `${time}<br>${zone}<br><b>LIBERO</b>`;
+    let found=data.find(x=>x.time==time && x.zone==zone);
+    let cell=document.createElement("div");
+    cell.className="cell";
 
-        el.onclick=()=>{
-          selectedTime=time;
-          selectedZone=zone;
-          openModal();
-        };
+    if(found){
+      cell.classList.add("busy");
+
+      let btn="";
+      if(auth.currentUser.email===ADMIN){
+        btn=`<button onclick="del('${found.id}')">X</button>`;
       }
 
-      cont.appendChild(el);
-    });
+      cell.innerHTML=`${found.trasp}<br>${found.dest}${btn}`;
 
-    m+=30;
-    if(m===60){m=0;h++;}
-    if(h===20) break;
+    } else {
+      cell.classList.add("free");
+      cell.innerHTML="LIBERO";
+      cell.onclick=()=>{
+        selectedTime=time;
+        selectedZone=zone;
+        modal.style.display="flex";
+      };
+    }
 
-  }
-}
-
-/* salva */
-function save(){
-
-  let t=document.getElementById("trasp").value;
-  let d=document.getElementById("dest").value;
-
-  if(!t||!d){
-    alert("Compila i campi");
-    return;
-  }
-
-  bookings = getBookings();
-
-  bookings.push({
-    id:Date.now(),
-    date:selectedDate,
-    time:selectedTime,
-    zone:selectedZone,
-    trasp:t,
-    dest:d
+    table.appendChild(cell);
   });
 
-  setBookings(bookings);
-
-  closeModal();
-  load();
+  m+=30;
+  if(m==60){m=0;h++;}
+  if(h==20) break;
+ }
 }
 
-/* cancella */
-function remove(id){
-  bookings = getBookings().filter(b=>b.id!==id);
-  setBookings(bookings);
-  load();
+/* SAVE */
+async function save(){
+ let t=trasp.value;
+ let d=dest.value;
+
+ if(!t||!d){alert("Compila"); return;}
+
+ await db.collection("bookings").add({
+  date:selectedDate,
+  time:selectedTime,
+  zone:selectedZone,
+  trasp:t,
+  dest:d,
+  user:auth.currentUser.email
+ });
+
+ closeModal();
+ loadTable();
 }
 
-/* modal */
-function openModal(){
-  document.getElementById("modal").style.display="flex";
+/* DELETE */
+async function del(id){
+ if(auth.currentUser.email!==ADMIN) return;
+ await db.collection("bookings").doc(id).delete();
+ loadTable();
 }
 
 function closeModal(){
-  document.getElementById("modal").style.display="none";
+ modal.style.display="none";
 }
-
-/* start */
-calendar();
 
 </script>
 
