@@ -2,168 +2,180 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestione Baie</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prenotazione Baie</title>
 
 <style>
-body {margin:0;font-family:Arial;background:#eef2f7;}
-header {background:#1e3a8a;color:white;text-align:center;padding:15px;}
+body {
+  margin:0;
+  font-family:system-ui;
+  background:#eef2f7;
+}
 
-.container {padding:10px;}
+header {
+  background:#1e3a8a;
+  color:white;
+  text-align:center;
+  padding:15px;
+  font-size:20px;
+  font-weight:bold;
+}
 
+.container {
+  padding:10px;
+}
+
+/* giorni */
 .calendar {
- display:flex;
- gap:10px;
- overflow-x:auto;
- margin-bottom:10px;
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
 }
 
 .day {
- min-width:70px;
- background:white;
- padding:10px;
- text-align:center;
- border-radius:10px;
- cursor:pointer;
+  min-width:70px;
+  padding:10px;
+  background:white;
+  text-align:center;
+  border-radius:12px;
+  cursor:pointer;
+  border:2px solid transparent;
 }
 
 .day.active {
- background:#1e3a8a;
- color:white;
+  border:2px solid #1e3a8a;
+  background:#dbeafe;
 }
 
+/* slot */
 .grid {
- display:grid;
- grid-template-columns:1fr 1fr;
- gap:10px;
+  margin-top:10px;
+  display:grid;
+  gap:10px;
 }
 
-.slot {
- padding:15px;
- border-radius:10px;
- text-align:center;
+.card {
+  padding:16px;
+  border-radius:12px;
+  text-align:center;
+  font-size:15px;
+  font-weight:500;
 }
 
-.free {background:#bbf7d0;}
-.busy {background:#fecaca;}
+.free {
+  background:#bbf7d0;
+}
+
+.busy {
+  background:#fecaca;
+}
 
 button {
- margin-top:5px;
- padding:8px;
- width:100%;
- border:none;
- background:#1e3a8a;
- color:white;
+  margin-top:6px;
+  padding:8px;
+  width:100%;
+  border:none;
+  border-radius:6px;
+  background:#1e3a8a;
+  color:white;
 }
 
+/* popup */
 .modal {
- display:none;
- position:fixed;
- inset:0;
- background:#0008;
- justify-content:center;
- align-items:center;
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
 }
 
 .box {
- background:white;
- padding:20px;
- border-radius:10px;
- width:90%;
- max-width:300px;
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  width:90%;
+  max-width:320px;
 }
 
 .box input {
- width:100%;
- padding:10px;
- margin-top:10px;
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  border-radius:6px;
+  border:1px solid #ccc;
 }
 </style>
-
 </head>
 
 <body>
 
-<header>Gestione Baie</header>
+<header>Prenotazione Baie</header>
 
 <div class="container">
-  <div id="calendar" class="calendar"></div>
-  <div id="slots" class="grid"></div>
+
+<div id="calendar" class="calendar"></div>
+<div id="slots" class="grid"></div>
+
 </div>
 
 <div id="modal" class="modal">
   <div class="box">
-    <h3>Prenota</h3>
+    <h3>Nuova prenotazione</h3>
     <input id="trasp" placeholder="Trasportatore">
     <input id="dest" placeholder="Destinazione">
-    <button onclick="save()">Salva</button>
+    <button onclick="save()">Conferma</button>
     <button onclick="closeModal()">Chiudi</button>
   </div>
 </div>
 
 <script>
 
-/* ✅ QUI CAMBI SOLO QUESTO */
-const DB_URL = "https://api.jsonbin.io/v3/b/YOUR_ID/latest";
+let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
 
-/* ---------- */
+let selectedDate="";
+let selectedTime="";
+let selectedZone="";
 
-let selectedDate="", selectedTime="", selectedZone="";
-let bookings=[];
+// calendario
+function init(){
 
-// CALENDARIO
-function calendar(){
- let cal=document.getElementById("calendar");
- cal.innerHTML="";
  let today=new Date();
+ let cal=document.getElementById("calendar");
 
  for(let i=0;i<10;i++){
+
   let d=new Date();
   d.setDate(today.getDate()+i);
 
   let div=document.createElement("div");
   div.className="day";
-  div.innerText=d.getDate();
+
+  div.innerHTML = `
+    <b>${d.getDate()}</b><br>
+    ${d.toLocaleDateString("it",{weekday:"short"})}
+  `;
 
   if(d.getDay()!=0 && d.getDay()!=6){
+
     div.onclick=()=>{
       selectedDate=d.toISOString().split("T")[0];
       document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
       div.classList.add("active");
-      load();
+      loadSlots();
     };
+
   } else {
-    div.style.opacity="0.4";
+    div.style.opacity=0.4;
   }
 
   cal.appendChild(div);
  }
+
 }
 
-// CARICA DATI DAL "DATABASE"
-async function getData(){
- try{
-  let res = await fetch(DB_URL);
-  let json = await res.json();
-  bookings = json.record || [];
- } catch {
-  bookings = [];
- }
-}
-
-// SALVA DATI
-async function saveData(){
- await fetch(DB_URL.replace("/latest",""), {
-  method:"PUT",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify(bookings)
- });
-}
-
-// SLOT
-async function load(){
-
- await getData();
+// slot
+function loadSlots(){
 
  let cont=document.getElementById("slots");
  cont.innerHTML="";
@@ -172,7 +184,7 @@ async function load(){
 
  while(true){
 
-  let time=h.toString().padStart(2,"0")+":"+m.toString().padStart(2,"0");
+  let time = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 
   ["Fogli","Scatole"].forEach(zone=>{
 
@@ -181,35 +193,50 @@ async function load(){
     let b=bookings.find(x=>x.date==selectedDate && x.time==time && x.zone==zone);
 
     if(b){
-      div.className="slot busy";
-      div.innerHTML=`${b.trasp}<br>${b.dest}
-      <button onclick="del(${b.id})">🗑</button>`;
+
+      div.className="card busy";
+      div.innerHTML = `
+        ${time} ${zone}<br><br>
+        <b>${b.trasp}</b><br>
+        ${b.dest}
+        <button onclick="remove(${b.id})">Cancella</button>
+      `;
+
     } else {
-      div.className="slot free";
-      div.innerHTML=`${time}<br>${zone}<br>LIBERO`;
+
+      div.className="card free";
+      div.innerHTML = `${time}<br>${zone}<br><b>LIBERO</b>`;
+
       div.onclick=()=>{
         selectedTime=time;
         selectedZone=zone;
         openModal();
       };
+
     }
 
     cont.appendChild(div);
+
   });
 
   m+=30;
   if(m==60){m=0;h++;}
   if(h==20) break;
+
  }
+
 }
 
-// SALVA PRENOTAZIONE
-async function save(){
+// salva
+function save(){
 
  let t=document.getElementById("trasp").value;
  let d=document.getElementById("dest").value;
 
- if(!t||!d){alert("Compila");return;}
+ if(!t || !d){
+  alert("Compila tutti i campi");
+  return;
+ }
 
  bookings.push({
   id:Date.now(),
@@ -220,16 +247,17 @@ async function save(){
   dest:d
  });
 
- await saveData();
+ localStorage.setItem("bookings",JSON.stringify(bookings));
+
  closeModal();
- load();
+ loadSlots();
 }
 
-// CANCELLA
-async function del(id){
- bookings=bookings.filter(x=>x.id!=id);
- await saveData();
- load();
+// cancella
+function remove(id){
+ bookings = bookings.filter(x=>x.id!=id);
+ localStorage.setItem("bookings",JSON.stringify(bookings));
+ loadSlots();
 }
 
 function openModal(){
@@ -238,10 +266,11 @@ function openModal(){
 
 function closeModal(){
  document.getElementById("modal").style.display="none";
+ document.getElementById("trasp").value="";
+ document.getElementById("dest").value="";
 }
 
-// START
-calendar();
+init();
 
 </script>
 
