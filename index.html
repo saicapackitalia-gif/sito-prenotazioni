@@ -2,53 +2,32 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestione Carichi</title>
 
 <style>
+body {margin:0;font-family:Arial;background:#eef1f6;}
 
-body {
-  margin:0;
-  font-family: Arial;
-  background:#eef1f6;
-}
+header {background:#1e40af;color:white;padding:15px;text-align:center;}
 
-header {
-  background:#1e40af;
-  color:white;
-  padding:15px;
-  text-align:center;
-  font-size:20px;
-}
+.container {padding:10px;}
 
-.container {
-  padding:10px;
-}
-
-/* CALENDARIO */
-.calendar {
-  display:flex;
-  gap:8px;
-  overflow-x:auto;
-  padding-bottom:10px;
-}
+.calendar {display:flex;gap:8px;overflow-x:auto;margin-bottom:10px;}
 
 .day {
-  min-width:65px;
+  min-width:60px;
   padding:10px;
-  text-align:center;
   background:white;
+  text-align:center;
   border-radius:10px;
   cursor:pointer;
-  border:2px solid transparent;
 }
 
 .day.active {
-  border:2px solid #1e40af;
-  background:#dbeafe;
+  background:#1e40af;
+  color:white;
 }
 
-/* SLOT */
 .grid {
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -57,50 +36,42 @@ header {
 
 .card {
   padding:15px;
-  border-radius:12px;
+  border-radius:10px;
   text-align:center;
-  font-size:14px;
 }
 
-.free {
-  background:#bbf7d0;
-}
+.free {background:#bbf7d0;}
+.busy {background:#fecaca;}
 
-.busy {
-  background:#fecaca;
-}
-
-/* MODAL */
 .modal {
   display:none;
   position:fixed;
   top:0;left:0;
   width:100%;height:100%;
-  background:rgba(0,0,0,0.5);
+  background:#0008;
   align-items:center;
   justify-content:center;
 }
 
-.modal-box {
+.box {
   background:white;
   padding:20px;
+  border-radius:10px;
   width:90%;
-  max-width:320px;
-  border-radius:12px;
+  max-width:300px;
 }
 
-.modal input {
+.box input {
   width:100%;
   padding:10px;
   margin-top:10px;
 }
 
-.modal button {
+.box button {
   width:100%;
   margin-top:10px;
-  padding:12px;
+  padding:10px;
 }
-
 </style>
 </head>
 
@@ -109,17 +80,13 @@ header {
 <header>Gestione Carichi</header>
 
 <div class="container">
-
 <div id="calendar" class="calendar"></div>
-
 <div id="slots" class="grid"></div>
-
 </div>
 
-<!-- POPUP -->
 <div id="modal" class="modal">
-  <div class="modal-box">
-    <h3>Nuova Prenotazione</h3>
+  <div class="box">
+    <h3>Prenota</h3>
     <input id="trasp" placeholder="Trasportatore">
     <input id="dest" placeholder="Destinazione">
     <button onclick="salva()">✅ Conferma</button>
@@ -129,149 +96,127 @@ header {
 
 <script>
 
-// DATI
 let bookings = JSON.parse(localStorage.getItem("bookings")||"[]");
 
-let selectedDate="";
-let selectedTime="";
-let selectedZone="";
+let selectedDate="", selectedTime="", selectedZone="";
 
-// CALENDARIO
-function creaCalendario(){
+// calendario
+function calendar(){
+ let cal=document.getElementById("calendar");
+ cal.innerHTML="";
 
-  let cal=document.getElementById("calendar");
-  cal.innerHTML="";
+ let today=new Date();
 
-  let today=new Date();
+ for(let i=0;i<10;i++){
+  let d=new Date();
+  d.setDate(today.getDate()+i);
 
-  for(let i=0;i<14;i++){
+  let div=document.createElement("div");
+  div.className="day";
+  div.innerText=d.getDate();
 
-    let d=new Date();
-    d.setDate(today.getDate()+i);
+  if(d.getDay()!=0 && d.getDay()!=6){
+    div.onclick=()=>{
+      selectedDate=d.toISOString().split("T")[0];
+      document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
+      div.classList.add("active");
+      load();
+    };
+  } else {
+    div.style.opacity="0.4";
+  }
+
+  cal.appendChild(div);
+ }
+}
+
+// carica slot
+function load(){
+
+ let cont=document.getElementById("slots");
+ cont.innerHTML="";
+
+ let h=6,m=0;
+
+ while(true){
+
+  let time=h.toString().padStart(2,"0")+":"+m.toString().padStart(2,"0");
+
+  ["Fogli","Scatole"].forEach(zone=>{
 
     let div=document.createElement("div");
-    div.className="day";
 
-    div.innerHTML = `
-      <b>${d.getDate()}</b><br>
-      ${d.toLocaleDateString('it',{weekday:'short'})}
-    `;
+    let b=bookings.find(x=>x.date==selectedDate && x.time==time && x.zone==zone);
 
-    if(d.getDay()!=0 && d.getDay()!=6){
-
-      div.onclick=()=>{
-        selectedDate=d.toISOString().split("T")[0];
-
-        document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
-        div.classList.add("active");
-
-        caricaSlot();
-      };
-
+    if(b){
+      div.className="card busy";
+      div.innerHTML=`${b.trasp}<br>${b.dest}<br>
+      <button onclick="del(${b.id})">🗑</button>`;
     } else {
-      div.style.opacity="0.4";
+      div.className="card free";
+      div.innerHTML=`${time}<br>${zone}<br><b>LIBERO</b>`;
+      div.onclick=()=>{
+        selectedTime=time;
+        selectedZone=zone;
+        apri();
+      };
     }
 
-    cal.appendChild(div);
-  }
-}
+    cont.appendChild(div);
 
-// SLOT
-function caricaSlot(){
-
-  let container=document.getElementById("slots");
-  container.innerHTML="";
-
-  let h=6,m=0;
-
-  while(true){
-
-    let time = String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
-
-    ["Fogli","Scatole"].forEach(zone=>{
-
-      let div=document.createElement("div");
-
-      let b=bookings.find(x=>x.date==selectedDate && x.time==time && x.zone==zone);
-
-      if(b){
-
-        div.className="card busy";
-        div.innerHTML = `
-          <b>${b.trasp}</b><br>
-          ${b.dest}<br>
-          ${time} ${zone}<br><br>
-          <button onclick="cancella(${b.id})">🗑 Cancella</button>
-        `;
-
-      } else {
-
-        div.className="card free";
-        div.innerHTML = `
-          ${time}<br>
-          ${zone}<br><br>
-          <b>LIBERO</b>
-        `;
-
-        div.onclick=()=>{
-          selectedTime=time;
-          selectedZone=zone;
-          apri();
-        };
-
-      }
-
-      container.appendChild(div);
-
-    });
-
-    m+=30;
-    if(m==60){m=0;h++;}
-    if(h==20) break;
-  }
-}
-
-// MODAL
-function apri(){
-  document.getElementById("modal").style.display="flex";
-}
-
-function chiudi(){
-  document.getElementById("modal").style.display="none";
-}
-
-// SALVA
-function salva(){
-
-  let t=document.getElementById("trasp").value;
-  let d=document.getElementById("dest").value;
-
-  if(!t||!d){ alert("Compila tutto"); return; }
-
-  bookings.push({
-    id:Date.now(),
-    date:selectedDate,
-    time:selectedTime,
-    zone:selectedZone,
-    trasp:t,
-    dest:d
   });
 
-  localStorage.setItem("bookings",JSON.stringify(bookings));
-
-  chiudi();
-  caricaSlot();
+  m+=30;
+  if(m==60){m=0;h++;}
+  if(h==20) break;
+ }
 }
 
-// CANCELLA
-function cancella(id){
-  bookings=bookings.filter(x=>x.id!=id);
-  localStorage.setItem("bookings",JSON.stringify(bookings));
-  caricaSlot();
+// salva
+function salva(){
+
+ let t=document.getElementById("trasp").value;
+ let d=document.getElementById("dest").value;
+
+ if(!t || !d){
+   alert("Compila tutti i campi");
+   return;
+ }
+
+ // ✅ blocco doppione
+ let check=bookings.find(x=>x.date==selectedDate && x.time==selectedTime && x.zone==selectedZone);
+
+ if(check){
+   alert("Slot già occupato!");
+   return;
+ }
+
+ bookings.push({
+  id:Date.now(),
+  date:selectedDate,
+  time:selectedTime,
+  zone:selectedZone,
+  trasp:t,
+  dest:d
+ });
+
+ localStorage.setItem("bookings",JSON.stringify(bookings));
+
+ chiudi();
+ load();
 }
 
-// START
-creaCalendario();
+// cancella
+function del(id){
+ bookings=bookings.filter(x=>x.id!=id);
+ localStorage.setItem("bookings",JSON.stringify(bookings));
+ load();
+}
+
+function apri(){document.getElementById("modal").style.display="flex";}
+function chiudi(){document.getElementById("modal").style.display="none";}
+
+calendar();
 
 </script>
 
