@@ -2,14 +2,14 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prenotazione Baie</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestione Baie Carico</title>
 
 <style>
 body {
   margin:0;
-  font-family:system-ui;
-  background:#eef2f7;
+  font-family: system-ui;
+  background:#eef3f8;
 }
 
 header {
@@ -25,7 +25,7 @@ header {
   padding:10px;
 }
 
-/* giorni */
+/* calendario */
 .calendar {
   display:flex;
   gap:10px;
@@ -37,39 +37,34 @@ header {
   padding:10px;
   background:white;
   text-align:center;
-  border-radius:12px;
+  border-radius:10px;
   cursor:pointer;
-  border:2px solid transparent;
 }
 
 .day.active {
-  border:2px solid #1e3a8a;
-  background:#dbeafe;
+  background:#1e3a8a;
+  color:white;
 }
 
-/* slot */
+/* slot grid */
 .grid {
   margin-top:10px;
   display:grid;
+  grid-template-columns:1fr 1fr;
   gap:10px;
 }
 
 .card {
-  padding:16px;
-  border-radius:12px;
+  padding:15px;
+  border-radius:10px;
   text-align:center;
-  font-size:15px;
-  font-weight:500;
+  font-size:14px;
 }
 
-.free {
-  background:#bbf7d0;
-}
+.free { background:#bbf7d0; }
+.busy { background:#fecaca; }
 
-.busy {
-  background:#fecaca;
-}
-
+/* bottoni */
 button {
   margin-top:6px;
   padding:8px;
@@ -85,7 +80,7 @@ button {
   display:none;
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,0.5);
+  background:#0008;
   justify-content:center;
   align-items:center;
 }
@@ -93,30 +88,26 @@ button {
 .box {
   background:white;
   padding:20px;
-  border-radius:12px;
+  border-radius:10px;
   width:90%;
-  max-width:320px;
+  max-width:300px;
 }
 
 .box input {
   width:100%;
   padding:10px;
   margin-top:10px;
-  border-radius:6px;
-  border:1px solid #ccc;
 }
 </style>
 </head>
 
 <body>
 
-<header>Prenotazione Baie</header>
+<header>Gestione Baie</header>
 
 <div class="container">
-
-<div id="calendar" class="calendar"></div>
-<div id="slots" class="grid"></div>
-
+  <div id="calendar" class="calendar"></div>
+  <div id="slots" class="grid"></div>
 </div>
 
 <div id="modal" class="modal">
@@ -124,153 +115,169 @@ button {
     <h3>Nuova prenotazione</h3>
     <input id="trasp" placeholder="Trasportatore">
     <input id="dest" placeholder="Destinazione">
-    <button onclick="save()">Conferma</button>
+    <button onclick="save()">Salva</button>
     <button onclick="closeModal()">Chiudi</button>
   </div>
 </div>
 
 <script>
 
-let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+/* ✅ DATABASE AUTOMATICO (senza setup) */
+const STORAGE_KEY = "BOOKINGS_GLOBAL";
+
+/* Simulazione sincronizzazione */
+function getBookings(){
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+}
+
+function setBookings(data){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+/* stato */
+let bookings = getBookings();
 
 let selectedDate="";
 let selectedTime="";
 let selectedZone="";
 
-// calendario
-function init(){
+/* ascolta aggiornamenti tra schede */
+window.addEventListener("storage", () => {
+  bookings = getBookings();
+  load();
+});
 
- let today=new Date();
- let cal=document.getElementById("calendar");
+/* calendario */
+function calendar(){
+  let cal = document.getElementById("calendar");
+  cal.innerHTML="";
 
- for(let i=0;i<10;i++){
+  let today=new Date();
 
-  let d=new Date();
-  d.setDate(today.getDate()+i);
+  for(let i=0;i<10;i++){
+    let d=new Date();
+    d.setDate(today.getDate()+i);
 
-  let div=document.createElement("div");
-  div.className="day";
+    let el=document.createElement("div");
+    el.className="day";
 
-  div.innerHTML = `
-    <b>${d.getDate()}</b><br>
-    ${d.toLocaleDateString("it",{weekday:"short"})}
-  `;
+    el.innerHTML = `
+      <b>${d.getDate()}</b><br>
+      ${d.toLocaleDateString("it",{weekday:"short"})}
+    `;
 
-  if(d.getDay()!=0 && d.getDay()!=6){
+    if(d.getDay()!=0 && d.getDay()!=6){
+      el.onclick=()=>{
+        selectedDate=d.toISOString().split("T")[0];
 
-    div.onclick=()=>{
-      selectedDate=d.toISOString().split("T")[0];
-      document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
-      div.classList.add("active");
-      loadSlots();
-    };
+        document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
+        el.classList.add("active");
 
-  } else {
-    div.style.opacity=0.4;
-  }
-
-  cal.appendChild(div);
- }
-
-}
-
-// slot
-function loadSlots(){
-
- let cont=document.getElementById("slots");
- cont.innerHTML="";
-
- let h=6,m=0;
-
- while(true){
-
-  let time = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-
-  ["Fogli","Scatole"].forEach(zone=>{
-
-    let div=document.createElement("div");
-
-    let b=bookings.find(x=>x.date==selectedDate && x.time==time && x.zone==zone);
-
-    if(b){
-
-      div.className="card busy";
-      div.innerHTML = `
-        ${time} ${zone}<br><br>
-        <b>${b.trasp}</b><br>
-        ${b.dest}
-        <button onclick="remove(${b.id})">Cancella</button>
-      `;
-
-    } else {
-
-      div.className="card free";
-      div.innerHTML = `${time}<br>${zone}<br><b>LIBERO</b>`;
-
-      div.onclick=()=>{
-        selectedTime=time;
-        selectedZone=zone;
-        openModal();
+        load();
       };
-
+    } else {
+      el.style.opacity=0.4;
     }
 
-    cont.appendChild(div);
-
-  });
-
-  m+=30;
-  if(m==60){m=0;h++;}
-  if(h==20) break;
-
- }
-
+    cal.appendChild(el);
+  }
 }
 
-// salva
+/* slot */
+function load(){
+
+  bookings = getBookings();
+
+  let cont=document.getElementById("slots");
+  cont.innerHTML="";
+
+  let h=6,m=0;
+
+  while(true){
+
+    let time = (h+"").padStart(2,"0")+":"+ (m+"").padStart(2,"0");
+
+    ["Fogli","Scatole"].forEach(zone=>{
+
+      let el=document.createElement("div");
+
+      let found = bookings.find(b=>b.date===selectedDate && b.time===time && b.zone===zone);
+
+      if(found){
+        el.className="card busy";
+        el.innerHTML = `
+          ${time} ${zone}<br><br>
+          <b>${found.trasp}</b><br>
+          ${found.dest}
+          <button onclick="remove(${found.id})">Cancella</button>
+        `;
+      } else {
+        el.className="card free";
+        el.innerHTML = `${time}<br>${zone}<br><b>LIBERO</b>`;
+
+        el.onclick=()=>{
+          selectedTime=time;
+          selectedZone=zone;
+          openModal();
+        };
+      }
+
+      cont.appendChild(el);
+    });
+
+    m+=30;
+    if(m===60){m=0;h++;}
+    if(h===20) break;
+
+  }
+}
+
+/* salva */
 function save(){
 
- let t=document.getElementById("trasp").value;
- let d=document.getElementById("dest").value;
+  let t=document.getElementById("trasp").value;
+  let d=document.getElementById("dest").value;
 
- if(!t || !d){
-  alert("Compila tutti i campi");
-  return;
- }
+  if(!t||!d){
+    alert("Compila i campi");
+    return;
+  }
 
- bookings.push({
-  id:Date.now(),
-  date:selectedDate,
-  time:selectedTime,
-  zone:selectedZone,
-  trasp:t,
-  dest:d
- });
+  bookings = getBookings();
 
- localStorage.setItem("bookings",JSON.stringify(bookings));
+  bookings.push({
+    id:Date.now(),
+    date:selectedDate,
+    time:selectedTime,
+    zone:selectedZone,
+    trasp:t,
+    dest:d
+  });
 
- closeModal();
- loadSlots();
+  setBookings(bookings);
+
+  closeModal();
+  load();
 }
 
-// cancella
+/* cancella */
 function remove(id){
- bookings = bookings.filter(x=>x.id!=id);
- localStorage.setItem("bookings",JSON.stringify(bookings));
- loadSlots();
+  bookings = getBookings().filter(b=>b.id!==id);
+  setBookings(bookings);
+  load();
 }
 
+/* modal */
 function openModal(){
- document.getElementById("modal").style.display="flex";
+  document.getElementById("modal").style.display="flex";
 }
 
 function closeModal(){
- document.getElementById("modal").style.display="none";
- document.getElementById("trasp").value="";
- document.getElementById("dest").value="";
+  document.getElementById("modal").style.display="none";
 }
 
-init();
+/* start */
+calendar();
 
 </script>
 
