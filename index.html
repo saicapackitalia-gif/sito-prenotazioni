@@ -5,87 +5,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ERP Logistica</title>
 
-<!-- ✅ FIREBASE CORRETTO (UNO PER RIGA, SCRIPT VERO) -->
-https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js
+<!-- ✅ SCRIPT CORRETTO (QUESTO ERA IL PROBLEMA) -->
+https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
 <style>
-body {
-  margin:0;
-  font-family:Arial;
-  background:#eef2f7;
-}
+body { margin:0; font-family:Arial; background:#eef2f7; }
 
 header {
   background:#1e3a8a;
   color:white;
   padding:15px;
   text-align:center;
-  font-size:18px;
-  font-weight:bold;
 }
 
 #login {
   padding:20px;
 }
 
-#login input {
+input {
   width:100%;
-  padding:14px;
+  padding:12px;
   margin-top:10px;
-  border-radius:8px;
+  border-radius:6px;
   border:1px solid #ccc;
 }
 
 button {
   width:100%;
-  padding:14px;
+  padding:12px;
   margin-top:10px;
-  border:none;
-  border-radius:8px;
   background:#1e3a8a;
   color:white;
-  font-size:16px;
+  border:none;
+  border-radius:6px;
   cursor:pointer;
 }
-
-/* calendario */
-.calendar {
-  display:flex;
-  overflow-x:auto;
-  gap:8px;
-  padding:10px;
-}
-
-.day {
-  min-width:70px;
-  background:white;
-  padding:10px;
-  text-align:center;
-  border-radius:8px;
-}
-
-.day.active {
-  background:#1e3a8a;
-  color:white;
-}
-
-/* tabella */
-.table {
-  display:grid;
-  grid-template-columns:80px 1fr 1fr;
-}
-
-.cell {
-  border:1px solid #ccc;
-  padding:10px;
-  text-align:center;
-}
-
-.free {background:#bbf7d0;}
-.busy {background:#fde68a;}
-.full {background:#ef4444;color:white;}
 </style>
 </head>
 
@@ -93,7 +49,6 @@ button {
 
 <header>ERP Logistica</header>
 
-<!-- ✅ LOGIN -->
 <div id="login">
 <input id="email" type="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
@@ -101,16 +56,14 @@ button {
 <button onclick="loginUser()">Login</button>
 </div>
 
-<!-- ✅ APP -->
 <div id="app" style="display:none">
-<div id="calendar" class="calendar"></div>
-<div id="table" class="table"></div>
+<h3>✅ Entrato correttamente</h3>
 <button onclick="logoutUser()">Logout</button>
 </div>
 
 <script>
 
-/* ✅ CONFIG FIREBASE */
+/* ✅ CONFIG (GIÀ GIUSTA) */
 const firebaseConfig = {
   apiKey: "AIzaSyDQ5QefY2T8eGhh46TmSNHyt9dcEf7A_C8",
   authDomain: "magazzino-carichi.firebaseapp.com",
@@ -119,7 +72,6 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.firestore();
 
 /* ✅ REGISTER */
 function registerUser(){
@@ -127,12 +79,8 @@ function registerUser(){
   const password = document.getElementById("password").value;
 
   auth.createUserWithEmailAndPassword(email,password)
-    .then(() => {
-      alert("✅ Registrazione riuscita");
-    })
-    .catch(err => {
-      alert("❌ " + err.message);
-    });
+    .then(()=> alert("✅ Registrazione OK"))
+    .catch(err=> alert(err.message));
 }
 
 /* ✅ LOGIN */
@@ -141,12 +89,8 @@ function loginUser(){
   const password = document.getElementById("password").value;
 
   auth.signInWithEmailAndPassword(email,password)
-    .then(() => {
-      alert("✅ Login riuscito");
-    })
-    .catch(err => {
-      alert("❌ " + err.message);
-    });
+    .then(()=> alert("✅ Login OK"))
+    .catch(err=> alert(err.message));
 }
 
 /* ✅ LOGOUT */
@@ -155,76 +99,13 @@ function logoutUser(){
   location.reload();
 }
 
-/* ✅ STATO UTENTE */
+/* ✅ STATO LOGIN */
 auth.onAuthStateChanged(user=>{
   if(user){
     document.getElementById("login").style.display="none";
     document.getElementById("app").style.display="block";
-    loadCalendar();
   }
 });
-
-/* ✅ CALENDARIO */
-function loadCalendar(){
-
-  const cal=document.getElementById("calendar");
-  cal.innerHTML="";
-
-  let today=new Date();
-
-  for(let i=0;i<5;i++){
-
-    let d=new Date();
-    d.setDate(today.getDate()+i);
-
-    let div=document.createElement("div");
-    div.className="day";
-    div.innerText=d.getDate();
-
-    div.onclick=()=>{
-      document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
-      div.classList.add("active");
-      loadSlots(d.toISOString().split("T")[0]);
-    };
-
-    cal.appendChild(div);
-  }
-}
-
-/* ✅ LOAD SLOT */
-async function loadSlots(date){
-
-  let snap = await db.collection("bookings").where("date","==",date).get();
-  let data = snap.docs.map(d=>d.data());
-
-  let table=document.getElementById("table");
-  table.innerHTML = "<div class='cell'>Ora</div><div class='cell'>Fogli</div><div class='cell'>Scatole</div>";
-
-  for(let h=6; h<10; h++){
-
-    let time = h + ":00";
-
-    table.innerHTML += `<div class="cell">${time}</div>`;
-
-    ["Fogli","Scatole"].forEach(zone=>{
-
-      let list=data.filter(x=>x.time==time && x.zone==zone);
-
-      let cell=document.createElement("div");
-
-      if(list.length==0){
-        cell.className="cell free";
-        cell.innerText="LIBERO";
-      } else {
-        cell.className="cell busy";
-        cell.innerText=list.length+" camion";
-      }
-
-      table.appendChild(cell);
-
-    });
-  }
-}
 
 </script>
 
