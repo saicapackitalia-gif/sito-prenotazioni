@@ -4,69 +4,135 @@
 <meta name="viewport" content="width=device-width">
 <title>ERP Logistica</title>
 
-
-<script src="static.com/firebasejs/9.22.0/firebase-app-compat.js
-https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js
-://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
+<!-- ✅ FIREBASE CORRETTO -->
+https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.jsscript>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
 <style>
-body {margin:0;font-family:Arial;background:#eef2f7;}
-header {background:#1e3a8a;color:white;padding:12px;text-align:center;font-weight:bold;}
+body {
+  margin:0;
+  font-family:Arial;
+  background:#eef2f7;
+}
 
-.calendar {display:flex;overflow:auto;padding:10px;gap:6px;}
-.day {min-width:70px;background:white;padding:10px;border-radius:8px;text-align:center;}
-.day.active {background:#1e3a8a;color:white;}
+header {
+  background:#1e3a8a;
+  color:white;
+  padding:12px;
+  text-align:center;
+  font-weight:bold;
+}
 
+/* LOGIN */
+#login {
+  padding:20px;
+}
+
+#login input {
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  font-size:16px;
+}
+
+button {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:8px;
+  background:#1e3a8a;
+  color:white;
+  font-size:16px;
+}
+
+/* CALENDAR */
+.calendar {
+  display:flex;
+  overflow-x:auto;
+  padding:10px;
+  gap:8px;
+}
+
+.day {
+  min-width:70px;
+  background:white;
+  padding:10px;
+  border-radius:8px;
+  text-align:center;
+}
+
+.day.active {
+  background:#1e3a8a;
+  color:white;
+}
+
+/* DASHBOARD */
 .dashboard {
- display:grid;
- grid-template-columns:1fr 1fr 1fr;
- gap:8px;
- padding:10px;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  padding:10px;
 }
 
 .boxStat {
- background:white;
- padding:10px;
- border-radius:8px;
- text-align:center;
- font-weight:bold;
+  background:white;
+  padding:10px;
+  border-radius:8px;
+  text-align:center;
+  font-weight:bold;
 }
 
-.table {display:grid;grid-template-columns:70px 1fr 1fr;}
+/* TABLE */
+.table {
+  display:grid;
+  grid-template-columns:70px 1fr 1fr;
+}
 
-.cell {border:1px solid #ccc;padding:8px;text-align:center;}
+.cell {
+  border:1px solid #ccc;
+  padding:10px;
+  text-align:center;
+}
 
 .free {background:#bbf7d0;}
 .medium {background:#fde68a;}
 .full {background:#ef4444;color:white;}
 
-button {width:100%;padding:6px;margin-top:4px;}
-
+/* MODAL */
 .modal {
- display:none;
- position:fixed;
- inset:0;
- background:#0008;
- justify-content:center;
- align-items:center;
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#0008;
+  justify-content:center;
+  align-items:center;
 }
 
 .modal-box {
- background:white;
- padding:15px;
- width:90%;
- max-width:300px;
+  background:white;
+  padding:15px;
+  width:90%;
+  max-width:300px;
+  border-radius:10px;
 }
-.modal input {width:100%;padding:8px;margin-top:6px;}
-</style>
 
+.modal-box input {
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+}
+</style>
 </head>
 
 <body>
 
 <header>ERP Logistica</header>
 
+<!-- LOGIN -->
 <div id="login">
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
@@ -74,9 +140,10 @@ button {width:100%;padding:6px;margin-top:4px;}
 <button onclick="register()">Registrati</button>
 </div>
 
+<!-- APP -->
 <div id="app" style="display:none">
 
-<div class="calendar" id="calendar"></div>
+<div id="calendar" class="calendar"></div>
 
 <div class="dashboard">
 <div class="boxStat">Camion<br><span id="tot">0</span></div>
@@ -90,6 +157,7 @@ button {width:100%;padding:6px;margin-top:4px;}
 
 </div>
 
+<!-- MODAL -->
 <div id="modal" class="modal">
 <div class="modal-box">
 <input id="trasp" placeholder="Trasportatore">
@@ -100,21 +168,18 @@ button {width:100%;padding:6px;margin-top:4px;}
 
 <script>
 
-/* 🔑 INSERISCI QUI SOLO LE CHIAVI */
-
+/* ✅ LE TUE CHIAVI GIÀ INSERITE */
 const firebaseConfig = {
   apiKey: "AIzaSyDQ5QefY2T8eGhh46TmSNHyt9dcEf7A_C8",
   authDomain: "magazzino-carichi.firebaseapp.com",
   projectId: "magazzino-carichi"
 };
 
-
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 const LIMIT = 2;
-const ADMIN="admin@azienda.com";
 
 let selectedDate="";
 let selectedTime="";
@@ -122,18 +187,27 @@ let selectedZone="";
 
 /* LOGIN */
 function login(){
- auth.signInWithEmailAndPassword(email.value,password.value);
+  auth.signInWithEmailAndPassword(email.value,password.value)
+  .catch(e => alert(e.message));
 }
-function register(){
- auth.createUserWithEmailAndPassword(email.value,password.value);
-}
-function logout(){auth.signOut(); location.reload();}
 
+function register(){
+  auth.createUserWithEmailAndPassword(email.value,password.value)
+  .then(() => alert("Registrazione completata"))
+  .catch(e => alert(e.message));
+}
+
+function logout(){
+  auth.signOut();
+  location.reload();
+}
+
+/* CONTROLLO LOGIN */
 auth.onAuthStateChanged(user=>{
  if(user){
-  login.style.display="none";
-  app.style.display="block";
-  loadCalendar();
+   document.getElementById("login").style.display="none";
+   document.getElementById("app").style.display="block";
+   loadCalendar();
  }
 });
 
@@ -151,43 +225,40 @@ function loadCalendar(){
   el.className="day";
   el.innerText=d.getDate();
 
-  if(d.getDay()!=0 && d.getDay()!=6){
-   el.onclick=()=>{
+  el.onclick=()=>{
     selectedDate=d.toISOString().split("T")[0];
     document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
     el.classList.add("active");
     loadData();
-   };
-  }
+  };
 
   c.appendChild(el);
  }
 }
 
-/* LOAD DATA ERP */
+/* LOAD */
 async function loadData(){
 
  let snap=await db.collection("bookings")
   .where("date","==",selectedDate)
   .get();
 
- let data=snap.docs.map(d=>({id:d.id,...d.data()}));
+ let data=snap.docs.map(d=>d.data());
 
- /* DASHBOARD */
  tot.innerText=data.length;
  fogli.innerText=data.filter(x=>x.zone=="Fogli").length;
  scatole.innerText=data.filter(x=>x.zone=="Scatole").length;
 
  let table=document.getElementById("table");
- table.innerHTML="<div>Ora</div><div>Fogli</div><div>Scatole</div>";
+ table.innerHTML="<div class='cell'>Ora</div><div class='cell'>Fogli</div><div class='cell'>Scatole</div>";
 
  let h=6,m=0;
 
  while(true){
 
-  let time=h.toString().padStart(2,"0")+":"+m.toString().padStart(2,"0");
+  let time = String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
 
-  table.innerHTML+=`<div class='cell'>${time}</div>`;
+  table.innerHTML+=`<div class="cell">${time}</div>`;
 
   ["Fogli","Scatole"].forEach(zone=>{
 
@@ -205,25 +276,25 @@ async function loadData(){
     }
     else if(list.length<LIMIT){
       cell.className="cell medium";
-      cell.innerHTML=list.map(x=>x.trasp).join("<br>");
+      cell.innerText=list.length+" camion";
     }
     else{
       cell.className="cell full";
-      cell.innerHTML="PIENO";
+      cell.innerText="PIENO";
     }
 
     table.appendChild(cell);
 
   });
 
-  m+=30; if(m==60){m=0;h++;}
+  m+=30;
+  if(m==60){m=0;h++;}
   if(h==20) break;
  }
 }
 
 /* SAVE */
 async function save(){
-
  await db.collection("bookings").add({
   date:selectedDate,
   time:selectedTime,
