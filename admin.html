@@ -143,10 +143,6 @@
             border-color: #667eea;
         }
 
-        .tab-button:hover {
-            border-color: #667eea;
-        }
-
         .tab-content {
             display: none;
             background: white;
@@ -159,9 +155,28 @@
             display: block;
         }
 
-        .calendar {
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-box h3 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-box .number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -172,6 +187,7 @@
             border-radius: 10px;
             border-left: 4px solid #667eea;
             position: relative;
+            margin-bottom: 15px;
         }
 
         .booking-card h3 {
@@ -221,133 +237,10 @@
             background: #c82333;
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .stat-box h3 {
-            font-size: 14px;
-            opacity: 0.9;
-            margin-bottom: 10px;
-        }
-
-        .stat-box .number {
-            font-size: 36px;
-            font-weight: bold;
-        }
-
-        .filters {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .filters input, .filters select {
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        .filters button {
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .filters button:hover {
-            background: #5568d3;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-        }
-
-        .modal.active {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 5px 30px rgba(0,0,0,0.3);
-        }
-
-        .modal-content h2 {
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        .modal-content input, .modal-content select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .modal-buttons button {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .btn-save {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-cancel {
-            background: #e0e0e0;
-            color: #333;
-        }
-
         .empty-state {
             text-align: center;
             padding: 40px;
             color: #999;
-        }
-
-        .empty-state p {
-            font-size: 18px;
-            margin-bottom: 10px;
         }
 
         @media (max-width: 768px) {
@@ -358,10 +251,6 @@
             .tabs {
                 justify-content: flex-start;
                 overflow-x: auto;
-            }
-
-            .calendar {
-                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -386,12 +275,9 @@
         </div>
 
         <div class="container">
-            <!-- TABS -->
             <div class="tabs">
                 <button class="tab-button active" onclick="switchTab('today')">📅 Oggi</button>
-                <button class="tab-button" onclick="switchTab('calendar')">📆 Calendario</button>
                 <button class="tab-button" onclick="switchTab('stats')">📊 Statistiche</button>
-                <button class="tab-button" onclick="switchTab('export')">📥 Esporta</button>
             </div>
 
             <!-- TAB: TODAY -->
@@ -401,65 +287,21 @@
                 <div id="todayBookings"></div>
             </div>
 
-            <!-- TAB: CALENDAR -->
-            <div class="tab-content" id="calendar">
-                <h2>Calendario Prenotazioni</h2>
-                <div class="filters">
-                    <input type="date" id="filterDate" onchange="loadCalendar()">
-                    <select id="filterBay" onchange="loadCalendar()">
-                        <option value="">Tutte le baie</option>
-                        <option value="Scatole">Scatole</option>
-                        <option value="Fogli">Fogli</option>
-                    </select>
-                    <button onclick="loadCalendar()">Filtra</button>
-                </div>
-                <div id="calendarView"></div>
-            </div>
-
             <!-- TAB: STATS -->
             <div class="tab-content" id="stats">
-                <h2>Statistiche</h2>
+                <h2>Statistiche Giornaliere</h2>
                 <div class="stats" id="statsBoxes"></div>
-                <div id="detailedStats"></div>
-            </div>
-
-            <!-- TAB: EXPORT -->
-            <div class="tab-content" id="export">
-                <h2>Esporta Dati</h2>
-                <div class="filters">
-                    <input type="date" id="exportFrom">
-                    <input type="date" id="exportTo">
-                    <button onclick="exportCSV()">📥 Scarica CSV</button>
-                    <button onclick="sendEmailReport()">✉️ Invia Report Email</button>
-                </div>
-                <div id="exportPreview"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL EDIT -->
-    <div class="modal" id="editModal">
-        <div class="modal-content">
-            <h2>Modifica Prenotazione</h2>
-            <input type="hidden" id="editId">
-            <input type="text" id="editEmail" placeholder="Email" disabled>
-            <input type="text" id="editName" placeholder="Nome Azienda" disabled>
-            <input type="text" id="editPhone" placeholder="Telefono" disabled>
-            <input type="date" id="editDate">
-            <select id="editBay">
-                <option value="Scatole">Scatole</option>
-                <option value="Fogli">Fogli</option>
-            </select>
-            <input type="time" id="editTime">
-            <div class="modal-buttons">
-                <button class="btn-save" onclick="saveEdit()">Salva</button>
-                <button class="btn-cancel" onclick="closeModal()">Annulla</button>
             </div>
         </div>
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api';
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000/api'
+            : 'https://sito-prenotazioni-backend.railway.app/api';
+
+        console.log('🔗 API URL:', API_URL);
+
         let authToken = localStorage.getItem('adminToken');
 
         if (authToken) {
@@ -472,16 +314,30 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
-            if (username === 'giacomo' && password === 'admin123') { // Cambierai in backend
-                authToken = 'admin_token_' + Date.now();
-                localStorage.setItem('adminToken', authToken);
-                document.getElementById('loginContainer').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
-                loadToday();
-            } else {
-                document.getElementById('errorMessage').textContent = '❌ Credenziali errate';
+            try {
+                const response = await fetch(`${API_URL}/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    authToken = result.token;
+                    localStorage.setItem('adminToken', authToken);
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                    document.getElementById('username').value = '';
+                    document.getElementById('password').value = '';
+                    loadToday();
+                } else {
+                    document.getElementById('errorMessage').textContent = '❌ Credenziali errate';
+                    document.getElementById('errorMessage').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Errore login:', error);
+                document.getElementById('errorMessage').textContent = '❌ Errore di connessione';
                 document.getElementById('errorMessage').style.display = 'block';
             }
         }
@@ -499,7 +355,6 @@
             document.getElementById(tab).classList.add('active');
             event.target.classList.add('active');
 
-            if (tab === 'calendar') loadCalendar();
             if (tab === 'stats') loadStats();
             if (tab === 'today') loadToday();
         }
@@ -517,11 +372,11 @@
                         <div class="number">${bookings.length}</div>
                     </div>
                     <div class="stat-box">
-                        <h3>Baia Scatole</h3>
+                        <h3>🔷 Baia Scatole</h3>
                         <div class="number">${bookings.filter(b => b.bay === 'Scatole').length}</div>
                     </div>
                     <div class="stat-box">
-                        <h3>Baia Fogli</h3>
+                        <h3>📄 Baia Fogli</h3>
                         <div class="number">${bookings.filter(b => b.bay === 'Fogli').length}</div>
                     </div>
                 `;
@@ -534,12 +389,11 @@
                     bookingsHtml += `
                         <div class="booking-card">
                             <h3>${booking.name}</h3>
-                            <p><strong>Email:</strong> ${booking.email}</p>
-                            <p><strong>Telefono:</strong> ${booking.phone}</p>
-                            <p><strong>Baia:</strong> ${booking.bay}</p>
-                            <p><strong>Orario:</strong> ${booking.time}</p>
+                            <p><strong>📧 Email:</strong> ${booking.email}</p>
+                            <p><strong>📞 Telefono:</strong> ${booking.phone}</p>
+                            <p><strong>🔷 Baia:</strong> ${booking.bay}</p>
+                            <p><strong>⏰ Orario:</strong> ${booking.time}</p>
                             <div class="actions">
-                                <button class="btn-edit" onclick="openEdit('${booking.id}')">✏️ Modifica</button>
                                 <button class="btn-delete" onclick="deleteBooking('${booking.id}')">🗑️ Elimina</button>
                             </div>
                         </div>
@@ -552,45 +406,30 @@
             }
         }
 
-        async function loadCalendar() {
-            // Implementare con server
-            document.getElementById('calendarView').innerHTML = '<div class="empty-state"><p>Calendario in caricamento...</p></div>';
-        }
-
         async function loadStats() {
-            // Implementare con server
-            document.getElementById('statsBoxes').innerHTML = '<div class="stat-box"><h3>Totale Prenotazioni</h3><div class="number">0</div></div>';
-        }
-
-        function openEdit(id) {
-            document.getElementById('editId').value = id;
-            document.getElementById('editModal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('editModal').classList.remove('active');
-        }
-
-        async function saveEdit() {
-            const id = document.getElementById('editId').value;
-            const date = document.getElementById('editDate').value;
-            const bay = document.getElementById('editBay').value;
-            const time = document.getElementById('editTime').value;
-
             try {
-                const response = await fetch(`${API_URL}/booking/${id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ date, bay, time })
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`${API_URL}/daily-report?date=${today}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
+                const stats = await response.json();
 
-                if (response.ok) {
-                    closeModal();
-                    loadToday();
-                }
+                let html = `
+                    <div class="stat-box">
+                        <h3>Totale Prenotazioni</h3>
+                        <div class="number">${stats.total || 0}</div>
+                    </div>
+                    <div class="stat-box">
+                        <h3>🔷 Scatole</h3>
+                        <div class="number">${stats.scatole || 0}</div>
+                    </div>
+                    <div class="stat-box">
+                        <h3>📄 Fogli</h3>
+                        <div class="number">${stats.fogli || 0}</div>
+                    </div>
+                `;
+
+                document.getElementById('statsBoxes').innerHTML = html;
             } catch (error) {
                 console.error('Errore:', error);
             }
@@ -607,18 +446,12 @@
 
                 if (response.ok) {
                     loadToday();
+                    alert('✅ Prenotazione eliminata');
                 }
             } catch (error) {
                 console.error('Errore:', error);
+                alert('❌ Errore nell\'eliminazione');
             }
-        }
-
-        function exportCSV() {
-            alert('Export CSV non ancora implementato');
-        }
-
-        function sendEmailReport() {
-            alert('Report email sarà inviato a giacomo.rigamonti@saica.com');
         }
     </script>
 </body>
