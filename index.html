@@ -3,55 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ERP Logistica</title>
+<title>Test Login</title>
 
-<!-- ✅ SCRIPT FIREBASE CORRETTI -->
-https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js
+<!-- ✅ QUESTE 3 RIGHE DEVONO ESSERE ESATTAMENTE COSÌ -->
+https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.jsscript>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
 <style>
-body {margin:0;font-family:Arial;background:#eef2f7;}
-header {background:#1e3a8a;color:white;padding:15px;text-align:center;}
-
-#login {padding:20px;}
-#login input {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:6px;
-  border:1px solid #ccc;
-}
-
-button {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  background:#1e3a8a;
-  color:white;
-  border:none;
-  border-radius:6px;
-}
-
-#app {display:none; padding:20px;}
+body { font-family:Arial; padding:20px; }
+input, button { width:100%; padding:12px; margin-top:10px; }
+button { background:#1e3a8a; color:white; border:none; }
 </style>
 </head>
 
 <body>
 
-<header>ERP Logistica</header>
+<h2>Login Test</h2>
 
-<div id="login">
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
+
 <button onclick="registerUser()">Registrati</button>
 <button onclick="loginUser()">Login</button>
-</div>
-
-<div id="app">
-<h2>✅ Login riuscito</h2>
-<button onclick="logoutUser()">Logout</button>
-</div>
 
 <script>
 
@@ -64,39 +38,23 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
-/* REGISTER */
 function registerUser(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  let email = document.getElementById("email").value;
+  let pass = document.getElementById("password").value;
 
-  auth.createUserWithEmailAndPassword(email,password)
-    .then(()=> alert("Registrazione OK"))
-    .catch(err=> alert(err.message));
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(() => alert("✅ Registrato"))
+    .catch(e => alert(e.message));
 }
 
-/* LOGIN */
 function loginUser(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  let email = document.getElementById("email").value;
+  let pass = document.getElementById("password").value;
 
-  auth.signInWithEmailAndPassword(email,password)
-    .then(()=> alert("Login OK"))
-    .catch(err=> alert(err.message));
+  auth.signInWithEmailAndPassword(email, pass)
+    .then(() => alert("✅ Login OK"))
+    .catch(e => alert(e.message));
 }
-
-/* LOGOUT */
-function logoutUser(){
-  auth.signOut();
-  location.reload();
-}
-
-/* STATO */
-auth.onAuthStateChanged(user=>{
-  if(user){
-    document.getElementById("login").style.display = "none";
-    document.getElementById("app").style.display = "block";
-  }
-});
 
 </script>
 
