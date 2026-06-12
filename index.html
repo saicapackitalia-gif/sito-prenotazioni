@@ -5,7 +5,7 @@
 <title>ERP Logistica</title>
 
 <!-- ✅ FIREBASE CORRETTO -->
-https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.jsscript>
+https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
@@ -47,6 +47,7 @@ button {
   background:#1e3a8a;
   color:white;
   font-size:16px;
+  cursor:pointer;
 }
 
 /* CALENDAR */
@@ -168,7 +169,7 @@ button {
 
 <script>
 
-/* ✅ LE TUE CHIAVI GIÀ INSERITE */
+/* ✅ FIREBASE CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyDQ5QefY2T8eGhh46TmSNHyt9dcEf7A_C8",
   authDomain: "magazzino-carichi.firebaseapp.com",
@@ -187,12 +188,19 @@ let selectedZone="";
 
 /* LOGIN */
 function login(){
-  auth.signInWithEmailAndPassword(email.value,password.value)
+  auth.signInWithEmailAndPassword(
+    document.getElementById("email").value,
+    document.getElementById("password").value
+  )
+  .then(() => alert("Login riuscito"))
   .catch(e => alert(e.message));
 }
 
 function register(){
-  auth.createUserWithEmailAndPassword(email.value,password.value)
+  auth.createUserWithEmailAndPassword(
+    document.getElementById("email").value,
+    document.getElementById("password").value
+  )
   .then(() => alert("Registrazione completata"))
   .catch(e => alert(e.message));
 }
@@ -245,9 +253,9 @@ async function loadData(){
 
  let data=snap.docs.map(d=>d.data());
 
- tot.innerText=data.length;
- fogli.innerText=data.filter(x=>x.zone=="Fogli").length;
- scatole.innerText=data.filter(x=>x.zone=="Scatole").length;
+ document.getElementById("tot").innerText=data.length;
+ document.getElementById("fogli").innerText=data.filter(x=>x.zone=="Fogli").length;
+ document.getElementById("scatole").innerText=data.filter(x=>x.zone=="Scatole").length;
 
  let table=document.getElementById("table");
  table.innerHTML="<div class='cell'>Ora</div><div class='cell'>Fogli</div><div class='cell'>Scatole</div>";
@@ -271,7 +279,7 @@ async function loadData(){
       cell.onclick=()=>{
         selectedTime=time;
         selectedZone=zone;
-        modal.style.display="flex";
+        document.getElementById("modal").style.display="flex";
       };
     }
     else if(list.length<LIMIT){
@@ -299,11 +307,11 @@ async function save(){
   date:selectedDate,
   time:selectedTime,
   zone:selectedZone,
-  trasp:trasp.value,
-  dest:dest.value
+  trasp:document.getElementById("trasp").value,
+  dest:document.getElementById("dest").value
  });
 
- modal.style.display="none";
+ document.getElementById("modal").style.display="none";
  loadData();
 }
 
