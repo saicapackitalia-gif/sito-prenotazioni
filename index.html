@@ -1,59 +1,33 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Test Login</title>
-
-<!-- ✅ QUESTE 3 RIGHE DEVONO ESSERE ESATTAMENTE COSÌ -->
-https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.jsscript>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
+<meta name="viewport" content="width=device-width">
+<title>Test Bottoni</title>
 <style>
-body { font-family:Arial; padding:20px; }
-input, button { width:100%; padding:12px; margin-top:10px; }
-button { background:#1e3a8a; color:white; border:none; }
+body {font-family:Arial; padding:20px;}
+input,button {width:100%; padding:10px; margin-top:10px;}
+button {background:#1e3a8a; color:white;}
 </style>
 </head>
 
 <body>
 
-<h2>Login Test</h2>
+<h2>Test Login</h2>
 
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
 
-<button onclick="registerUser()">Registrati</button>
-<button onclick="loginUser()">Login</button>
+<button onclick="testRegister()">Registrati</button>
+<button onclick="testLogin()">Login</button>
 
 <script>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDQ5QefY2T8eGhh46TmSNHyt9dcEf7A_C8",
-  authDomain: "magazzino-carichi.firebaseapp.com",
-  projectId: "magazzino-carichi"
-};
-
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-
-function registerUser(){
-  let email = document.getElementById("email").value;
-  let pass = document.getElementById("password").value;
-
-  auth.createUserWithEmailAndPassword(email, pass)
-    .then(() => alert("✅ Registrato"))
-    .catch(e => alert(e.message));
+function testRegister(){
+  alert("Registrati funziona ✅");
 }
 
-function loginUser(){
-  let email = document.getElementById("email").value;
-  let pass = document.getElementById("password").value;
-
-  auth.signInWithEmailAndPassword(email, pass)
-    .then(() => alert("✅ Login OK"))
-    .catch(e => alert(e.message));
+function testLogin(){
+  alert("Login funziona ✅");
 }
 
 </script>
