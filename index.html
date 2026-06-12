@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Login Firebase</title>
 
-<!-- ✅ SCRIPT CORRETTO -->
+<!-- ✅ QUESTO È CORRETTO DAVVERO -->
 https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.jsscript>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
@@ -53,18 +53,18 @@ function registerUser(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  auth.createUserWithEmailAndPassword(email,password)
-    .then(()=>alert("✅ Registrazione riuscita"))
-    .catch(e=>alert(e.message));
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(() => alert("✅ Registrazione riuscita"))
+    .catch(e => alert("❌ " + e.message));
 }
 
 function loginUser(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  auth.signInWithEmailAndPassword(email,password)
-    .then(()=>alert("✅ Login riuscito"))
-    .catch(e=>alert(e.message));
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => alert("✅ Login riuscito"))
+    .catch(e => alert("❌ " + e.message));
 }
 
 </script>
