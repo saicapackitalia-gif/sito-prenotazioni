@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prenotazione Carico - Saica Pack Italia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 25px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .time-slot {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .time-slot:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .time-slot.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .time-slot.disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-submit {
+            background: #667eea;
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-reset {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-reset:hover {
+            background: #e0e0e0;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #666;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .time-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Prenota il tuo carico</h1>
+            <p>Saica Pack Italia SPA</p>
+        </div>
+
+        <div class="message" id="message"></div>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Elaborazione in corso...</p>
+        </div>
+
+        <form id="bookingForm">
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" placeholder="tua.email@esempio.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Nome Azienda *</label>
+                <input type="text" id="name" placeholder="Nome della tua azienda" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Telefono *</label>
+                <input type="tel" id="phone" placeholder="+39 000 000 0000" required>
+            </div>
+
+            <div class="form-group">
+                <label for="date">Data *</label>
+                <input type="date" id="date" required>
+            </div>
+
+            <div class="form-group">
+                <label for="bay">Baia di Carico *</label>
+                <select id="bay" required>
+                    <option value="">Seleziona una baia</option>
+                    <option value="Scatole">🔷 Scatole</option>
+                    <option value="Fogli">📄 Fogli</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Orario di Carico *</label>
+                <div class="time-grid" id="timeGrid"></div>
+            </div>
+
+            <input type="hidden" id="selectedTime">
+
+            <div class="button-group">
+                <button type="submit" class="btn-submit">✅ Prenota</button>
+                <button type="reset" class="btn-reset">🔄 Azzera</button>
+            </div>
+
+            <div class="info-box">
+                ℹ️ Orari disponibili: Lunedì-Venerdì, 06:00-19:30<br>
+                Slot da 30 minuti. Riceverai conferma via email.
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api'; // Cambierai con URL reale
+
+        // Inizializza data minima a oggi
+        const dateInput = document.getElementById('date');
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+
+        // Genera slot orari
+        function generateTimeSlots() {
+            const slots = [];
+            const start = 6 * 60; // 06:00
+            const end = 19 * 60 + 30; // 19:30
+
+            for (let time = start; time < end; time += 30) {
+                const hours = Math.floor(time / 60);
+                const minutes = time % 60;
+                const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                slots.push(timeStr);
+            }
+            return slots;
+        }
+
+        function renderTimeSlots() {
+            const timeGrid = document.getElementById('timeGrid');
+            const slots = generateTimeSlots();
+            timeGrid.innerHTML = '';
+
+            slots.forEach(slot => {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'time-slot';
+                slotDiv.textContent = slot;
+                slotDiv.onclick = () => selectTime(slotDiv, slot);
+                timeGrid.appendChild(slotDiv);
+            });
+        }
+
+        function selectTime(element, time) {
+            document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('selectedTime').value = time;
+        }
+
+        // Carica slot prenotati
+        async function loadBookedSlots() {
+            const date = document.getElementById('date').value;
+            const bay = document.getElementById('bay').value;
+
+            if (!date || !bay) return;
+
+            try {
+                const response = await fetch(`${API_URL}/booked-slots?date=${date}&bay=${bay}`);
+                const booked = await response.json();
+
+                document.querySelectorAll('.time-slot').forEach(slot => {
+                    if (booked.includes(slot.textContent)) {
+                        slot.classList.add('disabled');
+                    } else {
+                        slot.classList.remove('disabled');
+                    }
+                });
+            } catch (error) {
+                console.error('Errore caricamento slot:', error);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('date').addEventListener('change', loadBookedSlots);
+        document.getElementById('bay').addEventListener('change', loadBookedSlots);
+
+        // Submit form
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const date = document.getElementById('date').value;
+            const bay = document.getElementById('bay').value;
+            const time = document.getElementById('selectedTime').value;
+
+            if (!time) {
+                showMessage('❌ Seleziona un orario', 'error');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch(`${API_URL}/booking`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name, phone, date, bay, time })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('✅ Prenotazione confermata! Controlla la tua email.', 'success');
+                    document.getElementById('bookingForm').reset();
+                    document.getElementById('selectedTime').value = '';
+                    renderTimeSlots();
+                } else {
+                    showMessage(`❌ ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Errore di connessione', 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        function showMessage(msg, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = msg;
+            messageDiv.className = `message ${type}`;
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Inizializza
+        renderTimeSlots();
+    </script>
+</body>
+</html>
