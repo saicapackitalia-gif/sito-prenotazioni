@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta name="viewport" content="width=device-width">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ERP Logistica</title>
 
-<!-- ✅ FIREBASE CORRETTO -->
-https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js>
+<!-- ✅ FIREBASE CORRETTO (UNO PER RIGA, SCRIPT VERO) -->
+https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
@@ -19,12 +20,12 @@ body {
 header {
   background:#1e3a8a;
   color:white;
-  padding:12px;
+  padding:15px;
   text-align:center;
+  font-size:18px;
   font-weight:bold;
 }
 
-/* LOGIN */
 #login {
   padding:20px;
 }
@@ -35,12 +36,11 @@ header {
   margin-top:10px;
   border-radius:8px;
   border:1px solid #ccc;
-  font-size:16px;
 }
 
 button {
   width:100%;
-  padding:12px;
+  padding:14px;
   margin-top:10px;
   border:none;
   border-radius:8px;
@@ -50,20 +50,20 @@ button {
   cursor:pointer;
 }
 
-/* CALENDAR */
+/* calendario */
 .calendar {
   display:flex;
   overflow-x:auto;
-  padding:10px;
   gap:8px;
+  padding:10px;
 }
 
 .day {
   min-width:70px;
   background:white;
   padding:10px;
-  border-radius:8px;
   text-align:center;
+  border-radius:8px;
 }
 
 .day.active {
@@ -71,26 +71,10 @@ button {
   color:white;
 }
 
-/* DASHBOARD */
-.dashboard {
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:8px;
-  padding:10px;
-}
-
-.boxStat {
-  background:white;
-  padding:10px;
-  border-radius:8px;
-  text-align:center;
-  font-weight:bold;
-}
-
-/* TABLE */
+/* tabella */
 .table {
   display:grid;
-  grid-template-columns:70px 1fr 1fr;
+  grid-template-columns:80px 1fr 1fr;
 }
 
 .cell {
@@ -100,32 +84,8 @@ button {
 }
 
 .free {background:#bbf7d0;}
-.medium {background:#fde68a;}
+.busy {background:#fde68a;}
 .full {background:#ef4444;color:white;}
-
-/* MODAL */
-.modal {
-  display:none;
-  position:fixed;
-  inset:0;
-  background:#0008;
-  justify-content:center;
-  align-items:center;
-}
-
-.modal-box {
-  background:white;
-  padding:15px;
-  width:90%;
-  max-width:300px;
-  border-radius:10px;
-}
-
-.modal-box input {
-  width:100%;
-  padding:10px;
-  margin-top:8px;
-}
 </style>
 </head>
 
@@ -133,43 +93,24 @@ button {
 
 <header>ERP Logistica</header>
 
-<!-- LOGIN -->
+<!-- ✅ LOGIN -->
 <div id="login">
-<input id="email" placeholder="Email">
+<input id="email" type="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-<button onclick="register()">Registrati</button>
+<button onclick="registerUser()">Registrati</button>
+<button onclick="loginUser()">Login</button>
 </div>
 
-<!-- APP -->
+<!-- ✅ APP -->
 <div id="app" style="display:none">
-
 <div id="calendar" class="calendar"></div>
-
-<div class="dashboard">
-<div class="boxStat">Camion<br><span id="tot">0</span></div>
-<div class="boxStat">Fogli<br><span id="fogli">0</span></div>
-<div class="boxStat">Scatole<br><span id="scatole">0</span></div>
-</div>
-
 <div id="table" class="table"></div>
-
-<button onclick="logout()">Logout</button>
-
-</div>
-
-<!-- MODAL -->
-<div id="modal" class="modal">
-<div class="modal-box">
-<input id="trasp" placeholder="Trasportatore">
-<input id="dest" placeholder="Destinazione">
-<button onclick="save()">Salva</button>
-</div>
+<button onclick="logoutUser()">Logout</button>
 </div>
 
 <script>
 
-/* ✅ FIREBASE CONFIG */
+/* ✅ CONFIG FIREBASE */
 const firebaseConfig = {
   apiKey: "AIzaSyDQ5QefY2T8eGhh46TmSNHyt9dcEf7A_C8",
   authDomain: "magazzino-carichi.firebaseapp.com",
@@ -180,139 +121,109 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-const LIMIT = 2;
+/* ✅ REGISTER */
+function registerUser(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-let selectedDate="";
-let selectedTime="";
-let selectedZone="";
-
-/* LOGIN */
-function login(){
-  auth.signInWithEmailAndPassword(
-    document.getElementById("email").value,
-    document.getElementById("password").value
-  )
-  .then(() => alert("Login riuscito"))
-  .catch(e => alert(e.message));
+  auth.createUserWithEmailAndPassword(email,password)
+    .then(() => {
+      alert("✅ Registrazione riuscita");
+    })
+    .catch(err => {
+      alert("❌ " + err.message);
+    });
 }
 
-function register(){
-  auth.createUserWithEmailAndPassword(
-    document.getElementById("email").value,
-    document.getElementById("password").value
-  )
-  .then(() => alert("Registrazione completata"))
-  .catch(e => alert(e.message));
+/* ✅ LOGIN */
+function loginUser(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  auth.signInWithEmailAndPassword(email,password)
+    .then(() => {
+      alert("✅ Login riuscito");
+    })
+    .catch(err => {
+      alert("❌ " + err.message);
+    });
 }
 
-function logout(){
+/* ✅ LOGOUT */
+function logoutUser(){
   auth.signOut();
   location.reload();
 }
 
-/* CONTROLLO LOGIN */
+/* ✅ STATO UTENTE */
 auth.onAuthStateChanged(user=>{
- if(user){
-   document.getElementById("login").style.display="none";
-   document.getElementById("app").style.display="block";
-   loadCalendar();
- }
+  if(user){
+    document.getElementById("login").style.display="none";
+    document.getElementById("app").style.display="block";
+    loadCalendar();
+  }
 });
 
-/* CALENDARIO */
+/* ✅ CALENDARIO */
 function loadCalendar(){
- let c=document.getElementById("calendar");
- c.innerHTML="";
- let today=new Date();
 
- for(let i=0;i<10;i++){
-  let d=new Date();
-  d.setDate(today.getDate()+i);
+  const cal=document.getElementById("calendar");
+  cal.innerHTML="";
 
-  let el=document.createElement("div");
-  el.className="day";
-  el.innerText=d.getDate();
+  let today=new Date();
 
-  el.onclick=()=>{
-    selectedDate=d.toISOString().split("T")[0];
-    document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
-    el.classList.add("active");
-    loadData();
-  };
+  for(let i=0;i<5;i++){
 
-  c.appendChild(el);
- }
+    let d=new Date();
+    d.setDate(today.getDate()+i);
+
+    let div=document.createElement("div");
+    div.className="day";
+    div.innerText=d.getDate();
+
+    div.onclick=()=>{
+      document.querySelectorAll(".day").forEach(x=>x.classList.remove("active"));
+      div.classList.add("active");
+      loadSlots(d.toISOString().split("T")[0]);
+    };
+
+    cal.appendChild(div);
+  }
 }
 
-/* LOAD */
-async function loadData(){
+/* ✅ LOAD SLOT */
+async function loadSlots(date){
 
- let snap=await db.collection("bookings")
-  .where("date","==",selectedDate)
-  .get();
+  let snap = await db.collection("bookings").where("date","==",date).get();
+  let data = snap.docs.map(d=>d.data());
 
- let data=snap.docs.map(d=>d.data());
+  let table=document.getElementById("table");
+  table.innerHTML = "<div class='cell'>Ora</div><div class='cell'>Fogli</div><div class='cell'>Scatole</div>";
 
- document.getElementById("tot").innerText=data.length;
- document.getElementById("fogli").innerText=data.filter(x=>x.zone=="Fogli").length;
- document.getElementById("scatole").innerText=data.filter(x=>x.zone=="Scatole").length;
+  for(let h=6; h<10; h++){
 
- let table=document.getElementById("table");
- table.innerHTML="<div class='cell'>Ora</div><div class='cell'>Fogli</div><div class='cell'>Scatole</div>";
+    let time = h + ":00";
 
- let h=6,m=0;
+    table.innerHTML += `<div class="cell">${time}</div>`;
 
- while(true){
+    ["Fogli","Scatole"].forEach(zone=>{
 
-  let time = String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+      let list=data.filter(x=>x.time==time && x.zone==zone);
 
-  table.innerHTML+=`<div class="cell">${time}</div>`;
+      let cell=document.createElement("div");
 
-  ["Fogli","Scatole"].forEach(zone=>{
+      if(list.length==0){
+        cell.className="cell free";
+        cell.innerText="LIBERO";
+      } else {
+        cell.className="cell busy";
+        cell.innerText=list.length+" camion";
+      }
 
-    let list=data.filter(x=>x.time==time && x.zone==zone);
-    let cell=document.createElement("div");
+      table.appendChild(cell);
 
-    if(list.length==0){
-      cell.className="cell free";
-      cell.innerText="LIBERO";
-      cell.onclick=()=>{
-        selectedTime=time;
-        selectedZone=zone;
-        document.getElementById("modal").style.display="flex";
-      };
-    }
-    else if(list.length<LIMIT){
-      cell.className="cell medium";
-      cell.innerText=list.length+" camion";
-    }
-    else{
-      cell.className="cell full";
-      cell.innerText="PIENO";
-    }
-
-    table.appendChild(cell);
-
-  });
-
-  m+=30;
-  if(m==60){m=0;h++;}
-  if(h==20) break;
- }
-}
-
-/* SAVE */
-async function save(){
- await db.collection("bookings").add({
-  date:selectedDate,
-  time:selectedTime,
-  zone:selectedZone,
-  trasp:document.getElementById("trasp").value,
-  dest:document.getElementById("dest").value
- });
-
- document.getElementById("modal").style.display="none";
- loadData();
+    });
+  }
 }
 
 </script>
