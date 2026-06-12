@@ -5,44 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Login Firebase</title>
 
-<!-- ✅ SCRIPT FIREBASE CORRETTI -->
-https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.jsscript>
+<!-- ✅ QUESTE DEVONO ESSERE ESATTAMENTE COSI -->
+https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
 <style>
 body {
-  font-family:Arial;
-  padding:20px;
-  background:#eef2f7;
+  font-family: Arial;
+  padding: 20px;
+  background: #eef2f7;
 }
 
-h2 {
-  text-align:center;
-}
+h2 { text-align: center; }
 
 input, button {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:6px;
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 6px;
 }
 
 input {
-  border:1px solid #ccc;
+  border: 1px solid #ccc;
 }
 
 button {
-  background:#1e3a8a;
-  color:white;
-  border:none;
-  cursor:pointer;
+  background: #1e3a8a;
+  color: white;
+  border: none;
 }
 </style>
 </head>
 
 <body>
 
-<h2>Login</h2>
+<h2>Login Test</h2>
 
 <input id="email" type="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
@@ -52,29 +49,25 @@ button {
 
 <script>
 
-/* ✅ CONFIG GIÀ OK */
+/* ✅ CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyDQ5QefY2T8eGhh46TmSNHyt9dcEf7A_C8",
   authDomain: "magazzino-carichi.firebaseapp.com",
   projectId: "magazzino-carichi"
 };
 
-/* ✅ INIZIALIZZA */
+/* ✅ INIT */
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
-/* ✅ REGISTRA */
+/* ✅ REGISTER */
 function registerUser(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
   auth.createUserWithEmailAndPassword(email, password)
-    .then(() => {
-      alert("✅ Registrazione riuscita");
-    })
-    .catch(error => {
-      alert("❌ " + error.message);
-    });
+    .then(() => alert("✅ Registrazione riuscita"))
+    .catch(e => alert("❌ " + e.message));
 }
 
 /* ✅ LOGIN */
@@ -83,12 +76,8 @@ function loginUser(){
   const password = document.getElementById("password").value;
 
   auth.signInWithEmailAndPassword(email, password)
-    .then(() => {
-      alert("✅ Login riuscito");
-    })
-    .catch(error => {
-      alert("❌ " + error.message);
-    });
+    .then(() => alert("✅ Login riuscito"))
+    .catch(e => alert("❌ " + e.message));
 }
 
 </script>
