@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login Firebase</title>
+<title>Login Firebase FIX</title>
 
-<!-- ✅ QUESTO È CORRETTO DAVVERO -->
+<!-- ✅ SCRIPT CORRETTI (FINALMENTE GIUSTI) -->
 https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.jsscript>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
@@ -30,16 +30,15 @@ button {
 
 <body>
 
-<h2>Login Test</h2>
+<h2>Login Firebase</h2>
 
-<input id="email" type="email" placeholder="Email">
+<input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
 
 <button onclick="registerUser()">Registrati</button>
 <button onclick="loginUser()">Login</button>
 
 <script>
-
 const firebaseConfig = {
   apiKey: "AIzaSyDQ5QefY2T8eGhh46TmSNHyt9dcEf7A_C8",
   authDomain: "magazzino-carichi.firebaseapp.com",
@@ -54,7 +53,7 @@ function registerUser(){
   const password = document.getElementById("password").value;
 
   auth.createUserWithEmailAndPassword(email, password)
-    .then(() => alert("✅ Registrazione riuscita"))
+    .then(() => alert("✅ Registrazione OK"))
     .catch(e => alert("❌ " + e.message));
 }
 
@@ -63,10 +62,9 @@ function loginUser(){
   const password = document.getElementById("password").value;
 
   auth.signInWithEmailAndPassword(email, password)
-    .then(() => alert("✅ Login riuscito"))
+    .then(() => alert("✅ Login OK"))
     .catch(e => alert("❌ " + e.message));
 }
-
 </script>
 
 </body>
