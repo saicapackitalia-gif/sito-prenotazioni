@@ -370,6 +370,7 @@ a,button,[role="button"],input,select{transition:color var(--transition-interact
 .btn-export-xlsx:hover:not(:disabled){background:var(--color-blue);color:var(--color-text-inverse);}
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -707,51 +708,55 @@ let offlineMode=false;
 let offlineDb={};
 let currentUser=null; // {id, email}
 
-// ===== SUPABASE REST =====
-async function sbFetch(method, path, body, token){
-  const headers={
-    'apikey': SB_KEY,
-    'Authorization': 'Bearer '+(token||SB_KEY),
-    'Content-Type': 'application/json',
-  };
-  if(method==='POST') headers['Prefer']='return=representation';
-  const res=await fetch(SB_URL+path,{method,headers,body:body?JSON.stringify(body):undefined});
-  const text=await res.text();
-  const data=text?JSON.parse(text):null;
-  if(!res.ok) throw new Error(data?.message||data?.error_description||text||'Errore '+res.status);
-  return data;
+// ===== SUPABASE JS CLIENT =====
+let sbClient = null;
+
+function initSupabaseClient(){
+  sbClient = supabase.createClient(SB_URL, SB_KEY, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false
+    }
+  });
 }
 
 // Auth
-let accessToken='';
-async function signUp(email,password,nome,reparto){
-  const r=await sbFetch('POST','/auth/v1/signup',{email,password,data:{nome,reparto}});
-  return r;
+async function signUp(email, password, nome, reparto){
+  const { data, error } = await sbClient.auth.signUp({
+    email, password,
+    options: { data: { nome, reparto } }
+  });
+  if(error) throw new Error(error.message);
+  return data;
 }
-async function signIn(email,password){
-  const r=await sbFetch('POST','/auth/v1/token?grant_type=password',{email,password});
-  accessToken=r.access_token;
-  return r;
+async function signIn(email, password){
+  const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+  if(error) throw new Error(error.message);
+  return data;
 }
 async function signOut(){
-  try{ await sbFetch('POST','/auth/v1/logout',{},accessToken); }catch(e){}
-  accessToken=''; currentUser=null;
+  await sbClient.auth.signOut();
+  currentUser = null;
 }
 async function getUser(){
-  const r=await sbFetch('GET','/auth/v1/user',null,accessToken);
-  return r;
+  const { data: { user }, error } = await sbClient.auth.getUser();
+  if(error) throw new Error(error.message);
+  return user;
 }
 
 // Bookings
 async function fetchBookings(date){
   if(offlineMode){
     return Object.entries(offlineDb)
-      .filter(([k])=>k.includes('_'+date+'_'))
-      .map(([k,v])=>{const p=k.split('_');return{...v,vehicle_id:p[0],data:date,slot_index:parseInt(p[2])};});
+      .filter(([k]) => k.includes('_'+date+'_'))
+      .map(([k,v]) => { const p=k.split('_'); return {...v, vehicle_id:p[0], data:date, slot_index:parseInt(p[2])}; });
   }
-  return await sbFetch('GET',`/rest/v1/prenotazioni?data=eq.${date}&select=*`,null,accessToken);
+  const { data, error } = await sbClient.from('prenotazioni').select('*').eq('data', date);
+  if(error) throw new Error(error.message);
+  return data;
 }
-async function createBooking(vehicle_id,data,slot_index,nome,destinazione,targa){
+async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa){
   if(offlineMode){
     const k=`${vehicle_id}_${data}_${slot_index}`;
     if(offlineDb[k]) throw new Error('Slot già occupato');
@@ -759,14 +764,19 @@ async function createBooking(vehicle_id,data,slot_index,nome,destinazione,targa)
     offlineDb[k]={id,vehicle_id,data,slot_index,nome,destinazione,targa,user_id:'offline'};
     return [offlineDb[k]];
   }
-  return await sbFetch('POST','/rest/v1/prenotazioni',{user_id:currentUser.id,vehicle_id,data,slot_index,nome,destinazione,targa},accessToken);
+  const { data: res, error } = await sbClient.from('prenotazioni').insert({
+    user_id: currentUser.id, vehicle_id, data, slot_index, nome, destinazione, targa
+  }).select();
+  if(error) throw new Error(error.code==='23505'?'Slot già occupato.':error.message);
+  return res;
 }
 async function deleteBooking(id){
   if(offlineMode){
     const k=Object.keys(offlineDb).find(k=>offlineDb[k].id===id);
     if(k) delete offlineDb[k]; return;
   }
-  await sbFetch('DELETE',`/rest/v1/prenotazioni?id=eq.${id}`,null,accessToken);
+  const { error } = await sbClient.from('prenotazioni').delete().eq('id', id);
+  if(error) throw new Error(error.message);
 }
 
 // ===== VEHICLES & SLOTS =====
@@ -1115,7 +1125,7 @@ async function doLogin(){
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Accesso...';
   try{
     const r=await signIn(email,pw);
-    const user=await getUser();
+    const user = r.user || await getUser();
     currentUser={id:user.id, email:user.email, nome:user.user_metadata?.nome||user.email.split('@')[0], reparto:user.user_metadata?.reparto||''};
     lastNome=currentUser.nome; lastReparto='';
     startApp();
@@ -1141,7 +1151,7 @@ async function doRegister(){
     // Try immediate login
     try{
       const r=await signIn(email,pw);
-      const user=await getUser();
+      const user = r.user || await getUser();
       currentUser={id:user.id,email:user.email,nome,reparto};
       lastNome=nome; lastReparto=reparto;
       startApp();
@@ -1188,10 +1198,12 @@ document.getElementById('setup-connect').addEventListener('click',async()=>{
   errBox.classList.remove('show');
   if(!url||!key){errBox.textContent='Inserisci URL e chiave API.';errBox.classList.add('show');return;}
   SB_URL=url; SB_KEY=key;
+  initSupabaseClient();
   const btn=document.getElementById('setup-connect');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Connessione...';
   try{
-    await sbFetch('GET','/rest/v1/prenotazioni?limit=1&select=id');
+    const { error } = await sbClient.from('prenotazioni').select('id').limit(1);
+    if(error && error.code !== 'PGRST116') throw new Error(error.message);
     showPage('page-login');
     renderAuthLogin();
   }catch(e){
@@ -1232,7 +1244,11 @@ showPage('page-setup');
           .sort((a,b)=> a.data.localeCompare(b.data)||a.vehicle_id.localeCompare(b.vehicle_id)||a.slot_index-b.slot_index);
       } else {
         try{
-          rows = await sbFetch('GET', `/rest/v1/prenotazioni?data=gte.${from}&data=lte.${to}&order=data.asc,vehicle_id.asc,slot_index.asc&select=*`, null, accessToken);
+          const { data: exportData, error: exportErr } = await sbClient.from('prenotazioni')
+            .select('*').gte('data', from).lte('data', to)
+            .order('data').order('vehicle_id').order('slot_index');
+          if(exportErr) throw new Error(exportErr.message);
+          rows = exportData;
         }catch(e){ toast('Errore scaricamento dati: '+e.message,'error-t'); return null; }
       }
       return { rows, from, to };
