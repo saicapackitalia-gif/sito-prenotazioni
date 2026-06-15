@@ -518,7 +518,7 @@ CREATE POLICY "delete_own" ON prenotazioni
         <h1 class="section-title">Calendario Prenotazioni</h1>
         <p class="section-desc">Seleziona data, baia e slot disponibile.</p>
       </div>
-      <button class="btn btn-ghost btn-sm" id="btn-settings">
+      <button class="btn btn-ghost btn-sm" id="btn-settings" style="display:none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         DB
       </button>
@@ -782,8 +782,8 @@ async function deleteBooking(id){
 // ===== VEHICLES & SLOTS =====
 const VEHICLES=[
   // Aggiungi baie qui: {id:'baia-3',name:'Baia 3',icon:'🚪'}
-  {id:'baia-1',name:'Baia 1',icon:'🚪'},
-  {id:'baia-2',name:'Baia 2',icon:'🚪'},
+  {id:'baia-1',name:'Fogli',icon:'📄'},
+  {id:'baia-2',name:'Scatole',icon:'📦'},
 ];
 function generateSlots(){
   const s=[];
@@ -1215,7 +1215,13 @@ document.getElementById('setup-connect').addEventListener('click',async()=>{
 });
 
 // ===== INIT =====
-showPage('page-setup');
+// Credenziali già configurate — vai direttamente al login
+SB_URL = 'https://jmhwxpgwakrqmnwefqrs.supabase.co';
+SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU';
+offlineMode = false;
+initSupabaseClient();
+showPage('page-login');
+renderAuthLogin();
 
 
 
