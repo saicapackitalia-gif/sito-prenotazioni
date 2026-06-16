@@ -369,6 +369,20 @@ a,button,[role="button"],input,select{transition:color var(--transition-interact
 }
 .btn-export-xlsx:hover:not(:disabled){background:var(--color-blue);color:var(--color-text-inverse);}
 
+
+/* ===== WEEKEND BLOCK ===== */
+.weekend-banner{
+  display:flex;align-items:center;gap:var(--space-3);
+  padding:var(--space-4) var(--space-5);
+  background:var(--color-warning-highlight);
+  border:1px solid oklch(from var(--color-warning) l c h/.25);
+  border-radius:var(--radius-xl);
+  color:var(--color-warning);
+  font-size:var(--text-sm);font-weight:500;
+  margin-bottom:var(--space-6);
+}
+.weekend-banner svg{flex-shrink:0;}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -560,6 +574,12 @@ CREATE POLICY "delete_own" ON prenotazioni
 
     <div class="vehicle-tabs" role="tablist" id="vehicle-tabs-container"></div>
 
+
+  <div class="weekend-banner" id="weekend-banner" style="display:none;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span id="weekend-banner-text">Lo stabilimento è chiuso nel weekend — nessuna prenotazione disponibile.</span>
+  </div>
+
     <div class="stats-bar" aria-live="polite">
       <div class="stat-card"><div class="stat-value" id="stat-free">—</div><div class="stat-label">Slot liberi</div></div>
       <div class="stat-card"><div class="stat-value" id="stat-booked">—</div><div class="stat-label">Occupati</div></div>
@@ -701,6 +721,20 @@ function isPast(h,m){
   if(selectedDate>todayS) return false;
   return (h*60+m)<(now.getHours()*60+now.getMinutes());
 }
+function isWeekend(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  return d.getDay()===0||d.getDay()===6;
+}
+function updateWeekendBanner(){
+  const banner=document.getElementById('weekend-banner');
+  const txt=document.getElementById('weekend-banner-text');
+  const d=new Date(selectedDate+'T00:00:00');
+  const dayName=d.getDay()===6?'sabato':'domenica';
+  if(banner){
+    banner.style.display=isWeekend(selectedDate)?'flex':'none';
+    if(txt) txt.textContent=`Lo stabilimento è chiuso il ${dayName} — nessuna prenotazione disponibile.`;
+  }
+}
 
 // ===== SUPABASE CONFIG =====
 let SB_URL='', SB_KEY='';
@@ -825,6 +859,7 @@ function renderTabs(){
 
 // ===== LOAD & RENDER =====
 async function loadAndRender(){
+  updateWeekendBanner();
   renderGridSkeleton();
   try{
     currentBookings=await fetchBookings(selectedDate);
@@ -859,8 +894,9 @@ function renderGrid(){
   tbody.innerHTML='';
   const map={};
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
+  const weekend=isWeekend(selectedDate);
   SLOTS.forEach((slot,idx)=>{
-    const b=map[idx], past=isPast(slot.hour,slot.min);
+    const b=map[idx], past=isPast(slot.hour,slot.min)||weekend;
     let cls='free',txt='Disponibile',aria=`${formatTime(slot.hour,slot.min)} - Disponibile`;
     if(past){cls='past';txt=b?b.reparto:'—';}
     else if(b){cls=b.mine?'mine':'booked';txt=b.mine?`✓ ${b.targa||b.nome}`:b.targa||b.nome||b.reparto||'Occupato';aria=`${formatTime(slot.hour,slot.min)} - ${b.mine?'Mia prenotazione':'Occupato: '+b.nome}`;}
@@ -996,10 +1032,34 @@ document.getElementById('modal-del-yes').addEventListener('click',async()=>{
 // ===== DATE PICKER =====
 const datePicker=document.getElementById('date-picker');
 if(datePicker){
+  // If today is weekend, start from Monday
+  let initD=new Date(selectedDate+'T00:00:00');
+  if(initD.getDay()===6) initD.setDate(initD.getDate()+2);
+  if(initD.getDay()===0) initD.setDate(initD.getDate()+1);
+  selectedDate=formatDate(initD);
   datePicker.value=selectedDate;
-  datePicker.addEventListener('change',()=>{selectedDate=datePicker.value;loadAndRender();});
-  document.getElementById('prev-day').addEventListener('click',()=>{const d=new Date(selectedDate+'T00:00:00');d.setDate(d.getDate()-1);selectedDate=formatDate(d);datePicker.value=selectedDate;loadAndRender();});
-  document.getElementById('next-day').addEventListener('click',()=>{const d=new Date(selectedDate+'T00:00:00');d.setDate(d.getDate()+1);selectedDate=formatDate(d);datePicker.value=selectedDate;loadAndRender();});
+  datePicker.addEventListener('change',()=>{
+    let d=new Date(datePicker.value+'T00:00:00');
+    if(d.getDay()===6) d.setDate(d.getDate()+2); // Sat → Mon
+    if(d.getDay()===0) d.setDate(d.getDate()+1); // Sun → Mon
+    selectedDate=formatDate(d);
+    datePicker.value=selectedDate;
+    loadAndRender();
+  });
+  document.getElementById('prev-day').addEventListener('click',()=>{
+    const d=new Date(selectedDate+'T00:00:00');
+    d.setDate(d.getDate()-1);
+    // skip weekends going back
+    while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()-1);
+    selectedDate=formatDate(d);datePicker.value=selectedDate;loadAndRender();
+  });
+  document.getElementById('next-day').addEventListener('click',()=>{
+    const d=new Date(selectedDate+'T00:00:00');
+    d.setDate(d.getDate()+1);
+    // skip weekends going forward
+    while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1);
+    selectedDate=formatDate(d);datePicker.value=selectedDate;loadAndRender();
+  });
 }
 
 // ===== LOGOUT =====
