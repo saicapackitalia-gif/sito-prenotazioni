@@ -719,7 +719,7 @@ function toast(msg, type){
 function formatTime(h,m){return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
 function formatDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function isAdmin(){
-  return currentUser && currentUser.email === 'giacomo.rigamonti@saica.com';
+  return currentUser && currentUser.email === ADMIN_EMAIL_CONST;
 }
 function formatDateIT(s){
   const [y,mo,da]=s.split('-');
@@ -754,6 +754,10 @@ let SB_URL='', SB_KEY='';
 let offlineMode=false;
 let offlineDb={};
 let currentUser=null; // {id, email}
+const ADMIN_EMAIL_CONST='giacomo.rigamonti@saica.com';
+const ADMIN_UID='f3bb2b25-e625-4e9d-b902-bbc8e6ea8ff1';
+// Service role used ONLY for admin delete (bypasses RLS)
+const SB_SVC='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTU0MDA5NywiZXhwIjoyMDk3MTE2MDk3fQ.vHoh21d1itwUP7apg8QMwKVD_dxyJdct8TUgnmA-K_o';
 
 // ===== SUPABASE JS CLIENT =====
 let sbClient = null;
@@ -822,8 +826,15 @@ async function deleteBooking(id){
     const k=Object.keys(offlineDb).find(k=>offlineDb[k].id===id);
     if(k) delete offlineDb[k]; return;
   }
-  const { error } = await sbClient.from('prenotazioni').delete().eq('id', id);
-  if(error) throw new Error(error.message);
+  if(isAdmin()){
+    // Admin uses service role client to bypass RLS and delete any booking
+    const adminClient = supabase.createClient(SB_URL, SB_SVC);
+    const { error } = await adminClient.from('prenotazioni').delete().eq('id', id);
+    if(error) throw new Error(error.message);
+  } else {
+    const { error } = await sbClient.from('prenotazioni').delete().eq('id', id);
+    if(error) throw new Error(error.message);
+  }
 }
 
 // ===== VEHICLES & SLOTS =====
