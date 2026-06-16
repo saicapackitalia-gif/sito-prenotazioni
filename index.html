@@ -383,6 +383,16 @@ a,button,[role="button"],input,select{transition:color var(--transition-interact
 }
 .weekend-banner svg{flex-shrink:0;}
 
+
+/* ===== SLOT OCCUPIED (non-admin) ===== */
+.slot.occupied-other{
+  background:var(--color-error-highlight);
+  border-color:oklch(from var(--color-error) l c h/.30);
+  color:var(--color-error-hover);
+  cursor:not-allowed;
+  font-weight:600;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -609,8 +619,8 @@ CREATE POLICY "delete_own" ON prenotazioni
     <section class="my-bookings-section">
       <div class="section-header" style="margin-bottom:var(--space-3);">
         <div>
-          <h2 class="section-title" style="font-size:var(--text-lg);">Le mie prenotazioni</h2>
-          <p class="section-desc">Prenotazioni attive per la data selezionata.</p>
+          <h2 class="section-title" style="font-size:var(--text-lg);" id="my-bookings-title">Le mie prenotazioni</h2>
+          <p class="section-desc" id="my-bookings-desc">Prenotazioni attive per la data selezionata.</p>
         </div>
       </div>
       <div class="booking-list" id="my-bookings-list"></div>
@@ -708,6 +718,9 @@ function toast(msg, type){
 }
 function formatTime(h,m){return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
 function formatDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function isAdmin(){
+  return currentUser && currentUser.email === 'giacomo.rigamonti@saica.com';
+}
 function formatDateIT(s){
   const [y,mo,da]=s.split('-');
   const days=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
@@ -899,9 +912,22 @@ function renderGrid(){
     const b=map[idx], past=isPast(slot.hour,slot.min)||weekend;
     let cls='free',txt='Disponibile',aria=`${formatTime(slot.hour,slot.min)} - Disponibile`;
     if(past){cls='past';txt=b?b.reparto:'—';}
-    else if(b){cls=b.mine?'mine':'booked';txt=b.mine?`✓ ${b.targa||b.nome}`:b.targa||b.nome||b.reparto||'Occupato';aria=`${formatTime(slot.hour,slot.min)} - ${b.mine?'Mia prenotazione':'Occupato: '+b.nome}`;}
+    else if(b){if(b.mine){
+          cls='mine';
+          txt=`✓ ${b.targa||b.nome}`;
+          aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione`;
+        } else if(isAdmin()){
+          cls='booked';
+          txt=`${b.nome}`;
+          aria=`${formatTime(slot.hour,slot.min)} - ${b.nome} | ${b.destinazione} | ${b.targa}`;
+        } else {
+          cls='occupied-other';
+          txt='Occupato';
+          aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
+        }}
+    const adminTitle = b && !b.mine && isAdmin() ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}">${txt}</div></td>`;
+    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${adminTitle}>${txt}</div></td>`;
     const el=tr.querySelector('.slot');
     if(!past){
       if(!b){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
@@ -928,14 +954,27 @@ function updateStats(){
 
 function renderMyBookings(){
   const list=document.getElementById('my-bookings-list'); if(!list) return;
-  const mine=currentBookings.filter(b=>b.mine&&SLOTS[b.slot_index]);
-  if(!mine.length){
-    list.innerHTML='<div class="empty-state-mini"><div class="icon" aria-hidden="true">📋</div><p>Nessuna prenotazione attiva per questa data e mezzo.</p></div>';
+  const titleEl=document.getElementById('my-bookings-title');
+  const descEl=document.getElementById('my-bookings-desc');
+
+  // Admin sees ALL bookings on this date; others see only their own
+  const bookings = isAdmin()
+    ? currentBookings.filter(b=>SLOTS[b.slot_index])
+    : currentBookings.filter(b=>b.mine&&SLOTS[b.slot_index]);
+
+  if(titleEl) titleEl.textContent = isAdmin() ? 'Tutte le prenotazioni' : 'Le mie prenotazioni';
+  if(descEl) descEl.textContent = isAdmin()
+    ? `${bookings.length} prenotazione${bookings.length!==1?'i':''} totali per questa data.`
+    : 'Prenotazioni attive per la data selezionata.';
+
+  if(!bookings.length){
+    list.innerHTML='<div class="empty-state-mini"><div class="icon" aria-hidden="true">📋</div><p>Nessuna prenotazione per questa data.</p></div>';
     return;
   }
-  list.innerHTML=mine.map(b=>{
+  list.innerHTML=bookings.map(b=>{
     const slot=SLOTS[b.slot_index];
     const vv=VEHICLES.find(v=>v.id===b.vehicle_id);
+    const canDelete = b.mine || isAdmin();
     return `<div class="booking-item"><div class="booking-item-info">
       <div class="booking-item-vehicle"><span aria-hidden="true">${vv?vv.icon:''}</span> ${vv?vv.name:b.vehicle_id}</div>
       <div class="booking-item-time">${formatTime(slot.hour,slot.min)}</div>
@@ -943,7 +982,7 @@ function renderMyBookings(){
       ${b.destinazione?`<span style="font-size:var(--text-xs);color:var(--color-text-muted);">→ ${b.destinazione}</span>`:''}
       ${b.nome?`<span style="font-size:var(--text-xs);color:var(--color-text-faint);">${b.nome}</span>`:''}
     </div>
-    <button class="btn btn-danger btn-sm" onclick="cancelFromList('${b.id}')" aria-label="Cancella prenotazione">Cancella</button>
+    ${canDelete?`<button class="btn btn-danger btn-sm" onclick="cancelFromList('${b.id}')" aria-label="Cancella prenotazione">Cancella</button>`:''}
     </div>`;
   }).join('');
 }
@@ -1310,9 +1349,12 @@ renderAuthLogin();
           .sort((a,b)=> a.data.localeCompare(b.data)||a.vehicle_id.localeCompare(b.vehicle_id)||a.slot_index-b.slot_index);
       } else {
         try{
-          const { data: exportData, error: exportErr } = await sbClient.from('prenotazioni')
+          let query = sbClient.from('prenotazioni')
             .select('*').gte('data', from).lte('data', to)
             .order('data').order('vehicle_id').order('slot_index');
+          // Non-admin: only own bookings
+          if(!isAdmin()) query = query.eq('user_id', currentUser.id);
+          const { data: exportData, error: exportErr } = await query;
           if(exportErr) throw new Error(exportErr.message);
           rows = exportData;
         }catch(e){ toast('Errore scaricamento dati: '+e.message,'error-t'); return null; }
