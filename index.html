@@ -2393,7 +2393,6 @@ async function loadAndRender(){
     currentBookings=[];
   }
   renderGrid();
-  renderMyBookings();
   updateStats();
 }
 
@@ -2460,51 +2459,7 @@ function updateStats(){
   el('stat-vehicle',vv?vv.name:'—');
 }
 
-function renderMyBookings(){
-  const list=document.getElementById('my-bookings-list'); if(!list) return;
-  const titleEl=document.getElementById('my-bookings-title');
-  const descEl=document.getElementById('my-bookings-desc');
 
-  // Admin sees ALL bookings on this date; others see only their own
-  const bookings = isAdmin()
-    ? currentBookings.filter(b=>SLOTS[b.slot_index])
-    : currentBookings.filter(b=>b.mine&&SLOTS[b.slot_index]);
-
-  if(titleEl) titleEl.textContent = isAdmin() ? 'Tutte le prenotazioni' : 'Le mie prenotazioni';
-  if(descEl) descEl.textContent = isAdmin()
-    ? `${bookings.length} prenotazione${bookings.length!==1?'i':''} totali per questa data.`
-    : 'Prenotazioni attive per la data selezionata.';
-
-  if(!bookings.length){
-    list.innerHTML='<div class="empty-state-mini"><div class="icon" aria-hidden="true">📋</div><p>Nessuna prenotazione per questa data.</p></div>';
-    return;
-  }
-  list.innerHTML=bookings.map(b=>{
-    const slot=SLOTS[b.slot_index];
-    const vv=VEHICLES.find(v=>v.id===b.vehicle_id);
-    const canDelete = b.mine || isAdmin();
-    return `<div class="booking-item"><div class="booking-item-info">
-      <div class="booking-item-vehicle"><span aria-hidden="true">${vv?vv.icon:''}</span> ${vv?vv.name:b.vehicle_id}</div>
-      <div class="booking-item-time">${formatTime(slot.hour,slot.min)}</div>
-      ${b.targa?`<span class="booking-badge" style="font-family:var(--font-mono);letter-spacing:.05em;">${b.targa}</span>`:''}
-      ${b.destinazione?`<span style="font-size:var(--text-xs);color:var(--color-text-muted);">→ ${b.destinazione}</span>`:''}
-      ${b.nome?`<span style="font-size:var(--text-xs);color:var(--color-text-faint);">${b.nome}</span>`:''}
-    </div>
-    ${canDelete?`<button class="btn btn-danger btn-sm" onclick="cancelFromList('${b.id}')" aria-label="Cancella prenotazione">Cancella</button>`:''}
-    </div>`;
-  }).join('');
-}
-
-window.cancelFromList=async function(id){
-  try{
-    await deleteBooking(id);
-    currentBookings=currentBookings.filter(b=>b.id!==id);
-    renderGrid(); renderMyBookings(); updateStats();
-    toast('Prenotazione cancellata.','error-t');
-  }catch(e){ toast('Errore: '+e.message,'error-t'); }
-};
-
-// ===== BOOKING MODAL =====
 function slotInfoHtml(slot,vehicleName){
   return `
     <div class="slot-info-item"><div class="slot-info-item-label">Orario</div><div class="slot-info-item-value">${formatTime(slot.hour,slot.min)}</div></div>
