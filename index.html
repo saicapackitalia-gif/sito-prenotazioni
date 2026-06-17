@@ -3031,7 +3031,7 @@ document.addEventListener('click', async e => {
     const id = delBtn.dataset.id;
     const booking = (currentBookings||[]).find(b=>String(b.id)===String(id));
     const name = booking?.nome || 'questa prenotazione';
-    if(!confirm(\`Eliminare la prenotazione di \${name}?\`)) return;
+    if(!confirm(`Eliminare la prenotazione di ${name}?`)) return;
     try {
       await deleteBooking(id);
       toast('✓ Prenotazione eliminata', 'success');
