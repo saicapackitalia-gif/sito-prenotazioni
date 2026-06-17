@@ -423,7 +423,7 @@ a,button,[role="button"],input,select{
   box-shadow:0 4px 24px rgba(15,21,35,.2);
   backdrop-filter:blur(20px);
 }
-.topbar-brand{display:flex;align-items:center;gap:var(--space-3);}
+.topbar-brand{display:flex;align-items:center;gap:var(--space-3);min-width:0;flex:1;}
 .topbar-logo{
   width:38px;height:38px;
   background:rgba(255,255,255,.15);
@@ -439,9 +439,11 @@ a,button,[role="button"],input,select{
   line-height:1.2;
 }
 .topbar-subtitle{
-  font-size:var(--text-xs);
-  color:rgba(255,255,255,.55);
-  line-height:1;
+  font-size:10px;
+  color:rgba(255,255,255,.65);
+  line-height:1.3;
+  white-space:nowrap;
+  overflow:visible;
 }
 .topbar-actions{display:flex;align-items:center;gap:var(--space-2);}
 .db-status{
@@ -1405,15 +1407,22 @@ CREATE POLICY "delete_own" ON prenotazioni
 <div class="page hidden" id="page-login">
   <div class="auth-card">
     <div class="auth-header">
-      <div class="auth-logo-saica" aria-label="Saica"><svg width="100" height="55" viewBox="0 0 80 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Saica">
-  <circle cx="14" cy="13" r="8" fill="white"/>
-  <circle cx="52" cy="8" r="5.5" fill="rgba(255,255,255,0.75)"/>
-  <path d="M14 13 C20 13 26 3 34 5 C40 7 44 16 52 13" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-  <text x="0" y="42" font-family="Inter, Arial Black, Helvetica Neue, sans-serif" font-size="18" font-weight="900" letter-spacing="3" fill="white">SAICA</text>
+      <div class="auth-logo-saica" aria-label="Saica"><svg width="88" height="48" viewBox="0 0 72 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Saica">
+  <path d="M8 10 C8 10 18 18 30 10 C42 2 52 10 52 10" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <circle cx="8" cy="10" r="7" fill="white"/>
+  <circle cx="52" cy="10" r="5" fill="rgba(255,255,255,0.7)"/>
+  <text x="0" y="38" font-family="'Inter','Arial Black','Helvetica Neue',sans-serif" font-size="17" font-weight="900" letter-spacing="2.5" fill="white">SAICA</text>
 </svg></div>
       <div>
         <div class="auth-header-title" id="auth-title">Accedi</div>
-        <div class="auth-header-sub">Portale Prenotazione Mezzi</div>
+        <div class="auth-header-sub">
+          Portale Prenotazione Mezzi<br>
+          <span style="font-size:10px;opacity:.75;">Stabilimento di Santa Maria Hoè (LC)</span>
+          <a href="https://www.google.com/maps/search/?api=1&query=Via+Giovanni+XXIII+54+Santa+Maria+Ho%C3%A8+23889" target="_blank" rel="noopener" class="maps-btn" aria-label="Apri in Google Maps" title="Apri in Google Maps">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Maps
+          </a>
+        </div>
       </div>
     </div>
     <div class="auth-body" id="auth-body">
@@ -1429,16 +1438,15 @@ CREATE POLICY "delete_own" ON prenotazioni
 <div class="app-wrapper hidden" id="app-wrapper">
   <header class="topbar">
         <div class="topbar-brand">
-      <div class="topbar-logo-saica" aria-label="Saica"><svg width="80" height="44" viewBox="0 0 80 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Saica">
-  <!-- Icon: wave with two circles -->
-  <!-- Large left circle -->
-  <circle cx="14" cy="13" r="8" fill="white"/>
-  <!-- Small right circle -->
-  <circle cx="52" cy="8" r="5.5" fill="rgba(255,255,255,0.75)"/>
-  <!-- Wave connecting them -->
-  <path d="M14 13 C20 13 26 3 34 5 C40 7 44 16 52 13" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+      <div class="topbar-logo-saica" aria-label="Saica"><svg width="72" height="40" viewBox="0 0 72 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Saica">
+  <!-- S-curve wave -->
+  <path d="M8 10 C8 10 18 18 30 10 C42 2 52 10 52 10" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Large circle left (dark green → white) -->
+  <circle cx="8" cy="10" r="7" fill="white"/>
+  <!-- Small circle right (lighter → semi-transparent white) -->
+  <circle cx="52" cy="10" r="5" fill="rgba(255,255,255,0.7)"/>
   <!-- SAICA text -->
-  <text x="0" y="42" font-family="Inter, Arial Black, Helvetica Neue, sans-serif" font-size="18" font-weight="900" letter-spacing="3" fill="white">SAICA</text>
+  <text x="0" y="38" font-family="'Inter','Arial Black','Helvetica Neue',sans-serif" font-size="17" font-weight="900" letter-spacing="2.5" fill="white">SAICA</text>
 </svg></div>
       <div class="topbar-divider" aria-hidden="true"></div>
       <div>
