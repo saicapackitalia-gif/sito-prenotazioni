@@ -1409,6 +1409,24 @@ table.slots-table td{padding:0;}
   .stats-bar{grid-template-columns:repeat(3,1fr);}
 }
 
+
+/* ===== MAPS TOPBAR BTN - always visible ===== */
+.maps-topbar-btn{
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.2);
+  color:rgba(255,255,255,.9);
+  text-decoration:none;
+  display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;
+  border-radius:var(--radius-md);
+  flex-shrink:0;
+  transition:all var(--transition-fast);
+}
+.maps-topbar-btn:hover{background:rgba(255,255,255,.25);color:white;}
+@media(max-width:600px){
+  .maps-topbar-btn{width:32px;height:32px;}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -1545,13 +1563,7 @@ CREATE POLICY "delete_own" ON prenotazioni
       <div class="topbar-divider" aria-hidden="true"></div>
       <div>
         <div class="topbar-title">Prenotazione Mezzi</div>
-        <div class="topbar-subtitle">
-          Stabilimento di Santa Maria Hoè (LC)
-          <a href="https://www.google.com/maps/search/?api=1&query=Via+Giovanni+XXIII+54+Santa+Maria+Ho%C3%A8+23889" target="_blank" rel="noopener" class="maps-btn" aria-label="Apri in Google Maps" title="Apri in Google Maps">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            Maps
-          </a>
-        </div>
+        <div class="topbar-subtitle">Stabilimento di Santa Maria Hoè (LC)</div>
       </div>
     </div>
     <div class="topbar-actions">
@@ -1567,6 +1579,9 @@ CREATE POLICY "delete_own" ON prenotazioni
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         <span class="btn-text">Esci</span>
       </button>
+      <a href="https://www.google.com/maps/search/?api=1&query=Via+Giovanni+XXIII+54+Santa+Maria+Ho%C3%A8+23889" target="_blank" rel="noopener" class="topbar-icon-btn maps-topbar-btn" aria-label="Apri in Google Maps" title="Via Giovanni XXIII 54, Santa Maria Hoè">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      </a>
       <button class="theme-toggle" data-theme-toggle aria-label="Cambia tema">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       </button>
