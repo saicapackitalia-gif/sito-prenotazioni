@@ -1842,13 +1842,34 @@ document.getElementById('setup-connect').addEventListener('click',async()=>{
 });
 
 // ===== INIT =====
-// Credenziali già configurate — vai direttamente al login
 SB_URL = 'https://jmhwxpgwakrqmnwefqrs.supabase.co';
 SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU';
 offlineMode = false;
 initSupabaseClient();
-showPage('page-login');
-renderAuthLogin();
+
+// Controlla sessione esistente → se loggato salta il login
+(async () => {
+  try {
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (session && session.user) {
+      const meta = session.user.user_metadata || {};
+      currentUser = {
+        id: session.user.id,
+        email: session.user.email,
+        nome: meta.nome || session.user.email.split('@')[0],
+        reparto: meta.reparto || ''
+      };
+      lastNome = currentUser.nome;
+      startApp();
+    } else {
+      showPage('page-login');
+      renderAuthLogin();
+    }
+  } catch(e) {
+    showPage('page-login');
+    renderAuthLogin();
+  }
+})();
 
 
 
