@@ -1292,6 +1292,31 @@ table.slots-table td{padding:0;}
   filter:drop-shadow(0 2px 6px rgba(0,0,0,.2));
 }
 
+
+/* ===== MAPS BUTTON ===== */
+.maps-btn{
+  display:inline-flex;align-items:center;gap:3px;
+  margin-left:var(--space-2);
+  padding:2px var(--space-2);
+  background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:var(--radius-full);
+  font-size:10px;font-weight:600;
+  color:rgba(255,255,255,.85);
+  text-decoration:none;
+  letter-spacing:.02em;
+  vertical-align:middle;
+  transition:all var(--transition-fast);
+  white-space:nowrap;
+}
+.maps-btn:hover{
+  background:rgba(255,255,255,.28);
+  color:white;
+  border-color:rgba(255,255,255,.4);
+  text-decoration:none;
+  transform:translateY(-1px);
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -1418,7 +1443,13 @@ CREATE POLICY "delete_own" ON prenotazioni
       <div class="topbar-divider" aria-hidden="true"></div>
       <div>
         <div class="topbar-title">Prenotazione Mezzi</div>
-        <div class="topbar-subtitle">Stabilimento di Santa Maria Hoè (LC)</div>
+        <div class="topbar-subtitle">
+          Stabilimento di Santa Maria Hoè (LC)
+          <a href="https://www.google.com/maps/search/?api=1&query=Via+Giovanni+XXIII+54+Santa+Maria+Ho%C3%A8+23889" target="_blank" rel="noopener" class="maps-btn" aria-label="Apri in Google Maps" title="Apri in Google Maps">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Maps
+          </a>
+        </div>
       </div>
     </div>
     <div class="topbar-actions">
