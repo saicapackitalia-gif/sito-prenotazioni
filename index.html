@@ -2740,8 +2740,9 @@ function renderAdminBookings(){
   list.innerHTML = sorted.map(b => {
     const v = VEHICLES.find(v=>v.id===b.vehicle_id)||{icon:'🚪',name:b.vehicle_id};
     let time = '--:--';
-    if(typeof b.slot_index === 'number' && SLOTS[b.slot_index]){
-      const s = SLOTS[b.slot_index];
+    const idx = parseInt(b.slot_index);
+    if(!isNaN(idx) && SLOTS[idx]){
+      const s = SLOTS[idx];
       time = formatTime(s.hour, s.min);
     }
     const name = b.nome || b.trasportatore || b.user_nome || b.user_email || 'N/D';
@@ -2821,9 +2822,20 @@ function goToStep1(){
 
 async function loadBookingsForStep1(){
   try {
-    currentBookings = await fetchBookings(selectedDate);
-    currentBookings.forEach(b=>{ b.mine = !offlineMode ? b.user_id===currentUser?.id : b.user_id===currentUser?.id; });
-  } catch(e){}
+    if(isAdmin()){
+      // Admin fetches ALL bookings using service role (bypasses RLS)
+      const adminClient = supabase.createClient(SB_URL, SB_SVC);
+      const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate);
+      if(!error && data) {
+        currentBookings = data;
+      } else {
+        currentBookings = await fetchBookings(selectedDate);
+      }
+    } else {
+      currentBookings = await fetchBookings(selectedDate);
+    }
+    currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
+  } catch(e){ console.error('loadBookingsForStep1 error:', e); }
   renderBaiaCards();
   renderAdminBookings();
   updateWeekendBannerS1();
