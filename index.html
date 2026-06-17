@@ -1549,6 +1549,92 @@ table.slots-table td{padding:0;}
   .baia-card-name{font-size:var(--text-lg);}
 }
 
+
+/* ===== ADMIN ALL BOOKINGS SECTION ===== */
+#admin-all-bookings{
+  background:var(--color-surface);
+  border:2px solid var(--color-primary);
+  border-radius:var(--radius-xl);
+  overflow:hidden;
+  box-shadow:var(--shadow-sm);
+}
+.admin-section-header{
+  display:flex;align-items:center;gap:var(--space-2);
+  padding:var(--space-3) var(--space-5);
+  background:var(--color-primary);
+  color:white;
+  font-size:var(--text-sm);font-weight:700;
+  letter-spacing:.02em;
+}
+.admin-badge{
+  margin-left:auto;
+  background:rgba(255,255,255,.25);
+  color:white;
+  font-size:var(--text-xs);font-weight:800;
+  padding:2px 8px;
+  border-radius:var(--radius-full);
+}
+.admin-bookings-list{
+  display:flex;flex-direction:column;
+  max-height:360px;
+  overflow-y:auto;
+}
+.admin-empty{
+  padding:var(--space-5);
+  text-align:center;
+  font-size:var(--text-sm);
+  color:var(--color-text-faint);
+}
+.admin-booking-row{
+  display:flex;align-items:center;gap:var(--space-3);
+  padding:var(--space-3) var(--space-5);
+  border-bottom:1px solid var(--color-divider);
+  transition:background var(--transition-fast);
+}
+.admin-booking-row:last-child{border-bottom:none;}
+.admin-booking-row:hover{background:var(--color-surface-offset);}
+.admin-booking-time{
+  font-size:var(--text-sm);font-weight:800;
+  color:var(--color-primary);
+  min-width:44px;
+  letter-spacing:.03em;
+}
+.admin-booking-baia{
+  font-size:var(--text-xs);font-weight:600;
+  color:var(--color-text-muted);
+  background:var(--color-surface-offset);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-full);
+  padding:2px var(--space-2);
+  white-space:nowrap;
+}
+.admin-booking-info{
+  display:flex;align-items:center;gap:var(--space-2);
+  flex-wrap:wrap;
+  flex:1;
+}
+.admin-booking-name{
+  font-size:var(--text-sm);font-weight:600;
+  color:var(--color-text);
+}
+.admin-booking-targa{
+  font-size:var(--text-xs);font-weight:700;
+  color:var(--color-text-muted);
+  background:var(--color-surface-offset);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-sm);
+  padding:1px 6px;
+  letter-spacing:.06em;
+}
+.admin-booking-dest{
+  font-size:var(--text-xs);
+  color:var(--color-text-faint);
+}
+@media(max-width:600px){
+  .admin-booking-row{gap:var(--space-2);padding:var(--space-2) var(--space-3);}
+  .admin-booking-info{gap:var(--space-1);}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -1768,6 +1854,18 @@ CREATE POLICY "delete_own" ON prenotazioni
       <!-- Baia cards -->
       <div class="baia-select-title">Seleziona la baia di carico</div>
       <div class="baia-cards" id="baia-cards-container"></div>
+    </div>
+
+    <!-- ===== ADMIN: Tutte le prenotazioni ===== -->
+    <div id="admin-all-bookings" style="display:none;">
+      <div class="admin-section-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Tutte le prenotazioni del giorno
+        <span class="admin-badge" id="admin-total-badge">0</span>
+      </div>
+      <div class="admin-bookings-list" id="admin-bookings-list">
+        <div class="admin-empty">Nessuna prenotazione per oggi</div>
+      </div>
     </div>
 
     <!-- ===== STEP 2: Griglia Slot ===== -->
@@ -2504,6 +2602,12 @@ function startApp(){
   setDbStatus('ok');
   showPage('app-wrapper');
   renderTabs();
+  // Show export bar only to admin
+  const exportBar = document.getElementById('export-bar');
+  if(exportBar) exportBar.style.display = isAdmin() ? '' : 'none';
+  // Show admin panel section only to admin
+  const adminSection = document.getElementById('admin-all-bookings');
+  if(adminSection) adminSection.style.display = isAdmin() ? '' : 'none';
   // Start on step 1 (baia selection)
   initStep1Controls();
   goToStep1();
@@ -2574,6 +2678,41 @@ initSupabaseClient();
 
 
   
+// ===== ADMIN: render all bookings =====
+function renderAdminBookings(){
+  if(!isAdmin()) return;
+  const list = document.getElementById('admin-bookings-list');
+  const badge = document.getElementById('admin-total-badge');
+  if(!list) return;
+  const all = currentBookings || [];
+  if(badge) badge.textContent = all.length;
+  if(all.length === 0){
+    list.innerHTML = '<div class="admin-empty">Nessuna prenotazione per oggi</div>';
+    return;
+  }
+  // Sort by time
+  const sorted = [...all].sort((a,b)=>{
+    const ta = a.slot_time||''; const tb = b.slot_time||'';
+    return ta.localeCompare(tb);
+  });
+  list.innerHTML = sorted.map(b => {
+    const v = VEHICLES.find(v=>v.id===b.vehicle_id)||{icon:'🚪',name:b.vehicle_id};
+    const time = b.slot_time ? b.slot_time.slice(0,5) : '--:--';
+    const name = b.trasportatore || b.user_nome || b.user_email || 'N/D';
+    const targa = b.targa || '';
+    const dest = b.destinazione || '';
+    return `<div class="admin-booking-row">
+      <div class="admin-booking-time">${time}</div>
+      <div class="admin-booking-baia">${v.icon} ${v.name}</div>
+      <div class="admin-booking-info">
+        <span class="admin-booking-name">${name}</span>
+        ${targa ? `<span class="admin-booking-targa">${targa}</span>` : ''}
+        ${dest ? `<span class="admin-booking-dest">→ ${dest}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ===== 2-STEP FLOW =====
 function renderBaiaCards(){
   const c = document.getElementById('baia-cards-container');
@@ -2629,6 +2768,7 @@ async function loadBookingsForStep1(){
     currentBookings.forEach(b=>{ b.mine = !offlineMode ? b.user_id===currentUser?.id : b.user_id===currentUser?.id; });
   } catch(e){}
   renderBaiaCards();
+  renderAdminBookings();
   updateWeekendBannerS1();
 }
 
