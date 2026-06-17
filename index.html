@@ -1440,6 +1440,115 @@ table.slots-table td{padding:0;}
   .topbar-actions{gap:6px;}
 }
 
+
+/* ===== 2-STEP FLOW ===== */
+#step-select{
+  display:flex;flex-direction:column;gap:var(--space-4);
+}
+#step-slots{
+  display:none;flex-direction:column;gap:var(--space-4);
+}
+
+/* Baia selection title */
+.baia-select-title{
+  font-size:var(--text-sm);font-weight:700;
+  color:var(--color-text-muted);
+  text-transform:uppercase;letter-spacing:.07em;
+  padding:0 var(--space-1);
+}
+
+/* Baia cards */
+.baia-cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:var(--space-4);
+}
+.baia-card{
+  background:var(--color-surface);
+  border:2px solid var(--color-border);
+  border-radius:var(--radius-2xl);
+  padding:var(--space-6) var(--space-5);
+  display:flex;flex-direction:column;align-items:flex-start;
+  gap:var(--space-2);
+  cursor:pointer;
+  transition:all var(--transition-interactive);
+  text-align:left;
+  position:relative;
+  box-shadow:var(--shadow-sm);
+}
+.baia-card:hover{
+  border-color:var(--color-primary);
+  box-shadow:var(--shadow-colored);
+  transform:translateY(-3px);
+  background:var(--color-primary-highlight);
+}
+.baia-card-icon{font-size:2.2rem;line-height:1;margin-bottom:var(--space-1);}
+.baia-card-name{
+  font-size:var(--text-xl);font-weight:800;
+  color:var(--color-text);letter-spacing:-.02em;
+}
+.baia-card-slots{
+  font-size:var(--text-sm);font-weight:500;
+  color:var(--color-text-muted);
+}
+.baia-card:hover .baia-card-slots{color:var(--color-primary);}
+.baia-card-arrow{
+  position:absolute;right:var(--space-4);top:50%;transform:translateY(-50%);
+  color:var(--color-text-faint);transition:all var(--transition-fast);
+}
+.baia-card:hover .baia-card-arrow{color:var(--color-primary);transform:translateY(-50%) translateX(3px);}
+
+/* Step 2 header */
+.step2-header{
+  display:flex;align-items:center;gap:var(--space-3);
+  flex-wrap:wrap;
+}
+.btn-back{
+  display:inline-flex;align-items:center;gap:var(--space-2);
+  padding:var(--space-2) var(--space-4);
+  border-radius:var(--radius-full);
+  border:1.5px solid var(--color-border);
+  background:var(--color-surface);
+  color:var(--color-text-muted);
+  font-size:var(--text-sm);font-weight:600;
+  cursor:pointer;
+  transition:all var(--transition-fast);
+  flex-shrink:0;
+}
+.btn-back:hover{
+  background:var(--color-surface-offset);
+  color:var(--color-text);
+  border-color:var(--color-primary);
+}
+.step2-info{
+  display:flex;align-items:center;gap:var(--space-2);
+  flex-wrap:wrap;
+  flex:1;
+}
+.step2-date{
+  font-size:var(--text-sm);font-weight:600;
+  color:var(--color-text-muted);
+}
+.step2-baia{
+  background:var(--color-primary);
+  color:white;
+  font-size:var(--text-sm);font-weight:700;
+  padding:3px var(--space-3);
+  border-radius:var(--radius-full);
+}
+
+/* Mobile baia cards full width */
+@media(max-width:600px){
+  .baia-cards{grid-template-columns:1fr;}
+  .baia-card{
+    flex-direction:row;align-items:center;
+    padding:var(--space-4) var(--space-5);
+    gap:var(--space-4);
+  }
+  .baia-card-icon{font-size:1.8rem;margin-bottom:0;}
+  .baia-card-name{font-size:var(--text-lg);}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -1638,7 +1747,44 @@ CREATE POLICY "delete_own" ON prenotazioni
     </div>
   </div>
 
-    <div class="date-nav">
+    <!-- ===== STEP 1: Selezione Data + Baia ===== -->
+    <div id="step-select">
+      <!-- Date picker -->
+      <div class="date-nav">
+        <span class="date-nav-label">Data</span>
+        <input type="date" class="date-input" id="date-picker-s1" aria-label="Seleziona data">
+        <div class="date-nav-arrows">
+          <button class="date-arrow-btn" id="prev-day-s1" aria-label="Giorno precedente">‹</button>
+          <button class="date-arrow-btn" id="next-day-s1" aria-label="Giorno successivo">›</button>
+        </div>
+      </div>
+
+      <!-- Weekend banner -->
+      <div class="weekend-banner" id="weekend-banner-s1" style="display:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="weekend-banner-text-s1">Stabilimento chiuso nel weekend</span>
+      </div>
+
+      <!-- Baia cards -->
+      <div class="baia-select-title">Seleziona la baia di carico</div>
+      <div class="baia-cards" id="baia-cards-container"></div>
+    </div>
+
+    <!-- ===== STEP 2: Griglia Slot ===== -->
+    <div id="step-slots" style="display:none;">
+      <!-- Back button + selected baia info -->
+      <div class="step2-header">
+        <button class="btn-back" id="btn-back-step1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          Torna alla selezione
+        </button>
+        <div class="step2-info">
+          <span class="step2-date" id="step2-date-label"></span>
+          <span class="step2-baia" id="step2-baia-label"></span>
+        </div>
+      </div>
+
+<div class="date-nav" style="display:none;" aria-hidden="true">
       <span class="date-nav-label">Data</span>
       <input type="date" class="date-input" id="date-picker" aria-label="Seleziona data">
       <div class="date-nav-arrows">
@@ -1647,7 +1793,7 @@ CREATE POLICY "delete_own" ON prenotazioni
       </div>
     </div>
 
-    <div class="vehicle-tabs" role="tablist" id="vehicle-tabs-container"></div>
+    <div class="vehicle-tabs" role="tablist" id="vehicle-tabs-container" style="display:none;" aria-hidden="true"></div>
 
 
   <div class="weekend-banner" id="weekend-banner" style="display:none;">
@@ -1680,6 +1826,8 @@ CREATE POLICY "delete_own" ON prenotazioni
       <div class="legend-item"><div class="legend-dot mine"></div><span>Mia prenotazione</span></div>
       <div class="legend-item"><div class="legend-dot past"></div><span>Passato</span></div>
     </div>
+    </div>
+
 
     <section class="my-bookings-section">
       <div class="section-header" style="margin-bottom:var(--space-3);">
@@ -2356,7 +2504,9 @@ function startApp(){
   setDbStatus('ok');
   showPage('app-wrapper');
   renderTabs();
-  loadAndRender();
+  // Start on step 1 (baia selection)
+  initStep1Controls();
+  goToStep1();
   if(window._initExportDates) window._initExportDates();
 }
 
@@ -2423,7 +2573,112 @@ initSupabaseClient();
 
 
 
-  // ===== EXPORT =====
+  
+// ===== 2-STEP FLOW =====
+function renderBaiaCards(){
+  const c = document.getElementById('baia-cards-container');
+  if(!c) return;
+  c.innerHTML = '';
+  VEHICLES.forEach(v => {
+    const card = document.createElement('button');
+    card.className = 'baia-card';
+    card.setAttribute('aria-label', 'Seleziona ' + v.name);
+    // Count free slots for this vehicle today
+    const booked = currentBookings.filter(b => b.vehicle_id === v.id).length;
+    const free = SLOTS.length - booked;
+    card.innerHTML = `
+      <div class="baia-card-icon">${v.icon}</div>
+      <div class="baia-card-name">${v.name}</div>
+      <div class="baia-card-slots">${free} slot liberi</div>
+      <div class="baia-card-arrow">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>`;
+    card.addEventListener('click', () => goToStep2(v));
+    c.appendChild(card);
+  });
+}
+
+function goToStep2(vehicle){
+  selectedVehicle = vehicle.id;
+  renderTabs();
+  loadAndRender();
+  // Update step2 header labels
+  const dateLabel = document.getElementById('step2-date-label');
+  const baiaLabel = document.getElementById('step2-baia-label');
+  if(dateLabel) dateLabel.textContent = formatDateIT(selectedDate);
+  if(baiaLabel) baiaLabel.textContent = vehicle.icon + ' ' + vehicle.name;
+  // Switch views
+  document.getElementById('step-select').style.display = 'none';
+  document.getElementById('step-slots').style.display = 'flex';
+  document.getElementById('step-slots').style.flexDirection = 'column';
+  document.getElementById('step-slots').style.gap = 'var(--space-4)';
+}
+
+function goToStep1(){
+  document.getElementById('step-slots').style.display = 'none';
+  document.getElementById('step-select').style.display = 'flex';
+  document.getElementById('step-select').style.flexDirection = 'column';
+  document.getElementById('step-select').style.gap = 'var(--space-4)';
+  // Refresh bookings count on cards
+  loadBookingsForStep1();
+}
+
+async function loadBookingsForStep1(){
+  try {
+    currentBookings = await fetchBookings(selectedDate);
+    currentBookings.forEach(b=>{ b.mine = !offlineMode ? b.user_id===currentUser?.id : b.user_id===currentUser?.id; });
+  } catch(e){}
+  renderBaiaCards();
+  updateWeekendBannerS1();
+}
+
+function updateWeekendBannerS1(){
+  const banner = document.getElementById('weekend-banner-s1');
+  const txt = document.getElementById('weekend-banner-text-s1');
+  if(!banner) return;
+  const d = new Date(selectedDate+'T00:00:00');
+  const dayName = d.getDay()===6?'sabato':'domenica';
+  banner.style.display = isWeekend(selectedDate) ? 'flex' : 'none';
+  if(txt) txt.textContent = `Stabilimento chiuso ${dayName}`;
+}
+
+// Init step1 date pickers in sync with main
+document.addEventListener('DOMContentLoaded', () => {});
+function initStep1Controls(){
+  const dp = document.getElementById('date-picker-s1');
+  const mainDp = document.getElementById('date-picker');
+  if(dp){
+    dp.value = selectedDate;
+    dp.addEventListener('change', e => {
+      selectedDate = e.target.value;
+      if(mainDp) mainDp.value = selectedDate;
+      loadBookingsForStep1();
+    });
+  }
+  const prev = document.getElementById('prev-day-s1');
+  const next = document.getElementById('next-day-s1');
+  if(prev) prev.addEventListener('click', () => {
+    const d = new Date(selectedDate+'T00:00:00');
+    d.setDate(d.getDate()-1);
+    selectedDate = formatDate(d);
+    if(dp) dp.value = selectedDate;
+    if(mainDp) mainDp.value = selectedDate;
+    loadBookingsForStep1();
+  });
+  if(next) next.addEventListener('click', () => {
+    const d = new Date(selectedDate+'T00:00:00');
+    d.setDate(d.getDate()+1);
+    selectedDate = formatDate(d);
+    if(dp) dp.value = selectedDate;
+    if(mainDp) mainDp.value = selectedDate;
+    loadBookingsForStep1();
+  });
+  const backBtn = document.getElementById('btn-back-step1');
+  if(backBtn) backBtn.addEventListener('click', goToStep1);
+}
+
+
+// ===== EXPORT =====
   (function(){
     const today = formatDate(new Date());
     // Default range: primo del mese corrente → oggi
