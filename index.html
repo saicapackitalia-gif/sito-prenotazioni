@@ -13,47 +13,48 @@
 
 /* ===== DESIGN TOKENS ===== */
 :root,[data-theme="light"]{
-  --color-bg:#f0f4ff;
+  /* === SAICA BRAND COLORS === */
+  --color-bg:#f4f7f4;
   --color-surface:#ffffff;
-  --color-surface-2:#f8faff;
-  --color-surface-offset:#eef1f8;
-  --color-surface-dynamic:#e4e9f5;
-  --color-divider:#dde3f0;
-  --color-border:#d0d7ea;
-  --color-text:#0f1523;
-  --color-text-muted:#5a6480;
-  --color-text-faint:#a0a9c0;
+  --color-surface-2:#f8faf8;
+  --color-surface-offset:#edf3ee;
+  --color-surface-dynamic:#deeade;
+  --color-divider:#cddece;
+  --color-border:#b8d0b9;
+  --color-text:#0f1f10;
+  --color-text-muted:#4a6b4c;
+  --color-text-faint:#92ab93;
   --color-text-inverse:#ffffff;
-  --color-primary:#3b5bdb;
-  --color-primary-hover:#2f4abf;
-  --color-primary-active:#2440a8;
-  --color-primary-highlight:#dde3f8;
-  --color-success:#0ca678;
-  --color-success-hover:#099268;
-  --color-success-highlight:#ccf0e5;
-  --color-error:#e03131;
-  --color-error-hover:#c92a2a;
-  --color-error-highlight:#ffe0e0;
-  --color-warning:#f08c00;
-  --color-warning-highlight:#fff3cd;
-  --color-gold:#f59f00;
-  --color-blue:#1971c2;
-  --color-blue-highlight:#d0ebff;
-  --color-accent:#7950f2;
-  --color-accent-highlight:#ede9fe;
+  --color-primary:#006633;
+  --color-primary-hover:#005228;
+  --color-primary-active:#003d1e;
+  --color-primary-highlight:#d4ecd9;
+  --color-success:#2d8a3e;
+  --color-success-hover:#237030;
+  --color-success-highlight:#d6eed9;
+  --color-error:#c0392b;
+  --color-error-hover:#a93226;
+  --color-error-highlight:#fde8e6;
+  --color-warning:#d68910;
+  --color-warning-highlight:#fef3d0;
+  --color-gold:#c9a227;
+  --color-blue:#1a6b3c;
+  --color-blue-highlight:#d4ecd9;
+  --color-accent:#33a85a;
+  --color-accent-highlight:#d6f0de;
   /* gradients */
-  --grad-primary:linear-gradient(135deg,#3b5bdb 0%,#7950f2 100%);
-  --grad-header:linear-gradient(135deg,#1e2d6b 0%,#3b5bdb 60%,#7950f2 100%);
-  --grad-card:linear-gradient(145deg,rgba(255,255,255,0.9) 0%,rgba(248,250,255,0.95) 100%);
-  --grad-mesh:radial-gradient(ellipse at 20% 50%,rgba(59,91,219,.08) 0%,transparent 60%),
-              radial-gradient(ellipse at 80% 20%,rgba(121,80,242,.08) 0%,transparent 60%),
-              radial-gradient(ellipse at 50% 80%,rgba(12,166,120,.05) 0%,transparent 60%);
+  --grad-primary:linear-gradient(135deg,#006633 0%,#339955 100%);
+  --grad-header:linear-gradient(135deg,#003d1e 0%,#006633 60%,#1a8040 100%);
+  --grad-card:linear-gradient(145deg,rgba(255,255,255,0.95) 0%,rgba(248,250,248,0.98) 100%);
+  --grad-mesh:radial-gradient(ellipse at 20% 50%,rgba(0,102,51,.06) 0%,transparent 60%),
+              radial-gradient(ellipse at 80% 20%,rgba(51,153,85,.05) 0%,transparent 60%),
+              radial-gradient(ellipse at 50% 80%,rgba(45,138,62,.04) 0%,transparent 60%);
   --shadow-xs:0 1px 3px rgba(15,21,35,.06);
   --shadow-sm:0 2px 8px rgba(15,21,35,.08);
   --shadow-md:0 4px 20px rgba(15,21,35,.10);
   --shadow-lg:0 12px 40px rgba(15,21,35,.14);
   --shadow-xl:0 24px 64px rgba(15,21,35,.18);
-  --shadow-colored:0 8px 32px rgba(59,91,219,.25);
+  --shadow-colored:0 8px 32px rgba(0,102,51,.25);
   --radius-xs:.25rem;--radius-sm:.5rem;--radius-md:.75rem;
   --radius-lg:1rem;--radius-xl:1.25rem;--radius-2xl:1.75rem;--radius-full:9999px;
   --transition-fast:120ms cubic-bezier(0.4,0,0.2,1);
@@ -72,68 +73,68 @@
 }
 
 [data-theme="dark"]{
-  --color-bg:#0d1117;
-  --color-surface:#161b26;
-  --color-surface-2:#1c2333;
-  --color-surface-offset:#1e2535;
-  --color-surface-dynamic:#253047;
-  --color-divider:#2a3350;
-  --color-border:#334166;
-  --color-text:#e6eaf4;
-  --color-text-muted:#7b8aaa;
-  --color-text-faint:#4a5570;
-  --color-text-inverse:#0d1117;
-  --color-primary:#748ffc;
-  --color-primary-hover:#5c7cfa;
-  --color-primary-active:#4c6ef5;
-  --color-primary-highlight:#1e2d5a;
-  --color-success:#38d9a9;
-  --color-success-hover:#20c997;
-  --color-success-highlight:#1a3d33;
-  --color-error:#ff6b6b;
-  --color-error-hover:#fa5252;
-  --color-error-highlight:#3d1f1f;
-  --color-warning:#ffd43b;
-  --color-warning-highlight:#3d3000;
-  --color-gold:#ffd43b;
-  --color-blue:#74c0fc;
-  --color-blue-highlight:#1a2d45;
-  --color-accent:#b197fc;
-  --color-accent-highlight:#2d1f5a;
-  --grad-primary:linear-gradient(135deg,#4c6ef5 0%,#9775fa 100%);
-  --grad-header:linear-gradient(135deg,#0d1117 0%,#1a2140 60%,#2d1f5a 100%);
-  --grad-card:linear-gradient(145deg,rgba(22,27,38,0.95) 0%,rgba(28,35,51,0.98) 100%);
-  --grad-mesh:radial-gradient(ellipse at 20% 50%,rgba(76,110,245,.06) 0%,transparent 60%),
-              radial-gradient(ellipse at 80% 20%,rgba(151,117,250,.06) 0%,transparent 60%),
-              radial-gradient(ellipse at 50% 80%,rgba(56,217,169,.04) 0%,transparent 60%);
-  --shadow-xs:0 1px 3px rgba(0,0,0,.3);
-  --shadow-sm:0 2px 8px rgba(0,0,0,.35);
-  --shadow-md:0 4px 20px rgba(0,0,0,.4);
-  --shadow-lg:0 12px 40px rgba(0,0,0,.5);
-  --shadow-xl:0 24px 64px rgba(0,0,0,.6);
-  --shadow-colored:0 8px 32px rgba(76,110,245,.3);
+  --color-bg:#0a1409;
+  --color-surface:#0f1e10;
+  --color-surface-2:#132615;
+  --color-surface-offset:#162918;
+  --color-surface-dynamic:#1e3820;
+  --color-divider:#1e3020;
+  --color-border:#2a4a2c;
+  --color-text:#d4ead6;
+  --color-text-muted:#6b9b6e;
+  --color-text-faint:#3d5e3f;
+  --color-text-inverse:#0a1409;
+  --color-primary:#4db374;
+  --color-primary-hover:#3d9960;
+  --color-primary-active:#2d7f4c;
+  --color-primary-highlight:#1a3d22;
+  --color-success:#5cb870;
+  --color-success-hover:#4aa05c;
+  --color-success-highlight:#1a3d22;
+  --color-error:#e05c5c;
+  --color-error-hover:#cc4444;
+  --color-error-highlight:#3d1515;
+  --color-warning:#d4941a;
+  --color-warning-highlight:#3d2a00;
+  --color-gold:#d4a827;
+  --color-blue:#4db374;
+  --color-blue-highlight:#1a3d22;
+  --color-accent:#66c285;
+  --color-accent-highlight:#1a3d22;
+  --grad-primary:linear-gradient(135deg,#2d7f4c 0%,#4db374 100%);
+  --grad-header:linear-gradient(135deg,#050e05 0%,#0f2e12 60%,#1a4a1e 100%);
+  --grad-card:linear-gradient(145deg,rgba(15,30,16,0.95) 0%,rgba(19,38,21,0.98) 100%);
+  --grad-mesh:radial-gradient(ellipse at 20% 50%,rgba(0,102,51,.08) 0%,transparent 60%),
+              radial-gradient(ellipse at 80% 20%,rgba(77,179,116,.06) 0%,transparent 60%),
+              radial-gradient(ellipse at 50% 80%,rgba(45,127,76,.04) 0%,transparent 60%);
+  --shadow-xs:0 1px 3px rgba(0,0,0,.4);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.45);
+  --shadow-md:0 4px 20px rgba(0,0,0,.5);
+  --shadow-lg:0 12px 40px rgba(0,0,0,.6);
+  --shadow-xl:0 24px 64px rgba(0,0,0,.7);
+  --shadow-colored:0 8px 32px rgba(0,102,51,.3);
 }
 @media(prefers-color-scheme:dark){:root:not([data-theme]){
-  --color-bg:#0d1117;--color-surface:#161b26;--color-surface-2:#1c2333;
-  --color-surface-offset:#1e2535;--color-surface-dynamic:#253047;
-  --color-divider:#2a3350;--color-border:#334166;
-  --color-text:#e6eaf4;--color-text-muted:#7b8aaa;--color-text-faint:#4a5570;
-  --color-text-inverse:#0d1117;--color-primary:#748ffc;--color-primary-hover:#5c7cfa;
-  --color-primary-active:#4c6ef5;--color-primary-highlight:#1e2d5a;
-  --color-success:#38d9a9;--color-success-hover:#20c997;--color-success-highlight:#1a3d33;
-  --color-error:#ff6b6b;--color-error-hover:#fa5252;--color-error-highlight:#3d1f1f;
-  --color-warning:#ffd43b;--color-warning-highlight:#3d3000;--color-gold:#ffd43b;
-  --color-blue:#74c0fc;--color-blue-highlight:#1a2d45;
-  --color-accent:#b197fc;--color-accent-highlight:#2d1f5a;
-  --grad-primary:linear-gradient(135deg,#4c6ef5 0%,#9775fa 100%);
-  --grad-header:linear-gradient(135deg,#0d1117 0%,#1a2140 60%,#2d1f5a 100%);
-  --grad-card:linear-gradient(145deg,rgba(22,27,38,0.95) 0%,rgba(28,35,51,0.98) 100%);
-  --grad-mesh:radial-gradient(ellipse at 20% 50%,rgba(76,110,245,.06) 0%,transparent 60%),
-              radial-gradient(ellipse at 80% 20%,rgba(151,117,250,.06) 0%,transparent 60%),
-              radial-gradient(ellipse at 50% 80%,rgba(56,217,169,.04) 0%,transparent 60%);
-  --shadow-xs:0 1px 3px rgba(0,0,0,.3);--shadow-sm:0 2px 8px rgba(0,0,0,.35);
-  --shadow-md:0 4px 20px rgba(0,0,0,.4);--shadow-lg:0 12px 40px rgba(0,0,0,.5);
-  --shadow-xl:0 24px 64px rgba(0,0,0,.6);--shadow-colored:0 8px 32px rgba(76,110,245,.3);
+  --color-bg:#0a1409;--color-surface:#0f1e10;--color-surface-2:#132615;
+  --color-surface-offset:#162918;--color-surface-dynamic:#1e3820;
+  --color-divider:#1e3020;--color-border:#2a4a2c;
+  --color-text:#d4ead6;--color-text-muted:#6b9b6e;--color-text-faint:#3d5e3f;
+  --color-text-inverse:#0a1409;--color-primary:#4db374;--color-primary-hover:#3d9960;
+  --color-primary-active:#2d7f4c;--color-primary-highlight:#1a3d22;
+  --color-success:#5cb870;--color-success-hover:#4aa05c;--color-success-highlight:#1a3d22;
+  --color-error:#e05c5c;--color-error-hover:#cc4444;--color-error-highlight:#3d1515;
+  --color-warning:#d4941a;--color-warning-highlight:#3d2a00;--color-gold:#d4a827;
+  --color-blue:#4db374;--color-blue-highlight:#1a3d22;
+  --color-accent:#66c285;--color-accent-highlight:#1a3d22;
+  --grad-primary:linear-gradient(135deg,#2d7f4c 0%,#4db374 100%);
+  --grad-header:linear-gradient(135deg,#050e05 0%,#0f2e12 60%,#1a4a1e 100%);
+  --grad-card:linear-gradient(145deg,rgba(15,30,16,0.95) 0%,rgba(19,38,21,0.98) 100%);
+  --grad-mesh:radial-gradient(ellipse at 20% 50%,rgba(0,102,51,.08) 0%,transparent 60%),
+              radial-gradient(ellipse at 80% 20%,rgba(77,179,116,.06) 0%,transparent 60%),
+              radial-gradient(ellipse at 50% 80%,rgba(45,127,76,.04) 0%,transparent 60%);
+  --shadow-xs:0 1px 3px rgba(0,0,0,.4);--shadow-sm:0 2px 8px rgba(0,0,0,.45);
+  --shadow-md:0 4px 20px rgba(0,0,0,.5);--shadow-lg:0 12px 40px rgba(0,0,0,.6);
+  --shadow-xl:0 24px 64px rgba(0,0,0,.7);--shadow-colored:0 8px 32px rgba(0,102,51,.3);
 }}
 
 /* ===== BASE ===== */
@@ -1359,7 +1360,7 @@ CREATE POLICY "delete_own" ON prenotazioni
       </div>
       <div>
         <div class="auth-header-title" id="auth-title">Accedi</div>
-        <div class="auth-header-sub">Portale prenotazione mezzi</div>
+        <div class="auth-header-sub">Saica Pack — Portale Prenotazione Mezzi</div>
       </div>
     </div>
     <div class="auth-body" id="auth-body">
@@ -1386,8 +1387,8 @@ CREATE POLICY "delete_own" ON prenotazioni
         </svg>
       </div>
       <div>
-        <div class="topbar-title">Prenotazione Mezzi</div>
-        <div class="topbar-subtitle">Stabilimento — Gestione Baie di Carico</div>
+        <div class="topbar-title">Saica Pack · Prenotazione Mezzi</div>
+        <div class="topbar-subtitle">Gestione Baie di Carico — Stabilimento Italia</div>
       </div>
     </div>
     <div class="topbar-actions">
