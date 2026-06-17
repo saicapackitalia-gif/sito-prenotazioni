@@ -736,14 +736,16 @@ table.slots-table td{padding:0;}
   position:fixed;inset:0;z-index:500;
   background:rgba(15,21,35,.5);
   backdrop-filter:blur(6px);
-  display:flex;align-items:flex-end;justify-content:center;
+  display:none;align-items:flex-end;justify-content:center;
   padding:0;
+}
+.modal-overlay.visible{
+  display:flex;
   animation:fadeIn .2s ease;
 }
 @media(min-width:640px){
-  .modal-overlay{align-items:center;padding:var(--space-4);}
+  .modal-overlay.visible{align-items:center;padding:var(--space-4);}
 }
-.modal-overlay.hidden{display:none;}
 .modal{
   background:var(--color-surface);
   border:1px solid var(--color-border);
@@ -1174,7 +1176,7 @@ CREATE POLICY "delete_own" ON prenotazioni
 </div>
 
 <!-- MODAL CANCELLA -->
-<div class="modal-overlay hidden" id="modal-del-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-del-title">
+<div class="modal-overlay" id="modal-del-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-del-title">
   <div class="modal">
     <div class="modal-header">
       <div><h2 class="modal-title" id="modal-del-title">Cancella prenotazione</h2><p class="modal-subtitle" id="modal-del-subtitle"></p></div>
@@ -1544,6 +1546,7 @@ document.getElementById('modal-cancel-btn').addEventListener('click',()=>closeMo
 document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-overlay');});
 
 document.getElementById('modal-confirm').addEventListener('click',async()=>{
+  if(!pendingSlot) return;
   const nome=document.getElementById('field-nome').value.trim();
   const destinazione=document.getElementById('field-destinazione').value.trim();
   const targa=document.getElementById('field-targa').value.trim().toUpperCase();
@@ -1553,7 +1556,8 @@ document.getElementById('modal-confirm').addEventListener('click',async()=>{
   const btn=document.getElementById('modal-confirm');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Salvo...';
   try{
-    const res=await createBooking(selectedVehicle,selectedDate,pendingSlot.idx,nome,destinazione,targa);
+    if(!pendingSlot){toast('Errore: nessuno slot selezionato.','error-t');return;}
+  const res=await createBooking(selectedVehicle,selectedDate,pendingSlot.idx,nome,destinazione,targa);
     lastNome=nome; lastReparto='';
     const nb=Array.isArray(res)?res[0]:res;
     if(nb){nb.mine=true;currentBookings.push(nb);}
