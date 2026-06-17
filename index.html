@@ -2690,15 +2690,17 @@ function renderAdminBookings(){
     list.innerHTML = '<div class="admin-empty">Nessuna prenotazione per oggi</div>';
     return;
   }
-  // Sort by time
-  const sorted = [...all].sort((a,b)=>{
-    const ta = a.slot_time||''; const tb = b.slot_time||'';
-    return ta.localeCompare(tb);
-  });
+  // Sort by slot_index
+  const sorted = [...all].sort((a,b)=>(a.slot_index||0)-(b.slot_index||0));
   list.innerHTML = sorted.map(b => {
     const v = VEHICLES.find(v=>v.id===b.vehicle_id)||{icon:'🚪',name:b.vehicle_id};
-    const time = b.slot_time ? b.slot_time.slice(0,5) : '--:--';
-    const name = b.trasportatore || b.user_nome || b.user_email || 'N/D';
+    // Derive time from slot_index
+    let time = '--:--';
+    if(typeof b.slot_index === 'number' && SLOTS[b.slot_index]){
+      const s = SLOTS[b.slot_index];
+      time = formatTime(s.hour, s.min);
+    }
+    const name = b.nome || b.trasportatore || b.user_nome || b.user_email || 'N/D';
     const targa = b.targa || '';
     const dest = b.destinazione || '';
     return `<div class="admin-booking-row">
