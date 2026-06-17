@@ -1764,6 +1764,21 @@ table.slots-table td{padding:0;}
   .schedule-col{padding:var(--space-3);}
 }
 
+
+/* ===== BTN DANGER ===== */
+.btn-danger{
+  background:var(--color-error);
+  color:white;
+  border:none;
+  border-radius:var(--radius-md);
+  padding:var(--space-2) var(--space-4);
+  font-size:var(--text-sm);font-weight:700;
+  display:inline-flex;align-items:center;gap:var(--space-2);
+  cursor:pointer;
+  transition:all var(--transition-fast);
+}
+.btn-danger:hover{filter:brightness(1.1);}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -2093,6 +2108,12 @@ CREATE POLICY "delete_own" ON prenotazioni
       </div>
       <div class="modal-body">
         <div class="field">
+          <label class="field-label" for="admin-edit-slot">Orario</label>
+          <select class="field-input" id="admin-edit-slot">
+            <option value="">-- Mantieni orario attuale --</option>
+          </select>
+        </div>
+        <div class="field">
           <label class="field-label" for="admin-edit-nome">Nome trasportatore *</label>
           <input type="text" class="field-input" id="admin-edit-nome" placeholder="Es. Mario Rossi">
         </div>
@@ -2112,6 +2133,52 @@ CREATE POLICY "delete_own" ON prenotazioni
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           Salva modifiche
         </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- USER EDIT MODAL -->
+  <div class="modal-overlay" id="user-edit-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="user-edit-title">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="user-edit-title">La mia prenotazione</h2>
+          <p class="modal-subtitle" id="user-edit-subtitle"></p>
+        </div>
+        <button class="modal-close" id="user-edit-close" aria-label="Chiudi">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label class="field-label" for="user-edit-slot">Cambia orario</label>
+          <select class="field-input" id="user-edit-slot"></select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="user-edit-nome">Nome trasportatore *</label>
+          <input type="text" class="field-input" id="user-edit-nome" placeholder="Es. Mario Rossi">
+        </div>
+        <div class="field">
+          <label class="field-label" for="user-edit-dest">Destinazione *</label>
+          <input type="text" class="field-input" id="user-edit-dest" placeholder="Es. Milano">
+        </div>
+        <div class="field">
+          <label class="field-label" for="user-edit-targa">Targa mezzo *</label>
+          <input type="text" class="field-input" id="user-edit-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" spellcheck="false">
+        </div>
+        <div class="error-msg" id="user-edit-error"></div>
+      </div>
+      <div class="modal-footer" style="flex-direction:column;gap:var(--space-2);">
+        <button class="btn btn-primary" id="user-edit-save" style="width:100%;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Salva modifiche
+        </button>
+        <div style="display:flex;gap:var(--space-2);width:100%;">
+          <button class="btn btn-ghost" id="user-edit-cancel" style="flex:1;">Annulla</button>
+          <button class="btn btn-danger" id="user-edit-delete" style="flex:1;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Elimina
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2373,10 +2440,12 @@ function renderTabs(){
 }
 
 
-async function updateBooking(id, nome, destinazione, targa){
+async function updateBooking(id, nome, destinazione, targa, slot_index){
   const adminClient = supabase.createClient(SB_URL, SB_SVC);
-  const { error } = await adminClient.from('prenotazioni').update({ nome, destinazione, targa }).eq('id', id);
-  if(error) throw new Error(error.message);
+  const patch = { nome, destinazione, targa };
+  if(slot_index !== undefined && slot_index !== null) patch.slot_index = slot_index;
+  const { error } = await adminClient.from('prenotazioni').update(patch).eq('id', id);
+  if(error) throw new Error(error.code==='23505'?'Slot già occupato. Scegline un altro.':error.message);
 }
 // ===== LOAD & RENDER =====
 async function loadAndRender(){
@@ -2438,7 +2507,8 @@ function renderGrid(){
     const el=tr.querySelector('.slot');
     if(!past){
       if(!b){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
-      else if(b.mine){el.addEventListener('click',()=>openDeleteModal(idx,slot,b.id));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openDeleteModal(idx,slot,b.id);}});}
+      else if(b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
+      else if(isAdmin()&&b&&!b.mine){el.addEventListener('click',()=>openAdminEdit(b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAdminEdit(b);}});}
     }
     tbody.appendChild(tr);
   });
@@ -2750,6 +2820,7 @@ function startApp(){
   const adminSection = document.getElementById('admin-all-bookings');
   if(adminSection) adminSection.style.display = isAdmin() ? '' : 'none';
   if(isAdmin()){ initAdminFilters(); initAdminEditModal(); }
+  initUserEditModal();
   // Start on step 1 (baia selection)
   initStep1Controls();
   goToStep1();
@@ -3000,6 +3071,90 @@ function initStep1Controls(){
 
 
 
+
+// ===== USER EDIT MODAL =====
+let userEditBookingId = null;
+let userEditVehicleId = null;
+
+function openUserEditModal(idx, slot, booking){
+  userEditBookingId = booking.id;
+  userEditVehicleId = booking.vehicle_id;
+  const v = VEHICLES.find(v=>v.id===booking.vehicle_id)||{name:booking.vehicle_id};
+  const timeStr = formatTime(slot.hour, slot.min);
+  document.getElementById('user-edit-subtitle').textContent = `${timeStr} · ${v.name}`;
+
+  // Slot selector: current + free slots for this vehicle/date
+  const slotSel = document.getElementById('user-edit-slot');
+  const occupied = (currentBookings||[])
+    .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
+    .map(b => parseInt(b.slot_index));
+  slotSel.innerHTML = '';
+  SLOTS.forEach((s, i) => {
+    if(isPast(s.hour, s.min)) return;
+    if(occupied.includes(i)) return;
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = formatTime(s.hour, s.min) + (i === idx ? ' (attuale)' : '');
+    if(i === idx) opt.selected = true;
+    slotSel.appendChild(opt);
+  });
+
+  document.getElementById('user-edit-nome').value = booking.nome || '';
+  document.getElementById('user-edit-dest').value = booking.destinazione || '';
+  document.getElementById('user-edit-targa').value = booking.targa || '';
+  document.getElementById('user-edit-error').classList.remove('show');
+  document.getElementById('user-edit-overlay').classList.add('visible');
+  document.getElementById('user-edit-slot').focus();
+}
+
+function closeUserEdit(){
+  document.getElementById('user-edit-overlay').classList.remove('visible');
+  userEditBookingId = null;
+}
+
+function initUserEditModal(){
+  document.getElementById('user-edit-close').addEventListener('click', closeUserEdit);
+  document.getElementById('user-edit-cancel').addEventListener('click', closeUserEdit);
+  document.getElementById('user-edit-overlay').addEventListener('click', e => {
+    if(e.target === e.currentTarget) closeUserEdit();
+  });
+
+  document.getElementById('user-edit-save').addEventListener('click', async () => {
+    const nome = document.getElementById('user-edit-nome').value.trim();
+    const dest = document.getElementById('user-edit-dest').value.trim();
+    const targa = document.getElementById('user-edit-targa').value.trim().toUpperCase();
+    const newSlot = parseInt(document.getElementById('user-edit-slot').value);
+    const errEl = document.getElementById('user-edit-error');
+    if(!nome||!dest||!targa){errEl.textContent='Compila tutti i campi.';errEl.classList.add('show');return;}
+    errEl.classList.remove('show');
+    const btn = document.getElementById('user-edit-save');
+    btn.disabled=true; btn.textContent='Salvataggio...';
+    try{
+      await updateBooking(userEditBookingId, nome, dest, targa, newSlot);
+      toast('✓ Prenotazione modificata','success');
+      closeUserEdit();
+      loadAndRender();
+      loadBookingsForStep1();
+    }catch(e){
+      errEl.textContent=e.message; errEl.classList.add('show');
+    }finally{
+      btn.disabled=false;
+      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salva modifiche';
+    }
+  });
+
+  document.getElementById('user-edit-delete').addEventListener('click', async () => {
+    if(!confirm('Eliminare questa prenotazione?')) return;
+    try{
+      await deleteBooking(userEditBookingId);
+      toast('✓ Prenotazione eliminata','success');
+      closeUserEdit();
+      loadAndRender();
+      loadBookingsForStep1();
+    }catch(e){ toast('Errore: '+e.message,'error'); }
+  });
+}
+
 // ===== ADMIN EDIT/DELETE =====
 let adminEditBookingId = null;
 
@@ -3013,13 +3168,15 @@ function initAdminEditModal(){
     const nome = document.getElementById('admin-edit-nome').value.trim();
     const dest = document.getElementById('admin-edit-dest').value.trim();
     const targa = document.getElementById('admin-edit-targa').value.trim().toUpperCase();
+    const slotVal = document.getElementById('admin-edit-slot').value;
+    const newSlotIdx = slotVal !== '' ? parseInt(slotVal) : null;
     const errEl = document.getElementById('admin-edit-error');
     if(!nome || !dest || !targa){ errEl.textContent='Compila tutti i campi.'; errEl.classList.add('show'); return; }
     errEl.classList.remove('show');
     const btn = document.getElementById('admin-edit-save');
     btn.disabled = true; btn.textContent = 'Salvataggio...';
     try {
-      await updateBooking(adminEditBookingId, nome, dest, targa);
+      await updateBooking(adminEditBookingId, nome, dest, targa, newSlotIdx);
       toast('✓ Prenotazione modificata', 'success');
       closeAdminEdit();
       loadBookingsForStep1();
@@ -3034,16 +3191,33 @@ function initAdminEditModal(){
 
 function openAdminEdit(booking){
   adminEditBookingId = booking.id;
-  const idx = parseInt(booking.slot_index);
-  const timeStr = (!isNaN(idx) && SLOTS[idx]) ? formatTime(SLOTS[idx].hour, SLOTS[idx].min) : '';
+  const currentIdx = parseInt(booking.slot_index);
   const v = VEHICLES.find(v=>v.id===booking.vehicle_id)||{name:booking.vehicle_id};
+  const timeStr = (!isNaN(currentIdx) && SLOTS[currentIdx]) ? formatTime(SLOTS[currentIdx].hour, SLOTS[currentIdx].min) : '';
+  document.getElementById('admin-edit-title').textContent = 'Modifica prenotazione';
   document.getElementById('admin-edit-subtitle').textContent = `${timeStr} · ${v.name}`;
+
+  // Populate slot dropdown: current slot + all FREE slots for this vehicle/date
+  const slotSel = document.getElementById('admin-edit-slot');
+  const occupiedByOthers = (currentBookings||[])
+    .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
+    .map(b => parseInt(b.slot_index));
+  slotSel.innerHTML = '';
+  SLOTS.forEach((s, idx) => {
+    if(occupiedByOthers.includes(idx)) return; // skip slots taken by others
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = formatTime(s.hour, s.min) + (idx === currentIdx ? ' (attuale)' : '');
+    if(idx === currentIdx) opt.selected = true;
+    slotSel.appendChild(opt);
+  });
+
   document.getElementById('admin-edit-nome').value = booking.nome || '';
   document.getElementById('admin-edit-dest').value = booking.destinazione || '';
   document.getElementById('admin-edit-targa').value = booking.targa || '';
   document.getElementById('admin-edit-error').classList.remove('show');
   document.getElementById('admin-edit-overlay').classList.add('visible');
-  document.getElementById('admin-edit-nome').focus();
+  document.getElementById('admin-edit-slot').focus();
 }
 
 function closeAdminEdit(){
