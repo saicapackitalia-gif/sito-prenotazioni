@@ -1780,6 +1780,15 @@ table.slots-table td{padding:0;}
 }
 .btn-danger:hover{filter:brightness(1.1);}
 
+
+/* Force select visibility in modals */
+.field-input[id$="-slot"]{
+  display:block !important;
+  min-height:44px;
+  appearance:auto;
+  -webkit-appearance:auto;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -2456,9 +2465,16 @@ async function loadAndRender(){
   updateWeekendBanner();
   renderGridSkeleton();
   try{
-    currentBookings=await fetchBookings(selectedDate);
-    // Tag mine
-    currentBookings.forEach(b=>{ b.mine = !offlineMode ? b.user_id===currentUser?.id : b.user_id==='offline'; });
+    if(isAdmin()){
+      // Admin fetches ALL bookings bypassing RLS
+      const adminClient = supabase.createClient(SB_URL, SB_SVC);
+      const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate).eq('vehicle_id', selectedVehicle);
+      if(!error && data) currentBookings = data;
+      else currentBookings = await fetchBookings(selectedDate);
+    } else {
+      currentBookings = await fetchBookings(selectedDate);
+    }
+    currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
     setDbStatus('ok');
   }catch(e){
     setDbStatus('error');
