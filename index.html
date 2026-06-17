@@ -1427,6 +1427,19 @@ table.slots-table td{padding:0;}
   .maps-topbar-btn{width:32px;height:32px;}
 }
 
+
+/* ===== MAPS ALWAYS VISIBLE ON MOBILE ===== */
+@media(max-width:600px){
+  /* Hide theme toggle to make room for maps */
+  .theme-toggle{display:none;}
+  /* Ensure maps btn is always shown */
+  .maps-topbar-btn{display:flex !important;}
+  /* Prevent topbar actions overflow */
+  .topbar-actions{overflow:visible;flex-wrap:nowrap;}
+  /* Compact gap */
+  .topbar-actions{gap:6px;}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
