@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181812 -->
+<!-- v202606181815 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -2507,11 +2507,13 @@ async function createBooking(vehicle_id, data, slot_index, nome, destinazione, t
   } catch(e) { /* use existing currentBookings if fetch fails */ }
 
   // Pre-check: cross-baia carrellista availability
-  const allowed = maxAllowedForSlot(vehicle_id, slot_index);
-  const current = countBookingsForSlot(vehicle_id, slot_index);
-  if(current >= allowed){
-    if(vehicle_id === 'baia-2' && allowed < 2){
-      throw new Error('Slot non disponibile: entrambi i carrellisti sono impegnati in questo orario.');
+  if(!canBookSlot(vehicle_id, slot_index)){
+    const v = VEHICLES.find(x => x.id === vehicle_id);
+    const vSlots = generateSlotsForVehicle(v);
+    const slot = vSlots[slot_index];
+    const busy = totalBusyAtTime(slot.hour, slot.min);
+    if(busy >= TOTAL_CARRELLISTI){
+      throw new Error('Slot non disponibile: entrambi i carrellisti sono già impegnati in questo orario.');
     }
     throw new Error('Slot già occupato.');
   }
@@ -2639,27 +2641,65 @@ function renderGridSkeleton(){
 
 
 // ===== CROSS-BAIA AVAILABILITY =====
-// For Scatole: max 2 per slot, but only if carrellisti are free on Fogli+Depositi
-// Returns how many bookings are allowed on a given vehicle/slot
-function maxAllowedForSlot(vehicleId, slotIdx){
-  const v = VEHICLES.find(x => x.id === vehicleId);
-  if(!v) return 1;
-  if(vehicleId !== 'baia-2') return v.maxPerSlot; // Fogli and Depositi: fixed max
+// Rules:
+//   - 2 carrellisti totali
+//   - Fogli: max 1 per slot
+//   - Depositi: max 1 per slot
+//   - Scatole: max 2 per slot (ma limitato dai carrellisti disponibili)
+//   - Totale prenotazioni su TUTTE le baie nello stesso slot_index <= 2
 
-  // Scatole: check how many carrellisti are busy on other baie at this slot
-  const otherBaie = ['baia-1','baia-3'];
-  const busyOnOthers = otherBaie.reduce((count, bid) => {
-    const hasBooking = currentBookings.some(b => b.vehicle_id === bid && parseInt(b.slot_index) === slotIdx);
-    return count + (hasBooking ? 1 : 0);
-  }, 0);
-  // 2 carrellisti total - busy on others = available for Scatole
-  const available = 2 - busyOnOthers;
-  return Math.max(0, Math.min(available, v.maxPerSlot));
-}
+const TOTAL_CARRELLISTI = 2;
 
-// Count current bookings on a vehicle/slot
+// Count bookings on a specific vehicle/slot (by slot time h:m, not index)
 function countBookingsForSlot(vehicleId, slotIdx){
   return currentBookings.filter(b => b.vehicle_id === vehicleId && parseInt(b.slot_index) === slotIdx).length;
+}
+
+// Count total carrellisti busy across ALL baie at a given time (by slot_index of each vehicle)
+function totalBusyAtTime(hour, min){
+  // For each baia, find if there's a booking whose slot time matches h:m
+  let total = 0;
+  VEHICLES.forEach(v => {
+    const vSlots = generateSlotsForVehicle(v);
+    const matchIdx = vSlots.findIndex(s => s.hour === hour && s.min === min);
+    if(matchIdx >= 0){
+      const count = currentBookings.filter(b => b.vehicle_id === v.id && parseInt(b.slot_index) === matchIdx).length;
+      total += count;
+    }
+  });
+  return total;
+}
+
+// Can we add one more booking to vehicleId at slotIdx?
+function canBookSlot(vehicleId, slotIdx){
+  const v = VEHICLES.find(x => x.id === vehicleId);
+  if(!v) return false;
+  const vSlots = generateSlotsForVehicle(v);
+  if(slotIdx >= vSlots.length) return false;
+  const slot = vSlots[slotIdx];
+
+  // Check 1: vehicle-specific max not exceeded
+  const currentCount = countBookingsForSlot(vehicleId, slotIdx);
+  if(currentCount >= v.maxPerSlot) return false;
+
+  // Check 2: total carrellisti not exceeded
+  const busy = totalBusyAtTime(slot.hour, slot.min);
+  if(busy >= TOTAL_CARRELLISTI) return false;
+
+  return true;
+}
+
+// Legacy compatibility: returns max allowed (used in render)
+function maxAllowedForSlot(vehicleId, slotIdx){
+  const v = VEHICLES.find(x => x.id === vehicleId);
+  if(!v) return 0;
+  const vSlots = generateSlotsForVehicle(v);
+  if(slotIdx >= vSlots.length) return 0;
+  const slot = vSlots[slotIdx];
+  const busy = totalBusyAtTime(slot.hour, slot.min);
+  const available = TOTAL_CARRELLISTI - busy;
+  const currentCount = countBookingsForSlot(vehicleId, slotIdx);
+  return Math.min(v.maxPerSlot, currentCount + Math.max(0, available));
 }
 
 function renderGrid(){
@@ -2675,7 +2715,7 @@ function renderGrid(){
     const b=map[idx];
     const booked_count=countBookingsForSlot(selectedVehicle,idx);
     const max_allowed=maxAllowedForSlot(selectedVehicle,idx);
-    const isFull=(booked_count>=max_allowed);
+    const isFull=!canBookSlot(selectedVehicle,idx);
     const past=isPast(slot.hour,slot.min)||weekend;
     let cls='free',txt='Disponibile',aria=`${formatTime(slot.hour,slot.min)} - Disponibile`;
     if(booked_count>0&&booked_count<max_allowed&&!past){
@@ -3386,7 +3426,7 @@ function showInlineSlots(vehicle){
     const slotBookings = booked.filter(b => parseInt(b.slot_index) === idx);
     const bookingCount = slotBookings.length;
     const maxAllowed = maxAllowedForSlot(vehicle.id, idx);
-    const isTaken = bookingCount >= maxAllowed;
+    const isTaken = !canBookSlot(vehicle.id, idx);
     const booking = slotBookings[0];
     const label = s.hour.toString().padStart(2,'0') + ':' + s.min.toString().padStart(2,'0');
     if(isTaken){
@@ -3399,7 +3439,7 @@ function showInlineSlots(vehicle){
         ${targa ? `<span class="inline-slot-detail">🚛 ${targa}</span>` : ''}
         ${dest ? `<span class="inline-slot-detail">📍 ${dest}</span>` : ''}
       </div>`;
-    } else if(bookingCount > 0 && bookingCount < maxAllowed){
+    } else if(bookingCount > 0 && canBookSlot(vehicle.id, idx)){
       // Partially booked (only possible on Scatole)
       const nome = booking?.nome || '–';
       const targa = booking?.targa || '';
