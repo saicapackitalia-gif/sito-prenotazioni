@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181744 -->
+<!-- v202606181754 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -3161,8 +3161,9 @@ function renderBaiaCards(){
     card.className = 'baia-card';
     card.setAttribute('aria-label', 'Seleziona ' + v.name);
     // Count free slots for this vehicle today
+    const vSlots = generateSlotsForVehicle(v);
     const booked = currentBookings.filter(b => b.vehicle_id === v.id).length;
-    const free = SLOTS.length - booked;
+    const free = vSlots.length - booked;
     card.innerHTML = `
       <div class="baia-card-icon">${v.icon}</div>
       <div class="baia-card-name">${v.name}</div>
@@ -3318,8 +3319,9 @@ function renderBaiaCardsForAdmin(){
     card.className = 'baia-card';
     card.id = 'admin-baia-card-' + v.id;
     card.setAttribute('aria-label', 'Seleziona ' + v.name);
+    const vSlots = generateSlotsForVehicle(v);
     const booked = currentBookings.filter(b => b.vehicle_id === v.id).length;
-    const free = SLOTS.length - booked;
+    const free = vSlots.length - booked;
     card.innerHTML = `
       <div class="baia-card-icon">${v.icon}</div>
       <div class="baia-card-body">
