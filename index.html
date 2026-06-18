@@ -1914,85 +1914,6 @@ table.slots-table td{padding:0;}
 </head>
 <body>
 
-<!-- ========== SETUP PAGE ========== -->
-<div class="page hidden" id="page-setup">
-  <div class="setup-card">
-    <div class="setup-header">
-      <div class="auth-logo" aria-hidden="true">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
-      </div>
-      <div>
-        <div class="setup-header-title">Configurazione Supabase</div>
-        <div class="setup-header-sub">Prima configurazione — operazione unica</div>
-      </div>
-    </div>
-    <div class="setup-body">
-      <div class="setup-steps">
-        <div class="setup-step">
-          <div class="setup-step-num">1</div>
-          <div class="setup-step-text">Vai su <strong><a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a></strong>, crea un account e un nuovo progetto (regione: <strong>Frankfurt</strong>).</div>
-        </div>
-        <div class="setup-step">
-          <div class="setup-step-num">2</div>
-          <div class="setup-step-text">In <strong>Authentication → Providers</strong>, assicurati che <strong>Email</strong> sia abilitato (è attivo di default). Disabilita "Confirm email" se vuoi accesso immediato senza verifica.</div>
-        </div>
-        <div class="setup-step">
-          <div class="setup-step-num">3</div>
-          <div class="setup-step-text">Vai su <strong>SQL Editor</strong> ed esegui questo script per creare la tabella prenotazioni:</div>
-        </div>
-      </div>
-      <div class="code-block">CREATE TABLE prenotazioni (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  vehicle_id text NOT NULL,
-  data date NOT NULL,
-  slot_index integer NOT NULL,
-  nome text NOT NULL,
-  destinazione text NOT NULL,
-  targa text NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  UNIQUE(vehicle_id, data, slot_index)
-);
-
-ALTER TABLE prenotazioni ENABLE ROW LEVEL SECURITY;
-
--- Tutti possono vedere le prenotazioni
-CREATE POLICY "select_all" ON prenotazioni
-  FOR SELECT USING (true);
-
--- Solo l'utente loggato può inserire le proprie
-CREATE POLICY "insert_own" ON prenotazioni
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Solo l'utente loggato può cancellare le proprie
-CREATE POLICY "delete_own" ON prenotazioni
-  FOR DELETE USING (auth.uid() = user_id);</div>
-      <div class="setup-steps" style="margin-top:0;">
-        <div class="setup-step">
-          <div class="setup-step-num">4</div>
-          <div class="setup-step-text">Vai su <strong>Project Settings → API</strong> e copia <strong>Project URL</strong> e <strong>anon public key</strong>.</div>
-        </div>
-      </div>
-      <div class="field">
-        <label class="field-label" for="setup-url">Project URL</label>
-        <input type="url" class="field-input" id="setup-url" placeholder="https://xxxxxxxxxxx.supabase.co" value="https://jmhwxpgwakrqmnwefqrs.supabase.co" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="field">
-        <label class="field-label" for="setup-key">Anon Public Key</label>
-        <input type="text" class="field-input" id="setup-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="error-msg" id="setup-error"></div>
-    </div>
-    <div class="setup-footer">
-      <button class="btn btn-ghost" id="setup-skip">Modalità offline (demo)</button>
-      <button class="btn btn-primary" style="width:auto;" id="setup-connect">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        Salva e Connetti
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- ========== LOGIN PAGE ========== -->
 <div class="page hidden" id="page-login">
   <div class="auth-card">
@@ -2387,7 +2308,7 @@ themeToggle && themeToggle.addEventListener('click', ()=>{ curTheme=curTheme==='
 
 // ===== UTILS =====
 function showPage(id){
-  ['page-setup','page-login','app-wrapper'].forEach(p=>{
+  ['page-login','app-wrapper'].forEach(p=>{
     const el=document.getElementById(p);
     if(el) el.classList.toggle('hidden', p!==id);
   });
@@ -2783,7 +2704,7 @@ document.getElementById('btn-logout')&&document.getElementById('btn-logout').add
 document.getElementById('btn-settings')&&document.getElementById('btn-settings').addEventListener('click',()=>{
   document.getElementById('setup-url').value=SB_URL;
   document.getElementById('setup-key').value=SB_KEY;
-  showPage('page-setup');
+  // setup page removed
 });
 
 // ===== ESC =====
