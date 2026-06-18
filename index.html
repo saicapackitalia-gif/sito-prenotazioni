@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181754 -->
+<!-- v202606181800 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -2558,6 +2558,7 @@ let SLOTS=generateSlots();
 // ===== APP STATE =====
 let selectedVehicle=VEHICLES[0].id;
 let selectedVehicleObj=VEHICLES[0];
+let adminAddBookingMode=false;
 let selectedDate=formatDate(new Date());
 let currentBookings=[];
 let pendingSlot=null;
@@ -3146,12 +3147,16 @@ function initAdminFilters(){
 function renderBaiaCards(){
   const c = document.getElementById('baia-cards-container');
   if(!c) return;
-  // Admin uses "+ Aggiungi prenotazione" button - hide cards
   const titleEl = document.querySelector('.baia-select-title');
-  if(isAdmin()){ 
-    c.style.display='none'; 
-    if(titleEl) titleEl.style.display='none';
-    return; 
+  // Admin: only show baia cards when in add-booking mode
+  if(isAdmin()){
+    if(adminAddBookingMode && !isWeekend(selectedDate)){
+      renderBaiaCardsForAdmin();
+    } else {
+      c.style.display='none';
+      if(titleEl) titleEl.style.display='none';
+    }
+    return;
   }
   if(titleEl) titleEl.style.display='';
   c.style.display='';
@@ -3245,6 +3250,15 @@ function updateWeekendBannerS1(){
   const dayName = d.getDay()===6?'sabato':'domenica';
   banner.style.display = isWeekend(selectedDate) ? 'flex' : 'none';
   if(txt) txt.textContent = `Stabilimento chiuso ${dayName}`;
+  // Hide baia cards + inline slots on weekend even in admin add-booking mode
+  if(isWeekend(selectedDate) && adminAddBookingMode){
+    const panel = document.getElementById('admin-inline-slots');
+    const c = document.getElementById('baia-cards-container');
+    const titleEl = document.querySelector('.baia-select-title');
+    if(panel) panel.remove();
+    if(c) c.style.display = 'none';
+    if(titleEl) titleEl.style.display = 'none';
+  }
 }
 
 // Init step1 date pickers in sync with main
@@ -3296,6 +3310,7 @@ function initAdminAddBooking(){
 }
 
 function showBaiaCardsForAdmin(){
+  adminAddBookingMode = true;
   // Show baia cards and title like a normal user
   const c = document.getElementById('baia-cards-container');
   const titleEl = document.querySelector('.baia-select-title');
@@ -3409,6 +3424,7 @@ function showInlineSlots(vehicle){
       const card = document.getElementById('admin-baia-card-' + v.id);
       if(card) card.classList.remove('baia-card--selected');
     });
+    adminAddBookingMode = false;
     // Hide baia cards, show bookings list + export bar
     const baiaContainer = document.getElementById('baia-cards-container');
     const titleEl = document.querySelector('.baia-select-title');
