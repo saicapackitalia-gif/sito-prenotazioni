@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181808 -->
+<!-- v202606181812 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -2496,6 +2496,16 @@ async function fetchBookings(date){
   return data;
 }
 async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa){
+  // Re-fetch fresh bookings for accurate cross-baia check
+  try {
+    const adminClient = supabase.createClient(SB_URL, SB_SVC);
+    const { data: fresh, error } = await adminClient.from('prenotazioni').select('*').eq('data', data);
+    if(!error && fresh) {
+      currentBookings = fresh;
+      currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
+    }
+  } catch(e) { /* use existing currentBookings if fetch fails */ }
+
   // Pre-check: cross-baia carrellista availability
   const allowed = maxAllowedForSlot(vehicle_id, slot_index);
   const current = countBookingsForSlot(vehicle_id, slot_index);
@@ -2601,15 +2611,11 @@ async function loadAndRender(){
   updateWeekendBanner();
   renderGridSkeleton();
   try{
-    if(isAdmin()){
-      // Admin fetches ALL bookings bypassing RLS
-      const adminClient = supabase.createClient(SB_URL, SB_SVC);
-      const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate).eq('vehicle_id', selectedVehicle);
-      if(!error && data) currentBookings = data;
-      else currentBookings = await fetchBookings(selectedDate);
-    } else {
-      currentBookings = await fetchBookings(selectedDate);
-    }
+    // Always fetch ALL baie for correct cross-baia availability check
+    const adminClient = supabase.createClient(SB_URL, SB_SVC);
+    const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate);
+    if(!error && data) currentBookings = data;
+    else currentBookings = await fetchBookings(selectedDate);
     currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
     setDbStatus('ok');
   }catch(e){
