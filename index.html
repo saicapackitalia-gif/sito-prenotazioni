@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181349 -->
+<!-- v202606181622 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -2525,7 +2525,8 @@ const VEHICLES=[
 ];
 function generateSlots(){
   const s=[];
-  for(let h=6;h<=19;h++) for(let m=0;m<60;m+=30){if(h===19&&m>30)break;s.push({hour:h,min:m});}
+  let total=6*60;
+  while(total<=18*60+45){s.push({hour:Math.floor(total/60),min:total%60});total+=45;}
   return s;
 }
 const SLOTS=generateSlots();
