@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181319 -->
+<!-- v202606181242 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -1890,15 +1890,9 @@ table.slots-table td{padding:0;}
 }
 .inline-slot--taken .inline-slot-time{color:var(--color-danger,#dc2626);}
 .inline-slot-name{
-  color:var(--color-text);
-  font-size:var(--text-xs);font-weight:600;
-  max-width:130px;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.inline-slot-detail{
   color:var(--color-text-faint);
   font-size:10px;
-  max-width:130px;
+  max-width:120px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .baia-card--selected{
@@ -1913,6 +1907,85 @@ table.slots-table td{padding:0;}
   <meta http-equiv="Expires" content="0">
 </head>
 <body>
+
+<!-- ========== SETUP PAGE ========== -->
+<div class="page hidden" id="page-setup">
+  <div class="setup-card">
+    <div class="setup-header">
+      <div class="auth-logo" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+      </div>
+      <div>
+        <div class="setup-header-title">Configurazione Supabase</div>
+        <div class="setup-header-sub">Prima configurazione — operazione unica</div>
+      </div>
+    </div>
+    <div class="setup-body">
+      <div class="setup-steps">
+        <div class="setup-step">
+          <div class="setup-step-num">1</div>
+          <div class="setup-step-text">Vai su <strong><a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a></strong>, crea un account e un nuovo progetto (regione: <strong>Frankfurt</strong>).</div>
+        </div>
+        <div class="setup-step">
+          <div class="setup-step-num">2</div>
+          <div class="setup-step-text">In <strong>Authentication → Providers</strong>, assicurati che <strong>Email</strong> sia abilitato (è attivo di default). Disabilita "Confirm email" se vuoi accesso immediato senza verifica.</div>
+        </div>
+        <div class="setup-step">
+          <div class="setup-step-num">3</div>
+          <div class="setup-step-text">Vai su <strong>SQL Editor</strong> ed esegui questo script per creare la tabella prenotazioni:</div>
+        </div>
+      </div>
+      <div class="code-block">CREATE TABLE prenotazioni (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  vehicle_id text NOT NULL,
+  data date NOT NULL,
+  slot_index integer NOT NULL,
+  nome text NOT NULL,
+  destinazione text NOT NULL,
+  targa text NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(vehicle_id, data, slot_index)
+);
+
+ALTER TABLE prenotazioni ENABLE ROW LEVEL SECURITY;
+
+-- Tutti possono vedere le prenotazioni
+CREATE POLICY "select_all" ON prenotazioni
+  FOR SELECT USING (true);
+
+-- Solo l'utente loggato può inserire le proprie
+CREATE POLICY "insert_own" ON prenotazioni
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Solo l'utente loggato può cancellare le proprie
+CREATE POLICY "delete_own" ON prenotazioni
+  FOR DELETE USING (auth.uid() = user_id);</div>
+      <div class="setup-steps" style="margin-top:0;">
+        <div class="setup-step">
+          <div class="setup-step-num">4</div>
+          <div class="setup-step-text">Vai su <strong>Project Settings → API</strong> e copia <strong>Project URL</strong> e <strong>anon public key</strong>.</div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="setup-url">Project URL</label>
+        <input type="url" class="field-input" id="setup-url" placeholder="https://xxxxxxxxxxx.supabase.co" value="https://jmhwxpgwakrqmnwefqrs.supabase.co" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label class="field-label" for="setup-key">Anon Public Key</label>
+        <input type="text" class="field-input" id="setup-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="error-msg" id="setup-error"></div>
+    </div>
+    <div class="setup-footer">
+      <button class="btn btn-ghost" id="setup-skip">Modalità offline (demo)</button>
+      <button class="btn btn-primary" style="width:auto;" id="setup-connect">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Salva e Connetti
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ========== LOGIN PAGE ========== -->
 <div class="page hidden" id="page-login">
@@ -2308,7 +2381,7 @@ themeToggle && themeToggle.addEventListener('click', ()=>{ curTheme=curTheme==='
 
 // ===== UTILS =====
 function showPage(id){
-  ['page-login','app-wrapper'].forEach(p=>{
+  ['page-setup','page-login','app-wrapper'].forEach(p=>{
     const el=document.getElementById(p);
     if(el) el.classList.toggle('hidden', p!==id);
   });
@@ -2704,7 +2777,7 @@ document.getElementById('btn-logout')&&document.getElementById('btn-logout').add
 document.getElementById('btn-settings')&&document.getElementById('btn-settings').addEventListener('click',()=>{
   document.getElementById('setup-url').value=SB_URL;
   document.getElementById('setup-key').value=SB_KEY;
-  // setup page removed
+  showPage('page-setup');
 });
 
 // ===== ESC =====
@@ -3255,7 +3328,6 @@ function showInlineSlots(vehicle){
 
   panel.querySelector('#inline-slots-back-btn').addEventListener('click', () => {
     panel.remove();
-    // Deselect cards
     VEHICLES.forEach(v => {
       const card = document.getElementById('admin-baia-card-' + v.id);
       if(card) card.classList.remove('baia-card--selected');
@@ -3270,3 +3342,409 @@ function showInlineSlots(vehicle){
   });
 }
 
+// ===== USER EDIT MODAL =====
+let userEditBookingId = null;
+let userEditVehicleId = null;
+
+function openUserEditModal(idx, slot, booking){
+  userEditBookingId = booking.id;
+  userEditVehicleId = booking.vehicle_id;
+  const v = VEHICLES.find(v=>v.id===booking.vehicle_id)||{name:booking.vehicle_id};
+  const timeStr = formatTime(slot.hour, slot.min);
+  document.getElementById('user-edit-subtitle').textContent = `${timeStr} · ${v.name}`;
+
+  // Slot selector: current + free slots for this vehicle/date
+  const slotSel = document.getElementById('user-edit-slot');
+  const occupied = (currentBookings||[])
+    .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
+    .map(b => parseInt(b.slot_index));
+  slotSel.innerHTML = '';
+  SLOTS.forEach((s, i) => {
+    if(isPast(s.hour, s.min)) return;
+    if(occupied.includes(i)) return;
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = formatTime(s.hour, s.min) + (i === idx ? ' (attuale)' : '');
+    if(i === idx) opt.selected = true;
+    slotSel.appendChild(opt);
+  });
+
+  document.getElementById('user-edit-nome').value = booking.nome || '';
+  document.getElementById('user-edit-dest').value = booking.destinazione || '';
+  document.getElementById('user-edit-targa').value = booking.targa || '';
+  document.getElementById('user-edit-error').classList.remove('show');
+  document.getElementById('user-edit-overlay').classList.add('visible');
+  document.getElementById('user-edit-slot').focus();
+}
+
+function closeUserEdit(){
+  document.getElementById('user-edit-overlay').classList.remove('visible');
+  userEditBookingId = null;
+}
+
+function initUserEditModal(){
+  document.getElementById('user-edit-close').addEventListener('click', closeUserEdit);
+  document.getElementById('user-edit-cancel').addEventListener('click', closeUserEdit);
+  document.getElementById('user-edit-overlay').addEventListener('click', e => {
+    if(e.target === e.currentTarget) closeUserEdit();
+  });
+
+  document.getElementById('user-edit-save').addEventListener('click', async () => {
+    const nome = document.getElementById('user-edit-nome').value.trim();
+    const dest = document.getElementById('user-edit-dest').value.trim();
+    const targa = document.getElementById('user-edit-targa').value.trim().toUpperCase();
+    const newSlot = parseInt(document.getElementById('user-edit-slot').value);
+    const errEl = document.getElementById('user-edit-error');
+    if(!nome||!dest||!targa){errEl.textContent='Compila tutti i campi.';errEl.classList.add('show');return;}
+    errEl.classList.remove('show');
+    const btn = document.getElementById('user-edit-save');
+    btn.disabled=true; btn.textContent='Salvataggio...';
+    try{
+      await updateBooking(userEditBookingId, nome, dest, targa, newSlot);
+      toast('✓ Prenotazione modificata','success');
+      closeUserEdit();
+      loadAndRender();
+      loadBookingsForStep1();
+    }catch(e){
+      errEl.textContent=e.message; errEl.classList.add('show');
+    }finally{
+      btn.disabled=false;
+      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salva modifiche';
+    }
+  });
+
+  document.getElementById('user-edit-delete').addEventListener('click', async () => {
+    if(!confirm('Eliminare questa prenotazione?')) return;
+    try{
+      await deleteBooking(userEditBookingId);
+      toast('✓ Prenotazione eliminata','success');
+      closeUserEdit();
+      loadAndRender();
+      loadBookingsForStep1();
+    }catch(e){ toast('Errore: '+e.message,'error'); }
+  });
+}
+
+// ===== ADMIN EDIT/DELETE =====
+let adminEditBookingId = null;
+
+function initAdminEditModal(){
+  const overlay = document.getElementById('admin-edit-overlay');
+  document.getElementById('admin-edit-close').addEventListener('click', closeAdminEdit);
+  document.getElementById('admin-edit-cancel').addEventListener('click', closeAdminEdit);
+  overlay.addEventListener('click', e => { if(e.target === overlay) closeAdminEdit(); });
+
+  document.getElementById('admin-edit-save').addEventListener('click', async () => {
+    const nome = document.getElementById('admin-edit-nome').value.trim();
+    const dest = document.getElementById('admin-edit-dest').value.trim();
+    const targa = document.getElementById('admin-edit-targa').value.trim().toUpperCase();
+    const slotVal = document.getElementById('admin-edit-slot').value;
+    const newSlotIdx = slotVal !== '' ? parseInt(slotVal) : null;
+    const errEl = document.getElementById('admin-edit-error');
+    if(!nome || !dest || !targa){ errEl.textContent='Compila tutti i campi.'; errEl.classList.add('show'); return; }
+    errEl.classList.remove('show');
+    const btn = document.getElementById('admin-edit-save');
+    btn.disabled = true; btn.textContent = 'Salvataggio...';
+    try {
+      await updateBooking(adminEditBookingId, nome, dest, targa, newSlotIdx);
+      toast('✓ Prenotazione modificata', 'success');
+      closeAdminEdit();
+      loadBookingsForStep1();
+    } catch(e) {
+      errEl.textContent = e.message; errEl.classList.add('show');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salva modifiche';
+    }
+  });
+}
+
+function openAdminEdit(booking){
+  adminEditBookingId = booking.id;
+  const currentIdx = parseInt(booking.slot_index);
+  const v = VEHICLES.find(v=>v.id===booking.vehicle_id)||{name:booking.vehicle_id};
+  const timeStr = (!isNaN(currentIdx) && SLOTS[currentIdx]) ? formatTime(SLOTS[currentIdx].hour, SLOTS[currentIdx].min) : '';
+  document.getElementById('admin-edit-title').textContent = 'Modifica prenotazione';
+  document.getElementById('admin-edit-subtitle').textContent = `${timeStr} · ${v.name}`;
+
+  // Populate slot dropdown: current slot + all FREE slots for this vehicle/date
+  const slotSel = document.getElementById('admin-edit-slot');
+  const occupiedByOthers = (currentBookings||[])
+    .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
+    .map(b => parseInt(b.slot_index));
+  slotSel.innerHTML = '';
+  SLOTS.forEach((s, idx) => {
+    if(occupiedByOthers.includes(idx)) return; // skip slots taken by others
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = formatTime(s.hour, s.min) + (idx === currentIdx ? ' (attuale)' : '');
+    if(idx === currentIdx) opt.selected = true;
+    slotSel.appendChild(opt);
+  });
+
+  document.getElementById('admin-edit-nome').value = booking.nome || '';
+  document.getElementById('admin-edit-dest').value = booking.destinazione || '';
+  document.getElementById('admin-edit-targa').value = booking.targa || '';
+  document.getElementById('admin-edit-error').classList.remove('show');
+  document.getElementById('admin-edit-overlay').classList.add('visible');
+  document.getElementById('admin-edit-slot').focus();
+}
+
+function closeAdminEdit(){
+  document.getElementById('admin-edit-overlay').classList.remove('visible');
+  adminEditBookingId = null;
+}
+
+// Delegate click on admin list for edit/delete
+document.addEventListener('click', async e => {
+  const editBtn = e.target.closest('.admin-edit-btn');
+  const delBtn = e.target.closest('.admin-delete-btn');
+  if(editBtn){
+    const id = editBtn.dataset.id;
+    const booking = (currentBookings||[]).find(b=>String(b.id)===String(id));
+    if(booking) openAdminEdit(booking);
+  }
+  if(delBtn){
+    const id = delBtn.dataset.id;
+    const booking = (currentBookings||[]).find(b=>String(b.id)===String(id));
+    const name = booking?.nome || 'questa prenotazione';
+    if(!confirm(`Eliminare la prenotazione di ${name}?`)) return;
+    try {
+      await deleteBooking(id);
+      toast('✓ Prenotazione eliminata', 'success');
+      loadBookingsForStep1();
+      loadAndRender();
+    } catch(e){ toast('Errore: '+e.message,'error'); }
+  }
+});
+
+
+// ===== USER SCHEDULE OVERVIEW =====
+function renderUserSchedule(){
+  const section = document.getElementById('user-schedule-overview');
+  if(!section) return;
+  // Hide for admin (they have the full panel)
+  // Show for regular users
+  section.style.display = isAdmin() ? 'none' : 'block';
+
+  const all = currentBookings || [];
+
+  VEHICLES.forEach(v => {
+    const colId = v.id === 'baia-1' ? 'slots-fogli' : 'slots-scatole';
+    const col = document.getElementById(colId);
+    if(!col) return;
+    const vBookings = all.filter(b => b.vehicle_id === v.id)
+                        .sort((a,b) => parseInt(a.slot_index) - parseInt(b.slot_index));
+    if(vBookings.length === 0){
+      col.innerHTML = '<div class="schedule-empty">Nessuno slot occupato</div>';
+      return;
+    }
+    col.innerHTML = vBookings.map(b => {
+      const idx = parseInt(b.slot_index);
+      const time = (!isNaN(idx) && SLOTS[idx]) ? formatTime(SLOTS[idx].hour, SLOTS[idx].min) : '--:--';
+      const isMine = b.user_id === currentUser?.id;
+      return `<div class="schedule-slot-pill${isMine ? ' mine' : ''}">
+        ${time}${isMine ? ' <span class="schedule-mine-dot">●</span>' : ''}
+      </div>`;
+    }).join('');
+  });
+}
+
+// ===== EXPORT =====
+  (function(){
+    const today = formatDate(new Date());
+    // Default range: primo del mese corrente → oggi
+    const firstOfMonth = today.slice(0,8)+'01';
+
+    function initExportDates(){
+      const ef = document.getElementById('export-from');
+      const et = document.getElementById('export-to');
+      if(ef && !ef.value) ef.value = firstOfMonth;
+      if(et && !et.value) et.value = today;
+    }
+
+    async function fetchExportData(){
+      const from = document.getElementById('export-from').value;
+      const to   = document.getElementById('export-to').value;
+      if(!from || !to){ toast('Seleziona un intervallo di date.','error-t'); return null; }
+      if(from > to){ toast('La data di inizio deve essere precedente alla fine.','error-t'); return null; }
+      let rows;
+      if(offlineMode){
+        rows = Object.values(offlineDb)
+          .filter(b => b.data >= from && b.data <= to)
+          .sort((a,b)=> a.data.localeCompare(b.data)||a.vehicle_id.localeCompare(b.vehicle_id)||a.slot_index-b.slot_index);
+      } else {
+        try{
+          let query = sbClient.from('prenotazioni')
+            .select('*').gte('data', from).lte('data', to)
+            .order('data').order('vehicle_id').order('slot_index');
+          // Non-admin: only own bookings
+          if(!isAdmin()) query = query.eq('user_id', currentUser.id);
+          const { data: exportData, error: exportErr } = await query;
+          if(exportErr) throw new Error(exportErr.message);
+          rows = exportData;
+        }catch(e){ toast('Errore scaricamento dati: '+e.message,'error-t'); return null; }
+      }
+      return { rows, from, to };
+    }
+
+    function slotToTime(idx){
+      const s = SLOTS[idx];
+      return s ? formatTime(s.hour, s.min) : '—';
+    }
+    function vehicleName(id){
+      const v = VEHICLES.find(v=>v.id===id);
+      return v ? v.name : id;
+    }
+    function formatDateITShort(s){
+      if(!s) return '';
+      const [y,mo,da] = s.split('-');
+      return `${da}/${mo}/${y}`;
+    }
+
+    // ===== CSV =====
+    document.getElementById('btn-export-csv').addEventListener('click', async function(){
+      initExportDates();
+      const btn = this;
+      btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+      const result = await fetchExportData();
+      if(!result){ btn.disabled=false; btn.innerHTML='CSV'; return; }
+      const { rows, from, to } = result;
+
+      const headers = ['Data','Giorno','Orario','Baia','Nome Trasportatore','Destinazione','Targa','Creato il'];
+      const days = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+      const csvRows = [headers.join(';')];
+      rows.forEach(r=>{
+        const dt = new Date(r.data+'T00:00:00');
+        const created = r.created_at ? new Date(r.created_at).toLocaleString('it-IT') : '';
+        const row = [
+          formatDateITShort(r.data),
+          days[dt.getDay()],
+          slotToTime(r.slot_index),
+          vehicleName(r.vehicle_id),
+          `"${(r.nome||'').replace(/"/g,'""')}"`,
+          `"${(r.destinazione||'').replace(/"/g,'""')}"`,
+          (r.targa||'').toUpperCase(),
+          created
+        ];
+        csvRows.push(row.join(';'));
+      });
+      const bom = '\uFEFF'; // UTF-8 BOM for Excel compatibility
+      const csv = bom + csvRows.join('\r\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `prenotazioni_${from}_${to}.csv`; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      toast(`✓ CSV esportato (${rows.length} righe)`,'success');
+      btn.disabled=false;
+      btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> CSV';
+    });
+
+    // ===== EXCEL (XLSX via SheetJS) =====
+    document.getElementById('btn-export-xlsx').addEventListener('click', async function(){
+      initExportDates();
+      const btn = this;
+      btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+      const result = await fetchExportData();
+      if(!result){ btn.disabled=false; btn.innerHTML='Excel'; return; }
+      const { rows, from, to } = result;
+
+      // Load SheetJS dynamically
+      if(!window.XLSX){
+        await new Promise((res,rej)=>{
+          const s=document.createElement('script');
+          s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+          s.onload=res; s.onerror=rej;
+          document.head.appendChild(s);
+        });
+      }
+
+      const days = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+      const wsData = [
+        ['Data','Giorno','Orario','Baia','Nome Trasportatore','Destinazione','Targa','Creato il']
+      ];
+      rows.forEach(r=>{
+        const dt = new Date(r.data+'T00:00:00');
+        const created = r.created_at ? new Date(r.created_at).toLocaleString('it-IT') : '';
+        wsData.push([
+          formatDateITShort(r.data),
+          days[dt.getDay()],
+          slotToTime(r.slot_index),
+          vehicleName(r.vehicle_id),
+          r.nome||'',
+          r.destinazione||'',
+          (r.targa||'').toUpperCase(),
+          created
+        ]);
+      });
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Column widths
+      ws['!cols'] = [
+        {wch:12},{wch:12},{wch:10},{wch:18},
+        {wch:22},{wch:16},{wch:28},{wch:20}
+      ];
+
+      // Header style (row 0)
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for(let c=range.s.c; c<=range.e.c; c++){
+        const cell = ws[XLSX.utils.encode_cell({r:0,c})];
+        if(cell){
+          cell.s = {
+            font:{bold:true,color:{rgb:'FFFFFF'}},
+            fill:{fgColor:{rgb:'01696F'}},
+            alignment:{horizontal:'center',vertical:'center'},
+            border:{
+              bottom:{style:'thin',color:{rgb:'CCCCCC'}}
+            }
+          };
+        }
+      }
+
+      // Zebra rows
+      for(let r=1; r<=rows.length; r++){
+        for(let c=range.s.c; c<=range.e.c; c++){
+          const cell = ws[XLSX.utils.encode_cell({r,c})];
+          if(cell){
+            cell.s = {
+              fill:{fgColor:{rgb: r%2===0 ? 'F0EDE8' : 'FFFFFF'}},
+              alignment:{vertical:'center'},
+            };
+          }
+        }
+      }
+
+      // Summary sheet
+      const vehicles = VEHICLES.map(v=>v.name);
+      const summary = [['Riepilogo per mezzo'],['']];
+      summary.push(['Mezzo','Totale prenotazioni']);
+      VEHICLES.forEach(v=>{
+        const count = rows.filter(r=>r.vehicle_id===v.id).length;
+        summary.push([v.name, count]);
+      });
+      summary.push(['']);
+      summary.push(['Periodo', `${formatDateITShort(from)} - ${formatDateITShort(to)}`]);
+      summary.push(['Totale prenotazioni', rows.length]);
+      const wsSummary = XLSX.utils.aoa_to_sheet(summary);
+      wsSummary['!cols']=[{wch:22},{wch:22}];
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Prenotazioni');
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Riepilogo');
+
+      XLSX.writeFile(wb, `prenotazioni_${from}_${to}.xlsx`);
+      toast(`✓ Excel esportato (${rows.length} righe)`,'success');
+      btn.disabled=false;
+      btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 3v18M16 3v18M2 9h20M2 15h20"/></svg> Excel';
+    });
+
+    // Init on app start
+    window._initExportDates = initExportDates;
+  })();
+
+})();
+</script>
+</body>
+</html>
