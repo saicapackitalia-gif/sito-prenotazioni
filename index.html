@@ -1828,6 +1828,66 @@ table.slots-table td{padding:0;}
 }
 .admin-add-baia-btn:hover svg{transform:translateX(3px);}
 
+
+/* ===== ADMIN INLINE SLOTS ===== */
+.admin-inline-slots{
+  background:var(--color-surface);
+  border:2px solid var(--color-primary);
+  border-radius:var(--radius-xl);
+  overflow:hidden;
+  margin-top:0;
+}
+.inline-slots-title{
+  padding:var(--space-3) var(--space-5);
+  font-weight:700;font-size:var(--text-sm);
+  color:var(--color-primary);
+  background:var(--color-primary-highlight);
+  border-bottom:1px solid var(--color-border);
+}
+.inline-slots-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:1px;
+  background:var(--color-border);
+}
+.inline-slot{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px;
+  padding:var(--space-3) var(--space-2);
+  background:var(--color-surface);
+  text-align:center;
+  font-size:var(--text-xs);
+  border:none;
+  transition:background var(--transition-fast);
+}
+.inline-slot-time{
+  font-size:var(--text-sm);font-weight:700;
+  color:var(--color-text);
+}
+.inline-slot--free{
+  cursor:pointer;
+}
+.inline-slot--free:hover{
+  background:var(--color-primary-highlight);
+}
+.inline-slot--free:hover .inline-slot-time{color:var(--color-primary);}
+.inline-slot-free{color:var(--color-primary);font-weight:600;}
+.inline-slot--taken{
+  background:var(--color-danger-bg,#fef2f2);
+  cursor:default;
+}
+.inline-slot--taken .inline-slot-time{color:var(--color-danger,#dc2626);}
+.inline-slot-name{
+  color:var(--color-text-faint);
+  font-size:10px;
+  max-width:120px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.baia-card--selected{
+  border-color:var(--color-primary)!important;
+  background:var(--color-primary-highlight)!important;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -2229,11 +2289,7 @@ CREATE POLICY "delete_own" ON prenotazioni
         </div>
       </div>
     </div>
-  </div>        <button class="modal-close" id="admin-add-close" aria-label="Chiudi">&times;</button>
-      </div>
-      <div class="modal-body" style="padding:var(--space-4);">
-        <div class="admin-add-baia-list" id="admin-add-baia-list"></div>
-      </div>
+  </div>
     </div>
   </div>
 
@@ -3076,6 +3132,9 @@ function goToStep1(){
     if(adminAll) adminAll.style.display = '';
     if(exportBar) exportBar.style.display = '';
     if(addBtn) addBtn.style.display = 'inline-flex';
+    // Remove inline slots panel if present
+    const inlineSlots = document.getElementById('admin-inline-slots');
+    if(inlineSlots) inlineSlots.remove();
   }
   // Refresh bookings count on cards
   loadBookingsForStep1();
@@ -3183,6 +3242,7 @@ function renderBaiaCardsForAdmin(){
   VEHICLES.forEach(v => {
     const card = document.createElement('button');
     card.className = 'baia-card';
+    card.id = 'admin-baia-card-' + v.id;
     card.setAttribute('aria-label', 'Seleziona ' + v.name);
     const booked = currentBookings.filter(b => b.vehicle_id === v.id).length;
     const free = SLOTS.length - booked;
@@ -3193,11 +3253,65 @@ function renderBaiaCardsForAdmin(){
         <div class="baia-card-slots">${free} slot liber${free===1?'o':'i'}</div>
       </div>
       <svg class="baia-card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
-    card.addEventListener('click', () => goToStep2(v));
+    card.addEventListener('click', () => showInlineSlots(v));
     c.appendChild(card);
   });
+  // Remove any previous inline slot panel
+  const old = document.getElementById('admin-inline-slots');
+  if(old) old.remove();
 }
 
+function showInlineSlots(vehicle){
+  // Highlight selected card
+  VEHICLES.forEach(v => {
+    const card = document.getElementById('admin-baia-card-' + v.id);
+    if(card) card.classList.toggle('baia-card--selected', v.id === vehicle.id);
+  });
+
+  // Remove previous slot panel
+  const old = document.getElementById('admin-inline-slots');
+  if(old) old.remove();
+
+  // Build inline slot grid
+  const panel = document.createElement('div');
+  panel.id = 'admin-inline-slots';
+  panel.className = 'admin-inline-slots';
+
+  const booked = currentBookings.filter(b => b.vehicle_id === vehicle.id);
+  const bookedSlots = booked.map(b => parseInt(b.slot_index));
+
+  let slotsHTML = '';
+  SLOTS.forEach((s, idx) => {
+    const isTaken = bookedSlots.includes(idx);
+    const booking = booked.find(b => parseInt(b.slot_index) === idx);
+    const label = s.hour.toString().padStart(2,'0') + ':' + s.min.toString().padStart(2,'0');
+    if(isTaken){
+      slotsHTML += `<div class="inline-slot inline-slot--taken" title="${booking?.nome_trasportatore||''}">
+        <span class="inline-slot-time">${label}</span>
+        <span class="inline-slot-name">${booking?.nome_trasportatore||'Occupato'}</span>
+      </div>`;
+    } else {
+      slotsHTML += `<button class="inline-slot inline-slot--free" data-idx="${idx}" data-vehicle="${vehicle.id}">
+        <span class="inline-slot-time">${label}</span>
+        <span class="inline-slot-free">Libero</span>
+      </button>`;
+    }
+  });
+
+  panel.innerHTML = `<div class="inline-slots-title">${vehicle.icon} Slot disponibili – ${vehicle.name}</div>
+    <div class="inline-slots-grid">${slotsHTML}</div>`;
+
+  // Attach click on free slots → open booking modal
+  const c = document.getElementById('baia-cards-container');
+  c.after(panel);
+
+  panel.querySelectorAll('.inline-slot--free').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedVehicle = vehicle.id;
+      openBookingModal(parseInt(btn.dataset.idx), SLOTS[parseInt(btn.dataset.idx)]);
+    });
+  });
+}
 
 // ===== USER EDIT MODAL =====
 let userEditBookingId = null;
