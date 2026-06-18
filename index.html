@@ -3027,6 +3027,15 @@ function initAdminFilters(){
 function renderBaiaCards(){
   const c = document.getElementById('baia-cards-container');
   if(!c) return;
+  // Admin uses "+ Aggiungi prenotazione" button - hide cards
+  const titleEl = document.querySelector('.baia-select-title');
+  if(isAdmin()){ 
+    c.style.display='none'; 
+    if(titleEl) titleEl.style.display='none';
+    return; 
+  }
+  if(titleEl) titleEl.style.display='';
+  c.style.display='';
   c.innerHTML = '';
   VEHICLES.forEach(v => {
     const card = document.createElement('button');
