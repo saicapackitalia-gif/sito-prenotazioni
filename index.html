@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181800 -->
+<!-- v202606181804 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -3328,6 +3328,9 @@ function showBaiaCardsForAdmin(){
 function renderBaiaCardsForAdmin(){
   const c = document.getElementById('baia-cards-container');
   if(!c) return;
+  c.style.display = '';
+  const titleEl = document.querySelector('.baia-select-title');
+  if(titleEl) titleEl.style.display = '';
   c.innerHTML = '';
   VEHICLES.forEach(v => {
     const card = document.createElement('button');
