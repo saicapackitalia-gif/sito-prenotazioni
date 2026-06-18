@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181242 -->
+<!-- v202606181319 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -3304,7 +3304,7 @@ function showInlineSlots(vehicle){
     const booking = booked.find(b => parseInt(b.slot_index) === idx);
     const label = s.hour.toString().padStart(2,'0') + ':' + s.min.toString().padStart(2,'0');
     if(isTaken){
-      const nome = booking?.nome_trasportatore || booking?.nome || '–';
+      const nome = booking?.nome || '–';
       const targa = booking?.targa || '';
       const dest = booking?.destinazione || '';
       slotsHTML += `<div class="inline-slot inline-slot--taken">
