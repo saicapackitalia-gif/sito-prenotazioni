@@ -2044,7 +2044,7 @@ CREATE POLICY "delete_own" ON prenotazioni
     </div>
 
     <!-- ===== USER: Panoramica orari del giorno ===== -->
-    <div id="user-schedule-overview">
+    <div id="user-schedule-overview" style="display:none;">
       <div class="schedule-overview-header">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Orari occupati oggi
@@ -3366,7 +3366,7 @@ function renderUserSchedule(){
   if(!section) return;
   // Hide for admin (they have the full panel)
   // Show for regular users
-  section.style.display = isAdmin() ? 'none' : '';
+  section.style.display = isAdmin() ? 'none' : 'block';
 
   const all = currentBookings || [];
 
