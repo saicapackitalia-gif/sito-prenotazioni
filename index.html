@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181804 -->
+<!-- v202606181808 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -2759,7 +2759,7 @@ document.getElementById('modal-confirm').addEventListener('click',async()=>{
     const nb=Array.isArray(res)?res[0]:res;
     if(nb){nb.mine=true;currentBookings.push(nb);}
     closeModal('modal-overlay');
-    renderGrid(); renderMyBookings(); updateStats();
+    renderGrid(); loadBookingsForStep1(); updateStats();
     toast(`✓ Prenotato per le ${formatTime(pendingSlot.slot.hour,pendingSlot.slot.min)}!`,'success');
     pendingSlot=null;
   }catch(e){ toast('Errore: '+(e.message.includes('unique')||e.message.includes('duplicate')?'Slot già occupato.':e.message),'error-t'); }
@@ -2786,7 +2786,7 @@ document.getElementById('modal-del-yes').addEventListener('click',async()=>{
     await deleteBooking(deleteBookingId);
     currentBookings=currentBookings.filter(b=>b.id!==deleteBookingId);
     closeModal('modal-del-overlay');
-    renderGrid(); renderMyBookings(); updateStats();
+    renderGrid(); loadBookingsForStep1(); updateStats();
     toast('Prenotazione cancellata.','error-t');
     deleteBookingId=null;
   }catch(e){ toast('Errore: '+e.message,'error-t'); }
