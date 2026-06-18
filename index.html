@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181343 -->
+<!-- v202606181349 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -3332,6 +3332,17 @@ function showInlineSlots(vehicle){
       const card = document.getElementById('admin-baia-card-' + v.id);
       if(card) card.classList.remove('baia-card--selected');
     });
+    // Hide baia cards, show bookings list + export bar
+    const baiaContainer = document.getElementById('baia-cards-container');
+    const titleEl = document.querySelector('.baia-select-title');
+    const adminAll = document.getElementById('admin-all-bookings');
+    const exportBar = document.getElementById('export-bar');
+    const addBtn = document.getElementById('admin-add-booking-btn');
+    if(baiaContainer) baiaContainer.style.display = 'none';
+    if(titleEl) titleEl.style.display = 'none';
+    if(adminAll) adminAll.style.display = '';
+    if(exportBar) exportBar.style.display = '';
+    if(addBtn) addBtn.style.display = '';
   });
 
   panel.querySelectorAll('.inline-slot--free').forEach(btn => {
