@@ -2229,16 +2229,7 @@ CREATE POLICY "delete_own" ON prenotazioni
         </div>
       </div>
     </div>
-  </div>
-
-
-  <!-- ADMIN ADD BOOKING: pick baia -->
-  <div class="modal-overlay" id="admin-add-overlay">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="admin-add-title" style="max-width:360px;">
-      <div class="modal-header">
-        <div><h2 class="modal-title" id="admin-add-title">Aggiungi prenotazione</h2>
-        <p class="modal-subtitle" id="admin-add-subtitle">Scegli la baia di carico</p></div>
-        <button class="modal-close" id="admin-add-close" aria-label="Chiudi">&times;</button>
+  </div>        <button class="modal-close" id="admin-add-close" aria-label="Chiudi">&times;</button>
       </div>
       <div class="modal-body" style="padding:var(--space-4);">
         <div class="admin-add-baia-list" id="admin-add-baia-list"></div>
@@ -3077,6 +3068,15 @@ function goToStep1(){
   document.getElementById('step-select').style.display = 'flex';
   document.getElementById('step-select').style.flexDirection = 'column';
   document.getElementById('step-select').style.gap = 'var(--space-4)';
+  // Restore admin panels if hidden
+  if(isAdmin()){
+    const adminAll = document.getElementById('admin-all-bookings');
+    const exportBar = document.getElementById('export-bar');
+    const addBtn = document.getElementById('admin-add-booking-btn');
+    if(adminAll) adminAll.style.display = '';
+    if(exportBar) exportBar.style.display = '';
+    if(addBtn) addBtn.style.display = 'inline-flex';
+  }
   // Refresh bookings count on cards
   loadBookingsForStep1();
 }
@@ -3157,32 +3157,47 @@ function initAdminAddBooking(){
   const btn = document.getElementById('admin-add-booking-btn');
   if(btn) {
     btn.style.display = isAdmin() ? 'inline-flex' : 'none';
-    btn.addEventListener('click', openAdminAddModal);
-  }
-
-  const overlay = document.getElementById('admin-add-overlay');
-  document.getElementById('admin-add-close').addEventListener('click', () => overlay.classList.remove('visible'));
-  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.classList.remove('visible'); });
-
-  // Populate baia list
-  const list = document.getElementById('admin-add-baia-list');
-  if(list){
-    VEHICLES.forEach(v => {
-      const btn2 = document.createElement('button');
-      btn2.className = 'admin-add-baia-btn';
-      btn2.innerHTML = `<span class="admin-add-baia-icon">${v.icon}</span><span class="admin-add-baia-name">${v.name}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
-      btn2.addEventListener('click', () => {
-        overlay.classList.remove('visible');
-        goToStep2(v);
-      });
-      list.appendChild(btn2);
-    });
+    btn.addEventListener('click', showBaiaCardsForAdmin);
   }
 }
 
-function openAdminAddModal(){
-  document.getElementById('admin-add-overlay').classList.add('visible');
+function showBaiaCardsForAdmin(){
+  // Show baia cards and title like a normal user
+  const c = document.getElementById('baia-cards-container');
+  const titleEl = document.querySelector('.baia-select-title');
+  const adminAll = document.getElementById('admin-all-bookings');
+  const exportBar = document.getElementById('export-bar');
+  const addBtn = document.getElementById('admin-add-booking-btn');
+
+  if(c) { c.style.display = ''; renderBaiaCardsForAdmin(); }
+  if(titleEl) titleEl.style.display = '';
+  if(adminAll) adminAll.style.display = 'none';
+  if(exportBar) exportBar.style.display = 'none';
+  if(addBtn) addBtn.style.display = 'none';
 }
+
+function renderBaiaCardsForAdmin(){
+  const c = document.getElementById('baia-cards-container');
+  if(!c) return;
+  c.innerHTML = '';
+  VEHICLES.forEach(v => {
+    const card = document.createElement('button');
+    card.className = 'baia-card';
+    card.setAttribute('aria-label', 'Seleziona ' + v.name);
+    const booked = currentBookings.filter(b => b.vehicle_id === v.id).length;
+    const free = SLOTS.length - booked;
+    card.innerHTML = `
+      <div class="baia-card-icon">${v.icon}</div>
+      <div class="baia-card-body">
+        <div class="baia-card-name">${v.name}</div>
+        <div class="baia-card-slots">${free} slot liber${free===1?'o':'i'}</div>
+      </div>
+      <svg class="baia-card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
+    card.addEventListener('click', () => goToStep2(v));
+    c.appendChild(card);
+  });
+}
+
 
 // ===== USER EDIT MODAL =====
 let userEditBookingId = null;
