@@ -1789,6 +1789,45 @@ table.slots-table td{padding:0;}
   -webkit-appearance:auto;
 }
 
+
+/* ===== BAIA SELECT HEADER ===== */
+.baia-select-header{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--space-3);
+}
+.admin-add-btn{flex-shrink:0;}
+
+/* ===== ADMIN ADD BAIA LIST ===== */
+.admin-add-baia-list{
+  display:flex;flex-direction:column;gap:var(--space-3);
+}
+.admin-add-baia-btn{
+  display:flex;align-items:center;gap:var(--space-3);
+  padding:var(--space-4) var(--space-5);
+  background:var(--color-surface);
+  border:2px solid var(--color-border);
+  border-radius:var(--radius-xl);
+  cursor:pointer;
+  transition:all var(--transition-interactive);
+  width:100%;text-align:left;
+}
+.admin-add-baia-btn:hover{
+  border-color:var(--color-primary);
+  background:var(--color-primary-highlight);
+}
+.admin-add-baia-btn:hover svg{color:var(--color-primary);}
+.admin-add-baia-icon{font-size:1.6rem;}
+.admin-add-baia-name{
+  font-size:var(--text-base);font-weight:700;
+  color:var(--color-text);flex:1;
+}
+.admin-add-baia-btn svg{
+  color:var(--color-text-faint);
+  margin-left:auto;
+  transition:transform var(--transition-fast);
+}
+.admin-add-baia-btn:hover svg{transform:translateX(3px);}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1963,22 +2002,7 @@ CREATE POLICY "delete_own" ON prenotazioni
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         DB
       </button>
-    </div>
-
-
-  <!-- EXPORT BAR -->
-  <div class="export-bar" id="export-bar">
-    <span class="export-bar-label">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px;" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Esporta prenotazioni
-    </span>
-    <div class="export-range">
-      <span class="export-range-label">Da</span>
-      <input type="date" class="export-date-input" id="export-from" aria-label="Data inizio esportazione">
-      <span class="export-range-label">a</span>
-      <input type="date" class="export-date-input" id="export-to" aria-label="Data fine esportazione">
-    </div>
-    <div class="export-btns">
+    </div>    <div class="export-btns">
       <button class="btn-export btn-export-csv" id="btn-export-csv" aria-label="Esporta in CSV">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         CSV
@@ -2009,7 +2033,13 @@ CREATE POLICY "delete_own" ON prenotazioni
       </div>
 
       <!-- Baia cards -->
-      <div class="baia-select-title">Seleziona la baia di carico</div>
+      <div class="baia-select-header">
+        <div class="baia-select-title">Seleziona la baia di carico</div>
+        <button class="btn btn-primary btn-sm admin-add-btn" id="admin-add-booking-btn" style="display:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Aggiungi prenotazione
+        </button>
+      </div>
       <div class="baia-cards" id="baia-cards-container"></div>
     </div>
 
@@ -2046,6 +2076,19 @@ CREATE POLICY "delete_own" ON prenotazioni
       <div class="admin-bookings-list" id="admin-bookings-list">
         <div class="admin-empty">Nessuna prenotazione per oggi</div>
       </div>
+    </div>
+
+    <!-- EXPORT BAR -->
+  <div class="export-bar" id="export-bar">
+    <span class="export-bar-label">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px;" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Esporta prenotazioni
+    </span>
+    <div class="export-range">
+      <span class="export-range-label">Da</span>
+      <input type="date" class="export-date-input" id="export-from" aria-label="Data inizio esportazione">
+      <span class="export-range-label">a</span>
+      <input type="date" class="export-date-input" id="export-to" aria-label="Data fine esportazione">
     </div>
 
     <!-- ===== STEP 2: Griglia Slot ===== -->
@@ -2192,6 +2235,21 @@ CREATE POLICY "delete_own" ON prenotazioni
             Elimina
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ADMIN ADD BOOKING: pick baia -->
+  <div class="modal-overlay" id="admin-add-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="admin-add-title" style="max-width:360px;">
+      <div class="modal-header">
+        <div><h2 class="modal-title" id="admin-add-title">Aggiungi prenotazione</h2>
+        <p class="modal-subtitle" id="admin-add-subtitle">Scegli la baia di carico</p></div>
+        <button class="modal-close" id="admin-add-close" aria-label="Chiudi">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:var(--space-4);">
+        <div class="admin-add-baia-list" id="admin-add-baia-list"></div>
       </div>
     </div>
   </div>
@@ -2839,7 +2897,7 @@ function startApp(){
   // Show admin panel section only to admin
   const adminSection = document.getElementById('admin-all-bookings');
   if(adminSection) adminSection.style.display = isAdmin() ? '' : 'none';
-  if(isAdmin()){ initAdminFilters(); initAdminEditModal(); }
+  if(isAdmin()){ initAdminFilters(); initAdminEditModal(); initAdminAddBooking(); }
   initUserEditModal();
   // Start on step 1 (baia selection)
   initStep1Controls();
@@ -3091,6 +3149,39 @@ function initStep1Controls(){
 
 
 
+
+
+// ===== ADMIN ADD BOOKING =====
+function initAdminAddBooking(){
+  const btn = document.getElementById('admin-add-booking-btn');
+  if(btn) {
+    btn.style.display = isAdmin() ? 'inline-flex' : 'none';
+    btn.addEventListener('click', openAdminAddModal);
+  }
+
+  const overlay = document.getElementById('admin-add-overlay');
+  document.getElementById('admin-add-close').addEventListener('click', () => overlay.classList.remove('visible'));
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.classList.remove('visible'); });
+
+  // Populate baia list
+  const list = document.getElementById('admin-add-baia-list');
+  if(list){
+    VEHICLES.forEach(v => {
+      const btn2 = document.createElement('button');
+      btn2.className = 'admin-add-baia-btn';
+      btn2.innerHTML = `<span class="admin-add-baia-icon">${v.icon}</span><span class="admin-add-baia-name">${v.name}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
+      btn2.addEventListener('click', () => {
+        overlay.classList.remove('visible');
+        goToStep2(v);
+      });
+      list.appendChild(btn2);
+    });
+  }
+}
+
+function openAdminAddModal(){
+  document.getElementById('admin-add-overlay').classList.add('visible');
+}
 
 // ===== USER EDIT MODAL =====
 let userEditBookingId = null;
