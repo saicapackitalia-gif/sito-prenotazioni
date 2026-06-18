@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606181622 -->
+<!-- v202606181744 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -1889,6 +1889,13 @@ table.slots-table td{padding:0;}
   cursor:default;
 }
 .inline-slot--taken .inline-slot-time{color:var(--color-danger,#dc2626);}
+.inline-slot--partial{
+  background:#fffbeb;
+  border-color:#f59e0b;
+  cursor:pointer;
+}
+.inline-slot--partial .inline-slot-time{color:#b45309;}
+.inline-slot--partial .inline-slot-free{color:#b45309;font-size:var(--text-xs);font-weight:700;}
 .inline-slot-name{
   color:var(--color-text-faint);
   font-size:10px;
@@ -2124,6 +2131,7 @@ CREATE POLICY "delete_own" ON prenotazioni
           <button class="admin-filter-btn active" data-filter="all">Tutte</button>
           <button class="admin-filter-btn" data-filter="baia-1">📄 Fogli</button>
           <button class="admin-filter-btn" data-filter="baia-2">📦 Scatole</button>
+          <button class="admin-filter-btn" data-filter="baia-3">🏭 Depositi</button>
         </div>
       </div>
       <div class="admin-bookings-list" id="admin-bookings-list">
@@ -2488,9 +2496,17 @@ async function fetchBookings(date){
   return data;
 }
 async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa){
+  // Pre-check: cross-baia carrellista availability
+  const allowed = maxAllowedForSlot(vehicle_id, slot_index);
+  const current = countBookingsForSlot(vehicle_id, slot_index);
+  if(current >= allowed){
+    if(vehicle_id === 'baia-2' && allowed < 2){
+      throw new Error('Slot non disponibile: entrambi i carrellisti sono impegnati in questo orario.');
+    }
+    throw new Error('Slot già occupato.');
+  }
   if(offlineMode){
-    const k=`${vehicle_id}_${data}_${slot_index}`;
-    if(offlineDb[k]) throw new Error('Slot già occupato');
+    const k=`${vehicle_id}_${data}_${slot_index}_${Date.now()}`;
     const id='offline-'+Date.now();
     offlineDb[k]={id,vehicle_id,data,slot_index,nome,destinazione,targa,user_id:'offline'};
     return [offlineDb[k]];
@@ -2519,20 +2535,29 @@ async function deleteBooking(id){
 
 // ===== VEHICLES & SLOTS =====
 const VEHICLES=[
-  // Aggiungi baie qui: {id:'baia-3',name:'Baia 3',icon:'🚪'}
-  {id:'baia-1',name:'Fogli',icon:'📄'},
-  {id:'baia-2',name:'Scatole',icon:'📦'},
+  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:30, startHour:6,  endHour:20, maxPerSlot:1},
+  {id:'baia-2', name:'Scatole',  icon:'📦', slotStep:30, startHour:6,  endHour:20, maxPerSlot:2},
+  {id:'baia-3', name:'Depositi', icon:'🏭', slotStep:30, startHour:6,  endHour:10, maxPerSlot:1},
 ];
-function generateSlots(){
+
+// Generate slots for a specific vehicle
+function generateSlotsForVehicle(v){
   const s=[];
-  let total=6*60;
-  while(total<=18*60+45){s.push({hour:Math.floor(total/60),min:total%60});total+=45;}
+  let total=v.startHour*60;
+  const end=v.endHour*60;
+  while(total<end){s.push({hour:Math.floor(total/60),min:total%60});total+=v.slotStep;}
   return s;
 }
-const SLOTS=generateSlots();
+
+// Default SLOTS for selected vehicle (updated dynamically)
+function generateSlots(){
+  return generateSlotsForVehicle(VEHICLES[0]);
+}
+let SLOTS=generateSlots();
 
 // ===== APP STATE =====
 let selectedVehicle=VEHICLES[0].id;
+let selectedVehicleObj=VEHICLES[0];
 let selectedDate=formatDate(new Date());
 let currentBookings=[];
 let pendingSlot=null;
@@ -2605,6 +2630,31 @@ function renderGridSkeleton(){
   });
 }
 
+
+// ===== CROSS-BAIA AVAILABILITY =====
+// For Scatole: max 2 per slot, but only if carrellisti are free on Fogli+Depositi
+// Returns how many bookings are allowed on a given vehicle/slot
+function maxAllowedForSlot(vehicleId, slotIdx){
+  const v = VEHICLES.find(x => x.id === vehicleId);
+  if(!v) return 1;
+  if(vehicleId !== 'baia-2') return v.maxPerSlot; // Fogli and Depositi: fixed max
+
+  // Scatole: check how many carrellisti are busy on other baie at this slot
+  const otherBaie = ['baia-1','baia-3'];
+  const busyOnOthers = otherBaie.reduce((count, bid) => {
+    const hasBooking = currentBookings.some(b => b.vehicle_id === bid && parseInt(b.slot_index) === slotIdx);
+    return count + (hasBooking ? 1 : 0);
+  }, 0);
+  // 2 carrellisti total - busy on others = available for Scatole
+  const available = 2 - busyOnOthers;
+  return Math.max(0, Math.min(available, v.maxPerSlot));
+}
+
+// Count current bookings on a vehicle/slot
+function countBookingsForSlot(vehicleId, slotIdx){
+  return currentBookings.filter(b => b.vehicle_id === vehicleId && parseInt(b.slot_index) === slotIdx).length;
+}
+
 function renderGrid(){
   const tbody=document.getElementById('booking-tbody'); if(!tbody) return;
   const thM=document.getElementById('th-mezzo');
@@ -2615,10 +2665,18 @@ function renderGrid(){
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
   const weekend=isWeekend(selectedDate);
   SLOTS.forEach((slot,idx)=>{
-    const b=map[idx], past=isPast(slot.hour,slot.min)||weekend;
+    const b=map[idx];
+    const booked_count=countBookingsForSlot(selectedVehicle,idx);
+    const max_allowed=maxAllowedForSlot(selectedVehicle,idx);
+    const isFull=(booked_count>=max_allowed);
+    const past=isPast(slot.hour,slot.min)||weekend;
     let cls='free',txt='Disponibile',aria=`${formatTime(slot.hour,slot.min)} - Disponibile`;
+    if(booked_count>0&&booked_count<max_allowed&&!past){
+      cls='free'; txt=`Disponibile (${booked_count}/${max_allowed})`;
+      aria=`${formatTime(slot.hour,slot.min)} - Parzialmente occupato`;
+    }
     if(past){cls='past';txt=b?b.reparto:'—';}
-    else if(b){if(b.mine){
+    else if(isFull&&b){if(b.mine){
           cls='mine';
           txt=`✓ ${b.targa||b.nome}`;
           aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione`;
@@ -2631,12 +2689,13 @@ function renderGrid(){
           txt='Occupato';
           aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
         }}
+    else if(isFull&&!b&&!past){cls='occupied-other';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
     const adminTitle = b && !b.mine && isAdmin() ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const tr=document.createElement('tr');
     tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
     const el=tr.querySelector('.slot');
     if(!past){
-      if(!b){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
+      if(!isFull){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
       else if(b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
       else if(isAdmin()&&b&&!b.mine){el.addEventListener('click',()=>openAdminEdit(b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAdminEdit(b);}});}
     }
@@ -3118,6 +3177,8 @@ function renderBaiaCards(){
 
 function goToStep2(vehicle){
   selectedVehicle = vehicle.id;
+  selectedVehicleObj = vehicle;
+  SLOTS = generateSlotsForVehicle(vehicle);
   renderTabs();
   loadAndRender();
   // Update step2 header labels
@@ -3290,13 +3351,17 @@ function showInlineSlots(vehicle){
   panel.id = 'admin-inline-slots';
   panel.className = 'admin-inline-slots';
 
+  const vehicleSlots = generateSlotsForVehicle(vehicle);
   const booked = currentBookings.filter(b => b.vehicle_id === vehicle.id);
   const bookedSlots = booked.map(b => parseInt(b.slot_index));
 
   let slotsHTML = '';
-  SLOTS.forEach((s, idx) => {
-    const isTaken = bookedSlots.includes(idx);
-    const booking = booked.find(b => parseInt(b.slot_index) === idx);
+  vehicleSlots.forEach((s, idx) => {
+    const slotBookings = booked.filter(b => parseInt(b.slot_index) === idx);
+    const bookingCount = slotBookings.length;
+    const maxAllowed = maxAllowedForSlot(vehicle.id, idx);
+    const isTaken = bookingCount >= maxAllowed;
+    const booking = slotBookings[0];
     const label = s.hour.toString().padStart(2,'0') + ':' + s.min.toString().padStart(2,'0');
     if(isTaken){
       const nome = booking?.nome || '–';
@@ -3308,6 +3373,15 @@ function showInlineSlots(vehicle){
         ${targa ? `<span class="inline-slot-detail">🚛 ${targa}</span>` : ''}
         ${dest ? `<span class="inline-slot-detail">📍 ${dest}</span>` : ''}
       </div>`;
+    } else if(bookingCount > 0 && bookingCount < maxAllowed){
+      // Partially booked (only possible on Scatole)
+      const nome = booking?.nome || '–';
+      const targa = booking?.targa || '';
+      slotsHTML += `<button class="inline-slot inline-slot--partial" data-idx="${idx}" data-vehicle="${vehicle.id}">
+        <span class="inline-slot-time">${label}</span>
+        <span class="inline-slot-free">+1 libero</span>
+        <span class="inline-slot-detail">${nome}${targa?' · '+targa:''}</span>
+      </button>`;
     } else {
       slotsHTML += `<button class="inline-slot inline-slot--free" data-idx="${idx}" data-vehicle="${vehicle.id}">
         <span class="inline-slot-time">${label}</span>
