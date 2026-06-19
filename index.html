@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606191309 -->
+<!-- v202606191312 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -2864,7 +2864,7 @@ document.getElementById('modal-del-yes').addEventListener('click',async()=>{
     await deleteBooking(deleteBookingId);
     currentBookings=currentBookings.filter(b=>b.id!==deleteBookingId);
     closeModal('modal-del-overlay');
-    renderGrid(); loadBookingsForStep1(); updateStats();
+    renderGrid(); renderAdminBookings(); loadBookingsForStep1(); updateStats();
     toast('Prenotazione cancellata.','error-t');
     deleteBookingId=null;
   }catch(e){ toast('Errore: '+e.message,'error-t'); }
@@ -3682,6 +3682,7 @@ function initAdminEditModal(){
       await updateBooking(adminEditBookingId, nome, dest, targa, newSlotIdx);
       toast('✓ Prenotazione modificata', 'success');
       closeAdminEdit();
+      await loadAndRender();
       loadBookingsForStep1();
     } catch(e) {
       errEl.textContent = e.message; errEl.classList.add('show');
