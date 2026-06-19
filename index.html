@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606191347 -->
+<!-- v202606191403 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -2480,6 +2480,7 @@ const SB_SVC='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 
 // ===== SUPABASE JS CLIENT =====
 let sbClient = null;
+let adminClient = null; // service_role client, bypasses RLS
 
 function initSupabaseClient(){
   sbClient = supabase.createClient(SB_URL, SB_KEY, {
@@ -2487,6 +2488,15 @@ function initSupabaseClient(){
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false
+    }
+  });
+  // Single persistent admin client — created once, reused everywhere
+  adminClient = supabase.createClient(SB_URL, SB_SVC, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+      storageKey: 'sb-admin-session'
     }
   });
 }
@@ -2529,7 +2539,7 @@ async function fetchBookings(date){
 async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa){
   // Re-fetch fresh bookings for accurate cross-baia check
   try {
-    const adminClient = supabase.createClient(SB_URL, SB_SVC);
+    // using persistent adminClient (service_role)
     const { data: fresh, error } = await adminClient.from('prenotazioni').select('*').eq('data', data);
     if(!error && fresh) {
       currentBookings = fresh;
@@ -2566,7 +2576,7 @@ async function deleteBooking(id){
     if(k) delete offlineDb[k]; return;
   }
   // Always use adminClient for delete (bypasses RLS for any booking)
-  const adminClient = supabase.createClient(SB_URL, SB_SVC);
+  // using persistent adminClient (service_role)
   const { error, count } = await adminClient
     .from('prenotazioni')
     .delete({ count: 'exact' })
@@ -2640,7 +2650,7 @@ function renderTabs(){
 
 
 async function updateBooking(id, nome, destinazione, targa, slot_index){
-  const adminClient = supabase.createClient(SB_URL, SB_SVC);
+  // using persistent adminClient (service_role)
   const patch = { nome, destinazione, targa };
   if(slot_index !== undefined && slot_index !== null) patch.slot_index = parseInt(slot_index);
   const { error } = await adminClient.from('prenotazioni').update(patch).eq('id', String(id));
@@ -2655,7 +2665,7 @@ async function loadAndRender(){
   renderGridSkeleton();
   try{
     // Always fetch ALL baie for correct cross-baia availability check
-    const adminClient = supabase.createClient(SB_URL, SB_SVC);
+    // using persistent adminClient (service_role)
     const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate);
     if(!error && data) currentBookings = data;
     else currentBookings = await fetchBookings(selectedDate);
@@ -3360,7 +3370,7 @@ async function loadBookingsForStep1(){
   try {
     if(isAdmin()){
       // Admin fetches ALL bookings using service role (bypasses RLS)
-      const adminClient = supabase.createClient(SB_URL, SB_SVC);
+      // using persistent adminClient (service_role)
       const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate);
       if(!error && data) {
         currentBookings = data;
