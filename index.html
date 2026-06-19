@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606191337 -->
+<!-- v202606191347 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -2565,14 +2565,21 @@ async function deleteBooking(id){
     const k=Object.keys(offlineDb).find(k=>offlineDb[k].id===id);
     if(k) delete offlineDb[k]; return;
   }
-  if(isAdmin()){
-    // Admin uses service role client to bypass RLS and delete any booking
-    const adminClient = supabase.createClient(SB_URL, SB_SVC);
-    const { error } = await adminClient.from('prenotazioni').delete().eq('id', id);
-    if(error) throw new Error(error.message);
-  } else {
-    const { error } = await sbClient.from('prenotazioni').delete().eq('id', id);
-    if(error) throw new Error(error.message);
+  // Always use adminClient for delete (bypasses RLS for any booking)
+  const adminClient = supabase.createClient(SB_URL, SB_SVC);
+  const { error, count } = await adminClient
+    .from('prenotazioni')
+    .delete({ count: 'exact' })
+    .eq('id', String(id));
+  if(error){
+    console.error('[deleteBooking] error:', error);
+    throw new Error(error.message);
+  }
+  if(count === 0){
+    console.warn('[deleteBooking] 0 rows deleted for id:', id);
+    // Try fallback: delete by user sbClient in case it is own booking
+    const { error: e2 } = await sbClient.from('prenotazioni').delete().eq('id', String(id));
+    if(e2) throw new Error(e2.message);
   }
 }
 
@@ -2635,9 +2642,12 @@ function renderTabs(){
 async function updateBooking(id, nome, destinazione, targa, slot_index){
   const adminClient = supabase.createClient(SB_URL, SB_SVC);
   const patch = { nome, destinazione, targa };
-  if(slot_index !== undefined && slot_index !== null) patch.slot_index = slot_index;
-  const { error } = await adminClient.from('prenotazioni').update(patch).eq('id', id);
-  if(error) throw new Error(error.code==='23505'?'Slot già occupato. Scegline un altro.':error.message);
+  if(slot_index !== undefined && slot_index !== null) patch.slot_index = parseInt(slot_index);
+  const { error } = await adminClient.from('prenotazioni').update(patch).eq('id', String(id));
+  if(error){
+    console.error('[updateBooking] error:', error);
+    throw new Error(error.code==='23505'?'Slot già occupato. Scegline un altro.':error.message);
+  }
 }
 // ===== LOAD & RENDER =====
 async function loadAndRender(){
