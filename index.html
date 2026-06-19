@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v202606191312 -->
+<!-- v202606191337 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -3746,8 +3746,8 @@ document.addEventListener('click', async e => {
     try {
       await deleteBooking(id);
       toast('✓ Prenotazione eliminata', 'success');
+      await loadAndRender();
       loadBookingsForStep1();
-      loadAndRender();
     } catch(e){ toast('Errore: '+e.message,'error'); }
   }
 });
