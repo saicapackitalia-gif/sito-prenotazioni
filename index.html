@@ -2643,7 +2643,7 @@ function renderTabs(){
     b.setAttribute('role','tab');
     b.setAttribute('aria-selected',v.id===selectedVehicle);
     b.innerHTML=`<span aria-hidden="true">${v.icon}</span> ${v.name}`;
-    b.addEventListener('click',()=>{selectedVehicle=v.id;renderTabs();loadAndRender();});
+    b.addEventListener('click',()=>{selectedVehicle=v.id; selectedVehicleObj=v; SLOTS=generateSlotsForVehicle(v); renderTabs(); loadAndRender();});
     c.appendChild(b);
   });
 }
@@ -2758,12 +2758,16 @@ function renderGrid(){
   const tbody=document.getElementById('booking-tbody'); if(!tbody) return;
   const thM=document.getElementById('th-mezzo');
   const v=VEHICLES.find(v=>v.id===selectedVehicle);
-  if(thM&&v) thM.textContent=v.name;
+  if(!v) return;
+  const vehicleSlots = generateSlotsForVehicle(v);
+  SLOTS = vehicleSlots;
+  selectedVehicleObj = v;
+  if(thM) thM.textContent=v.name;
   tbody.innerHTML='';
   const map={};
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
   const weekend=isWeekend(selectedDate);
-  SLOTS.forEach((slot,idx)=>{
+  vehicleSlots.forEach((slot,idx)=>{
     const b=map[idx];
     const booked_count=countBookingsForSlot(selectedVehicle,idx);
     const max_allowed=maxAllowedForSlot(selectedVehicle,idx);
@@ -2803,18 +2807,19 @@ function renderGrid(){
 }
 
 function updateStats(){
+  const vehicle = VEHICLES.find(v=>v.id===selectedVehicle);
+  const vehicleSlots = vehicle ? generateSlotsForVehicle(vehicle) : [];
   const map={};
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
   let free=0,booked=0,mine=0;
-  SLOTS.forEach((slot,idx)=>{
-    if(isPast(slot.hour,slot.min)) return;
+  vehicleSlots.forEach((slot,idx)=>{
+    if(isPast(slot.hour,slot.min) || isWeekend(selectedDate)) return;
     const b=map[idx];
     if(!b) free++; else{booked++;if(b.mine) mine++;}
   });
   const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   el('stat-free',free); el('stat-booked',booked); el('stat-mine',mine);
-  const vv=VEHICLES.find(v=>v.id===selectedVehicle);
-  el('stat-vehicle',vv?vv.name:'—');
+  el('stat-vehicle',vehicle?vehicle.name:'—');
 }
 
 
@@ -3327,12 +3332,12 @@ function renderBaiaCards(){
   });
 }
 
-function goToStep2(vehicle){
+async function goToStep2(vehicle){
   selectedVehicle = vehicle.id;
   selectedVehicleObj = vehicle;
   SLOTS = generateSlotsForVehicle(vehicle);
   renderTabs();
-  loadAndRender();
+  await loadAndRender();
   // Update step2 header labels
   const dateLabel = document.getElementById('step2-date-label');
   const baiaLabel = document.getElementById('step2-baia-label');
