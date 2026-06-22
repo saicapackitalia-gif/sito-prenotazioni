@@ -2547,6 +2547,8 @@ async function createBooking(vehicle_id, data, slot_index, nome, destinazione, t
     }
   } catch(e) { /* use existing currentBookings if fetch fails */ }
 
+  const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
+  if(vehicle_id==='baia-3' && !isAdmin() && !isZini){ throw new Error('La baia Depositi è riservata a ZINI Autotrasporti Srl.'); }
   // Pre-check: cross-baia carrellista availability
   if(!canBookSlot(vehicle_id, slot_index)){
     const v = VEHICLES.find(x => x.id === vehicle_id);
@@ -2832,6 +2834,8 @@ function slotInfoHtml(slot,vehicleName){
 function openBookingModal(idx,slot){
   pendingSlot={idx,slot};
   const vv=VEHICLES.find(v=>v.id===selectedVehicle);
+  const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
+  if(vv && vv.id==='baia-3' && !isAdmin() && !isZini){ toast('La baia Depositi è riservata a ZINI Autotrasporti Srl.','error-t'); return; }
   document.getElementById('modal-subtitle').textContent=`${vv?vv.name:''} — ${formatDateIT(selectedDate)}`;
   document.getElementById('slot-info-box').innerHTML=slotInfoHtml(slot,vv?vv.name:'');
   document.getElementById('field-nome').value=lastNome;
@@ -3313,6 +3317,9 @@ function renderBaiaCards(){
   c.style.display='';
   c.innerHTML = '';
   VEHICLES.forEach(v => {
+    const isDepositi = v.id === 'baia-3';
+    const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
+    if(isDepositi && !isAdmin() && !isZini) return;
     const card = document.createElement('button');
     card.className = 'baia-card';
     card.setAttribute('aria-label', 'Seleziona ' + v.name);
@@ -3332,7 +3339,7 @@ function renderBaiaCards(){
   });
 }
 
-async async function goToStep2(vehicle){
+async function goToStep2(vehicle){
   selectedVehicle = vehicle.id;
   selectedVehicleObj = vehicle;
   SLOTS = generateSlotsForVehicle(vehicle);
