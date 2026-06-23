@@ -1880,6 +1880,24 @@ table.slots-table td{padding:0;}
   font-weight:700;font-size:var(--text-sm);
   color:var(--color-primary);
 }
+.inline-slots-btns{
+  display:flex;align-items:center;gap:var(--space-2);
+}
+.inline-slots-home{
+  display:inline-flex;align-items:center;gap:var(--space-1);
+  padding:var(--space-1) var(--space-3);
+  border-radius:var(--radius-full);
+  border:1.5px solid var(--color-primary);
+  background:var(--color-primary-highlight);
+  color:var(--color-primary);
+  font-size:var(--text-sm);font-weight:600;
+  cursor:pointer;
+  transition:all var(--transition-fast);
+}
+.inline-slots-home:hover{
+  background:var(--color-primary);
+  color:white;
+}
 .inline-slots-back{
   font-size:var(--text-xs);font-weight:600;
   color:var(--color-text-faint);
@@ -3592,13 +3610,32 @@ function showInlineSlots(vehicle){
   panel.innerHTML = `
     <div class="inline-slots-header">
       <span class="inline-slots-title">${vehicle.icon} Slot disponibili – ${vehicle.name}</span>
-      <button class="inline-slots-back" id="inline-slots-back-btn">← Indietro</button>
+      <div class="inline-slots-btns">
+        <button class="inline-slots-back" id="inline-slots-back-btn">← Indietro</button>
+        <button class="inline-slots-home" id="inline-slots-home-btn">🏠 Home</button>
+      </div>
     </div>
     <div class="inline-slots-grid">${slotsHTML}</div>`;
 
   // Attach click on free slots → open booking modal
   const c = document.getElementById('baia-cards-container');
   c.after(panel);
+
+  panel.querySelector('#inline-slots-home-btn').addEventListener('click', () => {
+    panel.remove();
+    adminAddBookingMode = false;
+    const baiaContainer = document.getElementById('baia-cards-container');
+    const titleEl = document.querySelector('.baia-select-title');
+    const adminAll = document.getElementById('admin-all-bookings');
+    const exportBar = document.getElementById('export-bar');
+    const addBtn = document.getElementById('admin-add-booking-btn');
+    if(baiaContainer) baiaContainer.style.display = 'none';
+    if(titleEl) titleEl.style.display = 'none';
+    if(adminAll) adminAll.style.display = '';
+    if(exportBar) exportBar.style.display = '';
+    if(addBtn) addBtn.style.display = '';
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  });
 
   panel.querySelector('#inline-slots-back-btn').addEventListener('click', () => {
     panel.remove();
@@ -3620,10 +3657,11 @@ function showInlineSlots(vehicle){
     if(addBtn) addBtn.style.display = '';
   });
 
-  panel.querySelectorAll('.inline-slot--free').forEach(btn => {
+  panel.querySelectorAll('.inline-slot--free, .inline-slot--partial').forEach(btn => {
     btn.addEventListener('click', () => {
       selectedVehicle = vehicle.id;
-      const vSlots2 = generateSlotsForVehicle(vehicle); openBookingModal(parseInt(btn.dataset.idx), vSlots2[parseInt(btn.dataset.idx)]);
+      const vSlots2 = generateSlotsForVehicle(vehicle);
+      openBookingModal(parseInt(btn.dataset.idx), vSlots2[parseInt(btn.dataset.idx)]);
     });
   });
 }
