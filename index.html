@@ -582,6 +582,20 @@ a,button,[role="button"],input,select{
 .date-nav{
   display:flex;align-items:center;gap:var(--space-2);
 }
+.date-nav-home{margin-left:auto;display:flex;align-items:center;}
+.btn-home-top{
+  display:inline-flex;align-items:center;gap:var(--space-1);
+  padding:var(--space-1) var(--space-3);
+  border-radius:var(--radius-full);
+  border:1.5px solid var(--color-primary);
+  background:var(--color-primary-highlight);
+  color:var(--color-primary);
+  font-size:var(--text-sm);
+  font-weight:600;
+  cursor:pointer;
+  transition:all var(--transition-fast);
+}
+.btn-home-top:hover{background:var(--color-primary);color:#fff;}
 .date-nav-label{
   font-size:var(--text-base);font-weight:700;
   min-width:180px;text-align:center;
@@ -2132,6 +2146,16 @@ CREATE POLICY "delete_own" ON prenotazioni
         <span class="date-nav-label">Data</span>
         <input type="date" class="date-input" id="date-picker-s1" aria-label="Seleziona data">
         <div class="date-nav-arrows">
+            <div class="date-nav-home">
+    <button class="btn-home-top" id="admin-home-btn" aria-label="Torna alla home">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"></path>
+        <polyline points="9 21 9 12 15 12 15 21"></polyline>
+      </svg>
+      Home
+    </button>
+  </div>
           <button class="date-arrow-btn" id="prev-day-s1" aria-label="Giorno precedente">‹</button>
           <button class="date-arrow-btn" id="next-day-s1" aria-label="Giorno successivo">›</button>
         </div>
@@ -4071,5 +4095,3 @@ function renderUserSchedule(){
 
 })();
 </script>
-</body>
-</html>
