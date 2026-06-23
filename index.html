@@ -1521,6 +1521,16 @@ table.slots-table td{padding:0;}
   color:var(--color-text);
   border-color:var(--color-primary);
 }
+.btn-home{
+  background:var(--color-primary-highlight);
+  color:var(--color-primary);
+  border-color:var(--color-primary);
+}
+.btn-home:hover{
+  background:var(--color-primary);
+  color:white;
+  border-color:var(--color-primary);
+}
 .step2-info{
   display:flex;align-items:center;gap:var(--space-2);
   flex-wrap:wrap;
@@ -2201,6 +2211,10 @@ CREATE POLICY "delete_own" ON prenotazioni
         <button class="btn-back" id="btn-back-step1">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           Torna alla selezione
+        </button>
+        <button class="btn-back btn-home" id="btn-home-step2" title="Torna alla Home" aria-label="Torna alla Home">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
+          Home
         </button>
         <div class="step2-info">
           <span class="step2-date" id="step2-date-label"></span>
@@ -3357,6 +3371,11 @@ async function goToStep2(vehicle){
   document.getElementById('step-slots').style.gap = 'var(--space-4)';
 }
 
+function goHome(){
+  goToStep1();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
 function goToStep1(){
   document.getElementById('step-slots').style.display = 'none';
   document.getElementById('step-select').style.display = 'flex';
@@ -3452,6 +3471,8 @@ function initStep1Controls(){
   });
   const backBtn = document.getElementById('btn-back-step1');
   if(backBtn) backBtn.addEventListener('click', goToStep1);
+  const homeBtn = document.getElementById('btn-home-step2');
+  if(homeBtn) homeBtn.addEventListener('click', goHome);
 }
 
 
@@ -3602,7 +3623,7 @@ function showInlineSlots(vehicle){
   panel.querySelectorAll('.inline-slot--free').forEach(btn => {
     btn.addEventListener('click', () => {
       selectedVehicle = vehicle.id;
-      openBookingModal(parseInt(btn.dataset.idx), SLOTS[parseInt(btn.dataset.idx)]);
+      const vSlots2 = generateSlotsForVehicle(vehicle); openBookingModal(parseInt(btn.dataset.idx), vSlots2[parseInt(btn.dataset.idx)]);
     });
   });
 }
