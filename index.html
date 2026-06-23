@@ -582,20 +582,6 @@ a,button,[role="button"],input,select{
 .date-nav{
   display:flex;align-items:center;gap:var(--space-2);
 }
-.date-nav-home{margin-left:auto;display:flex;align-items:center;}
-.btn-home-top{
-  display:inline-flex;align-items:center;gap:var(--space-1);
-  padding:var(--space-1) var(--space-3);
-  border-radius:var(--radius-full);
-  border:1.5px solid var(--color-primary);
-  background:var(--color-primary-highlight);
-  color:var(--color-primary);
-  font-size:var(--text-sm);
-  font-weight:600;
-  cursor:pointer;
-  transition:all var(--transition-fast);
-}
-.btn-home-top:hover{background:var(--color-primary);color:#fff;}
 .date-nav-label{
   font-size:var(--text-base);font-weight:700;
   min-width:180px;text-align:center;
@@ -3485,6 +3471,7 @@ document.addEventListener('DOMContentLoaded', () => {});
 function initStep1Controls(){
   const dp = document.getElementById('date-picker-s1');
   const mainDp = document.getElementById('date-picker');
+
   if(dp){
     dp.value = selectedDate;
     dp.addEventListener('change', e => {
@@ -3493,28 +3480,57 @@ function initStep1Controls(){
       loadBookingsForStep1();
     });
   }
+
   const prev = document.getElementById('prev-day-s1');
   const next = document.getElementById('next-day-s1');
+
   if(prev) prev.addEventListener('click', () => {
-    const d = new Date(selectedDate+'T00:00:00');
-    d.setDate(d.getDate()-1);
+    const d = new Date(selectedDate + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
     selectedDate = formatDate(d);
     if(dp) dp.value = selectedDate;
     if(mainDp) mainDp.value = selectedDate;
     loadBookingsForStep1();
   });
+
   if(next) next.addEventListener('click', () => {
-    const d = new Date(selectedDate+'T00:00:00');
-    d.setDate(d.getDate()+1);
+    const d = new Date(selectedDate + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
     selectedDate = formatDate(d);
     if(dp) dp.value = selectedDate;
     if(mainDp) mainDp.value = selectedDate;
     loadBookingsForStep1();
   });
+
   const backBtn = document.getElementById('btn-back-step1');
   if(backBtn) backBtn.addEventListener('click', goToStep1);
-  const homeBtn = document.getElementById('btn-home-step2');
-  if(homeBtn) homeBtn.addEventListener('click', goHome);
+
+  const homeBtnStep2 = document.getElementById('btn-home-step2');
+  if(homeBtnStep2) homeBtnStep2.addEventListener('click', goHome);
+
+  const homeBtnTop = document.getElementById('admin-home-btn');
+  if(homeBtnTop) homeBtnTop.addEventListener('click', goAdminHome);
+}
+
+function goAdminHome(){
+  const panel = document.getElementById('admin-inline-slots');
+  if(panel) panel.remove();
+
+  adminAddBookingMode = false;
+
+  const baiaContainer = document.getElementById('baia-cards-container');
+  const titleEl = document.querySelector('.baia-select-title');
+  const adminAll = document.getElementById('admin-all-bookings');
+  const exportBar = document.getElementById('export-bar');
+  const addBtn = document.getElementById('admin-add-booking-btn');
+
+  if(baiaContainer) baiaContainer.style.display = 'none';
+  if(titleEl) titleEl.style.display = 'none';
+  if(adminAll) adminAll.style.display = '';
+  if(exportBar) exportBar.style.display = '';
+  if(addBtn) addBtn.style.display = '';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 
