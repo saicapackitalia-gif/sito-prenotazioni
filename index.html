@@ -2722,9 +2722,9 @@ async function loadAndRender(){
   }
   const vNow = VEHICLES.find(v=>v.id===selectedVehicle);
   if(vNow){ selectedVehicleObj = vNow; SLOTS = generateSlotsForVehicle(vNow); }
-  renderGrid();
-  renderAdminBookings();
-  updateStats();
+  try{ renderGrid(); }catch(e){ console.error('renderGrid',e); }
+  try{ renderAdminBookings(); }catch(e){ console.error('renderAdminBookings',e); }
+  try{ updateStats(); }catch(e){ console.error('updateStats',e); }
 }
 
 function renderGridSkeleton(){
@@ -3383,7 +3383,7 @@ function renderBaiaCards(){
   });
 }
 
-async function goToStep2(vehicle){
+async async function goToStep2(vehicle){
   selectedVehicle = vehicle.id;
   selectedVehicleObj = vehicle;
   SLOTS = generateSlotsForVehicle(vehicle);
@@ -3395,10 +3395,10 @@ async function goToStep2(vehicle){
   if(dateLabel) dateLabel.textContent = formatDateIT(selectedDate);
   if(baiaLabel) baiaLabel.textContent = vehicle.icon + ' ' + vehicle.name;
   // Switch views
-  document.getElementById('step-select').style.display = 'none';
-  document.getElementById('step-slots').style.display = 'flex';
-  document.getElementById('step-slots').style.flexDirection = 'column';
-  document.getElementById('step-slots').style.gap = 'var(--space-4)';
+  const stepSelect = document.getElementById('step-select');
+  const stepSlots = document.getElementById('step-slots');
+  if(stepSelect) stepSelect.style.display = 'none';
+  if(stepSlots){ stepSlots.style.display = 'flex'; stepSlots.style.flexDirection = 'column'; stepSlots.style.gap = 'var(--space-4)'; }
 }
 
 function goHome(){
@@ -3407,10 +3407,10 @@ function goHome(){
 }
 
 function goToStep1(){
-  document.getElementById('step-slots').style.display = 'none';
-  document.getElementById('step-select').style.display = 'flex';
-  document.getElementById('step-select').style.flexDirection = 'column';
-  document.getElementById('step-select').style.gap = 'var(--space-4)';
+  const stepSlots = document.getElementById('step-slots');
+  const stepSelect = document.getElementById('step-select');
+  if(stepSlots) stepSlots.style.display = 'none';
+  if(stepSelect){ stepSelect.style.display = 'flex'; stepSelect.style.flexDirection = 'column'; stepSelect.style.gap = 'var(--space-4)'; }
   // Restore admin panels if hidden
   if(isAdmin()){
     const adminAll = document.getElementById('admin-all-bookings');
@@ -3427,7 +3427,7 @@ function goToStep1(){
   loadBookingsForStep1();
 }
 
-async function loadBookingsForStep1(){
+async async function loadBookingsForStep1(){
   try {
     if(isAdmin()){
       // Admin fetches ALL bookings using service role (bypasses RLS)
