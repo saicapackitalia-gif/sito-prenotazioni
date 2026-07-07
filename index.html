@@ -2480,6 +2480,11 @@ updTheme();
 themeToggle && themeToggle.addEventListener('click', ()=>{ curTheme=curTheme==='dark'?'light':'dark'; root.setAttribute('data-theme',curTheme); updTheme(); });
 
 // ===== UTILS =====
+const $ = (id) => document.getElementById(id);
+function safeShow(id, display='flex'){ const el=$(id); if(el) el.style.display=display; }
+function safeHide(id){ const el=$(id); if(el) el.style.display='none'; }
+function safeText(id, text){ const el=$(id); if(el) el.textContent=text; }
+function safeHtml(id, html){ const el=$(id); if(el) el.innerHTML=html; }
 function showPage(id){
   ['page-setup','page-login','app-wrapper'].forEach(p=>{
     const el=document.getElementById(p);
@@ -3148,7 +3153,7 @@ async function doRegister(){
       const user = r.user || await getUser();
       currentUser={id:user.id,email:user.email,nome,reparto};
       lastNome=nome; lastReparto=reparto;
-      startApp();
+      try{ startApp(); }catch(e){ console.error(e); const el=document.getElementById('app-crash'); if(el) el.style.display='block'; }
     }catch(e2){
       // Email confirmation required
       const s=document.getElementById('auth-success');
@@ -3188,14 +3193,16 @@ function startApp(){
 }
 
 // ===== SETUP SCREEN =====
-document.getElementById('setup-skip').addEventListener('click',()=>{
+window.addEventListener('DOMContentLoaded', () => {
+  const setupSkip=$('setup-skip');
+  const setupConnect=$('setup-connect');
+  if(setupSkip) setupSkip.addEventListener('click',()=>{
   offlineMode=true; SB_URL=''; SB_KEY='';
   currentUser={id:'offline',email:'demo@offline.it',nome:'Utente Demo',reparto:'Demo'};
   lastNome='Utente Demo'; lastReparto='Demo';
   startApp();
-});
-
-document.getElementById('setup-connect').addEventListener('click',async()=>{
+  });
+  if(setupConnect) setupConnect.addEventListener('click',async()=>{
   const url=document.getElementById('setup-url').value.trim().replace(/\/$/,'');
   const key=document.getElementById('setup-key').value.trim();
   const errBox=document.getElementById('setup-error');
@@ -3218,6 +3225,9 @@ document.getElementById('setup-connect').addEventListener('click',async()=>{
   }
 });
 
+  });
+});
+
 // ===== INIT =====
 SB_URL = 'https://jmhwxpgwakrqmnwefqrs.supabase.co';
 SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU';
@@ -3237,7 +3247,7 @@ initSupabaseClient();
         reparto: meta.reparto || ''
       };
       lastNome = currentUser.nome;
-      startApp();
+      try{ startApp(); }catch(e){ console.error(e); const el=document.getElementById('app-crash'); if(el) el.style.display='block'; }
     } else {
       showPage('page-login');
       renderAuthLogin();
@@ -3332,7 +3342,7 @@ function initAdminFilters(){
       adminFilter = btn.dataset.filter;
       document.querySelectorAll('.admin-filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderAdminBookings();
+      try{ renderAdminBookings(); }catch(e){ console.error('renderAdminBookings', e); }
     });
   });
 
@@ -3462,10 +3472,10 @@ async async function loadBookingsForStep1(){
     }
     currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
   } catch(e){ console.error('loadBookingsForStep1 error:', e); }
-  renderBaiaCards();
-  renderAdminBookings();
-  renderUserSchedule();
-  updateWeekendBannerS1();
+  try{ renderBaiaCards(); }catch(e){ console.error('renderBaiaCards', e); }
+  try{ renderAdminBookings(); }catch(e){ console.error('renderAdminBookings', e); }
+  try{ renderUserSchedule(); }catch(e){ console.error('renderUserSchedule', e); }
+  try{ updateWeekendBannerS1(); }catch(e){ console.error('updateWeekendBannerS1', e); }
 }
 
 function updateWeekendBannerS1(){
@@ -3488,7 +3498,6 @@ function updateWeekendBannerS1(){
 }
 
 // Init step1 date pickers in sync with main
-document.addEventListener('DOMContentLoaded', () => {});
 function initStep1Controls(){
   const dp = document.getElementById('date-picker-s1');
   const mainDp = document.getElementById('date-picker');
