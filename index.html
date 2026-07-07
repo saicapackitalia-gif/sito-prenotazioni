@@ -1961,11 +1961,13 @@ table.slots-table td{padding:0;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
 window.addEventListener('error', function(e){
+  const b=document.getElementById('debug-banner'); if(b){ b.style.display='block'; b.textContent='Errore JS: '+(e.message||'sconosciuto'); }
   console.error(e.error || e.message);
   const el=document.getElementById('app-crash');
   if(el) el.style.display='block';
 });
 window.addEventListener('unhandledrejection', function(e){
+  const b=document.getElementById('debug-banner'); if(b){ b.style.display='block'; b.textContent='Promise reject: '+(e.reason?.message||e.reason||'sconosciuto'); }
   console.error(e.reason);
   const el=document.getElementById('app-crash');
   if(el) el.style.display='block';
@@ -1977,6 +1979,7 @@ window.addEventListener('unhandledrejection', function(e){
   <meta http-equiv="Expires" content="0">
 </head>
 <body>
+<div id="debug-banner" style="display:none;position:sticky;top:0;z-index:99999;background:#b00020;color:#fff;padding:10px 14px;font:600 14px/1.4 Inter,Arial,sans-serif">Il sito ha rilevato un errore di script. Mandami questa schermata e la console.</div>
 <div id="app-crash" style="display:none;position:fixed;inset:0;z-index:99999;background:#f4f7f4;color:#0f1f10;padding:24px;font-family:Inter,sans-serif">
   <div style="max-width:720px;margin:60px auto;background:#fff;border:1px solid #cfe0d0;border-radius:20px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.08)">
     <h1 style="margin:0 0 12px 0">Il sito non si è caricato correttamente</h1>
