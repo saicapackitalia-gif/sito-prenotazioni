@@ -1959,34 +1959,12 @@ table.slots-table td{padding:0;}
 }
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
-window.addEventListener('error', function(e){
-  const b=document.getElementById('debug-banner'); if(b){ b.style.display='block'; b.textContent='Errore JS: '+(e.message||'sconosciuto'); }
-  console.error(e.error || e.message);
-  const el=document.getElementById('app-crash');
-  if(el) el.style.display='block';
-});
-window.addEventListener('unhandledrejection', function(e){
-  const b=document.getElementById('debug-banner'); if(b){ b.style.display='block'; b.textContent='Promise reject: '+(e.reason?.message||e.reason||'sconosciuto'); }
-  console.error(e.reason);
-  const el=document.getElementById('app-crash');
-  if(el) el.style.display='block';
-});
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
 </head>
 <body>
-<div id="debug-banner" style="display:none;position:sticky;top:0;z-index:99999;background:#b00020;color:#fff;padding:10px 14px;font:600 14px/1.4 Inter,Arial,sans-serif">Il sito ha rilevato un errore di script. Mandami questa schermata e la console.</div>
-<div id="app-crash" style="display:none;position:fixed;inset:0;z-index:99999;background:#f4f7f4;color:#0f1f10;padding:24px;font-family:Inter,sans-serif">
-  <div style="max-width:720px;margin:60px auto;background:#fff;border:1px solid #cfe0d0;border-radius:20px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.08)">
-    <h1 style="margin:0 0 12px 0">Il sito non si è caricato correttamente</h1>
-    <p style="margin:0 0 12px 0">Ho aggiunto un fallback visibile per evitare lo schermo bianco. Se lo vedi, significa che c’è un errore JavaScript all’avvio.</p>
-    <p style="margin:0">Apri la console del browser e inviami il primo errore rosso.</p>
-  </div>
-</div>
 
 <!-- ========== SETUP PAGE ========== -->
 <div class="page hidden" id="page-setup">
@@ -2483,11 +2461,6 @@ updTheme();
 themeToggle && themeToggle.addEventListener('click', ()=>{ curTheme=curTheme==='dark'?'light':'dark'; root.setAttribute('data-theme',curTheme); updTheme(); });
 
 // ===== UTILS =====
-const $ = (id) => document.getElementById(id);
-function safeShow(id, display='flex'){ const el=$(id); if(el) el.style.display=display; }
-function safeHide(id){ const el=$(id); if(el) el.style.display='none'; }
-function safeText(id, text){ const el=$(id); if(el) el.textContent=text; }
-function safeHtml(id, html){ const el=$(id); if(el) el.innerHTML=html; }
 function showPage(id){
   ['page-setup','page-login','app-wrapper'].forEach(p=>{
     const el=document.getElementById(p);
@@ -2749,9 +2722,9 @@ async function loadAndRender(){
   }
   const vNow = VEHICLES.find(v=>v.id===selectedVehicle);
   if(vNow){ selectedVehicleObj = vNow; SLOTS = generateSlotsForVehicle(vNow); }
-  try{ renderGrid(); }catch(e){ console.error('renderGrid',e); }
-  try{ renderAdminBookings(); }catch(e){ console.error('renderAdminBookings',e); }
-  try{ updateStats(); }catch(e){ console.error('updateStats',e); }
+  renderGrid();
+  renderAdminBookings();
+  updateStats();
 }
 
 function renderGridSkeleton(){
@@ -3156,7 +3129,7 @@ async function doRegister(){
       const user = r.user || await getUser();
       currentUser={id:user.id,email:user.email,nome,reparto};
       lastNome=nome; lastReparto=reparto;
-      try{ startApp(); }catch(e){ console.error(e); const el=document.getElementById('app-crash'); if(el) el.style.display='block'; }
+      startApp();
     }catch(e2){
       // Email confirmation required
       const s=document.getElementById('auth-success');
@@ -3196,16 +3169,14 @@ function startApp(){
 }
 
 // ===== SETUP SCREEN =====
-window.addEventListener('DOMContentLoaded', () => {
-  const setupSkip=$('setup-skip');
-  const setupConnect=$('setup-connect');
-  if(setupSkip) setupSkip.addEventListener('click',()=>{
+document.getElementById('setup-skip').addEventListener('click',()=>{
   offlineMode=true; SB_URL=''; SB_KEY='';
   currentUser={id:'offline',email:'demo@offline.it',nome:'Utente Demo',reparto:'Demo'};
   lastNome='Utente Demo'; lastReparto='Demo';
   startApp();
-  });
-  if(setupConnect) setupConnect.addEventListener('click',async()=>{
+});
+
+document.getElementById('setup-connect').addEventListener('click',async()=>{
   const url=document.getElementById('setup-url').value.trim().replace(/\/$/,'');
   const key=document.getElementById('setup-key').value.trim();
   const errBox=document.getElementById('setup-error');
@@ -3228,9 +3199,6 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-  });
-});
-
 // ===== INIT =====
 SB_URL = 'https://jmhwxpgwakrqmnwefqrs.supabase.co';
 SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU';
@@ -3250,7 +3218,7 @@ initSupabaseClient();
         reparto: meta.reparto || ''
       };
       lastNome = currentUser.nome;
-      try{ startApp(); }catch(e){ console.error(e); const el=document.getElementById('app-crash'); if(el) el.style.display='block'; }
+      startApp();
     } else {
       showPage('page-login');
       renderAuthLogin();
@@ -3345,7 +3313,7 @@ function initAdminFilters(){
       adminFilter = btn.dataset.filter;
       document.querySelectorAll('.admin-filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      try{ renderAdminBookings(); }catch(e){ console.error('renderAdminBookings', e); }
+      renderAdminBookings();
     });
   });
 
@@ -3413,10 +3381,8 @@ function renderBaiaCards(){
     card.addEventListener('click', () => goToStep2(v));
     c.appendChild(card);
   });
-}
 
-// fixed bootstrap
-async function goToStep2(vehicle){
+async function goToStep2(vehicle) {
   selectedVehicle = vehicle.id;
   selectedVehicleObj = vehicle;
   SLOTS = generateSlotsForVehicle(vehicle);
@@ -3428,10 +3394,10 @@ async function goToStep2(vehicle){
   if(dateLabel) dateLabel.textContent = formatDateIT(selectedDate);
   if(baiaLabel) baiaLabel.textContent = vehicle.icon + ' ' + vehicle.name;
   // Switch views
-  const stepSelect = document.getElementById('step-select');
-  const stepSlots = document.getElementById('step-slots');
-  if(stepSelect) stepSelect.style.display = 'none';
-  if(stepSlots){ stepSlots.style.display = 'flex'; stepSlots.style.flexDirection = 'column'; stepSlots.style.gap = 'var(--space-4)'; }
+  document.getElementById('step-select').style.display = 'none';
+  document.getElementById('step-slots').style.display = 'flex';
+  document.getElementById('step-slots').style.flexDirection = 'column';
+  document.getElementById('step-slots').style.gap = 'var(--space-4)';
 }
 
 function goHome(){
@@ -3440,10 +3406,10 @@ function goHome(){
 }
 
 function goToStep1(){
-  const stepSlots = document.getElementById('step-slots');
-  const stepSelect = document.getElementById('step-select');
-  if(stepSlots) stepSlots.style.display = 'none';
-  if(stepSelect){ stepSelect.style.display = 'flex'; stepSelect.style.flexDirection = 'column'; stepSelect.style.gap = 'var(--space-4)'; }
+  document.getElementById('step-slots').style.display = 'none';
+  document.getElementById('step-select').style.display = 'flex';
+  document.getElementById('step-select').style.flexDirection = 'column';
+  document.getElementById('step-select').style.gap = 'var(--space-4)';
   // Restore admin panels if hidden
   if(isAdmin()){
     const adminAll = document.getElementById('admin-all-bookings');
@@ -3476,10 +3442,10 @@ async function loadBookingsForStep1(){
     }
     currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
   } catch(e){ console.error('loadBookingsForStep1 error:', e); }
-  try{ renderBaiaCards(); }catch(e){ console.error('renderBaiaCards', e); }
-  try{ renderAdminBookings(); }catch(e){ console.error('renderAdminBookings', e); }
-  try{ renderUserSchedule(); }catch(e){ console.error('renderUserSchedule', e); }
-  try{ updateWeekendBannerS1(); }catch(e){ console.error('updateWeekendBannerS1', e); }
+  renderBaiaCards();
+  renderAdminBookings();
+  renderUserSchedule();
+  updateWeekendBannerS1();
 }
 
 function updateWeekendBannerS1(){
@@ -3502,6 +3468,7 @@ function updateWeekendBannerS1(){
 }
 
 // Init step1 date pickers in sync with main
+document.addEventListener('DOMContentLoaded', () => {});
 function initStep1Controls(){
   const dp = document.getElementById('date-picker-s1');
   const mainDp = document.getElementById('date-picker');
