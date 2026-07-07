@@ -2836,26 +2836,7 @@ function renderGrid(){
           txt='Occupato';
           aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
         }}
-    else if(isFull&&!b&&!past){
-      // Cross-baia block: controlla se l'utente corrente ha occupato lui stesso l'orario su un'altra baia
-      const myBookingsAtTime = currentBookings.filter(bk => {
-        if(!bk.mine) return false;
-        const bkV = VEHICLES.find(x => x.id === bk.vehicle_id);
-        if(!bkV) return false;
-        const bkSlots = generateSlotsForVehicle(bkV);
-        const bkSlot = bkSlots[parseInt(bk.slot_index)];
-        return bkSlot && bkSlot.hour === slot.hour && bkSlot.min === slot.min;
-      });
-      if(myBookingsAtTime.length > 0 && !isAdmin()){
-        cls='mine';
-        const myB = myBookingsAtTime[0];
-        const myV = VEHICLES.find(x => x.id === myB.vehicle_id);
-        txt=`✓ ${myB.targa||myB.nome}${myV ? ' ('+myV.name+')' : ''}`;
-        aria=`${formatTime(slot.hour,slot.min)} - Occupato dalla tua prenotazione su ${myV ? myV.name : 'altra baia'}`;
-      } else {
-        cls='occupied-other';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
-      }
-    }
+    else if(isFull&&!b&&!past){cls='occupied-other';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
     const adminTitle = b && !b.mine && isAdmin() ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const tr=document.createElement('tr');
     tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
@@ -3520,25 +3501,6 @@ function initStep1Controls(){
   if(backBtn) backBtn.addEventListener('click', goToStep1);
   const homeBtn = document.getElementById('btn-home-step2');
   if(homeBtn) homeBtn.addEventListener('click', goHome);
-  const homeBtnTop = document.getElementById('admin-home-btn');
-  if(homeBtnTop) homeBtnTop.addEventListener('click', goAdminHome);
-}
-
-function goAdminHome(){
-  const panel = document.getElementById('admin-inline-slots');
-  if(panel) panel.remove();
-  adminAddBookingMode = false;
-  const baiaContainer = document.getElementById('baia-cards-container');
-  const titleEl = document.querySelector('.baia-select-title');
-  const adminAll = document.getElementById('admin-all-bookings');
-  const exportBar = document.getElementById('export-bar');
-  const addBtn = document.getElementById('admin-add-booking-btn');
-  if(baiaContainer) baiaContainer.style.display = 'none';
-  if(titleEl) titleEl.style.display = 'none';
-  if(adminAll) adminAll.style.display = '';
-  if(exportBar) exportBar.style.display = '';
-  if(addBtn) addBtn.style.display = '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 
