@@ -3415,7 +3415,8 @@ function renderBaiaCards(){
   });
 }
 
-async async function goToStep2(vehicle){
+// fixed bootstrap
+async function goToStep2(vehicle){
   selectedVehicle = vehicle.id;
   selectedVehicleObj = vehicle;
   SLOTS = generateSlotsForVehicle(vehicle);
@@ -3459,7 +3460,7 @@ function goToStep1(){
   loadBookingsForStep1();
 }
 
-async async function loadBookingsForStep1(){
+async function loadBookingsForStep1(){
   try {
     if(isAdmin()){
       // Admin fetches ALL bookings using service role (bypasses RLS)
