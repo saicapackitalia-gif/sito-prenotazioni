@@ -2824,11 +2824,17 @@ function renderGrid(){
       cls='free'; txt=`Disponibile (${booked_count}/${max_allowed})`;
       aria=`${formatTime(slot.hour,slot.min)} - Parzialmente occupato`;
     }
-    if(past){cls='past';txt=b?b.reparto:'—';}
+    if(past){
+      if(b){
+        if(b.mine){cls='past mine';txt=`✓ ${b.destinazione||b.targa||b.nome}`;aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione: ${b.destinazione||''}`;}
+        else if(isAdmin()){cls='past';txt=b.nome;aria=`${formatTime(slot.hour,slot.min)} - ${b.nome} | ${b.destinazione} | ${b.targa}`;}
+        else {cls='past';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
+      } else {cls='past';txt='—';}
+    }
     else if(isFull&&b){if(b.mine){
           cls='mine';
-          txt=`✓ ${b.targa||b.nome}`;
-          aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione`;
+          txt=`✓ ${b.destinazione||b.targa||b.nome}`;
+          aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione: ${b.destinazione||''} (${b.targa||''})`;
         } else if(isAdmin()){
           cls='booked';
           txt=`${b.nome}`;
@@ -2839,9 +2845,10 @@ function renderGrid(){
           aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
         }}
     else if(isFull&&!b&&!past){cls='occupied-other';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
+    const mineTitle = b && b.mine ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const adminTitle = b && !b.mine && isAdmin() ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
+    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
     const el=tr.querySelector('.slot');
     if(!past){
       if(!isFull){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
@@ -3383,22 +3390,33 @@ function renderBaiaCards(){
   });
 }
 
+let _goToStep2Busy = false;
 async function goToStep2(vehicle) {
+  if(_goToStep2Busy) return; // avoid double-tap causing a stuck/half-loaded state
+  _goToStep2Busy = true;
   selectedVehicle = vehicle.id;
   selectedVehicleObj = vehicle;
   SLOTS = generateSlotsForVehicle(vehicle);
   renderTabs();
-  await loadAndRender();
-  // Update step2 header labels
-  const dateLabel = document.getElementById('step2-date-label');
-  const baiaLabel = document.getElementById('step2-baia-label');
-  if(dateLabel) dateLabel.textContent = formatDateIT(selectedDate);
-  if(baiaLabel) baiaLabel.textContent = vehicle.icon + ' ' + vehicle.name;
-  // Switch views
-  document.getElementById('step-select').style.display = 'none';
-  document.getElementById('step-slots').style.display = 'flex';
-  document.getElementById('step-slots').style.flexDirection = 'column';
-  document.getElementById('step-slots').style.gap = 'var(--space-4)';
+  try{
+    await loadAndRender();
+  }catch(e){
+    // loadAndRender already handles its own errors internally, but guard here too
+    // so a network hiccup never leaves the user stuck on step 1 with no feedback.
+    toast('Errore di connessione, riprova.','error-t');
+  }finally{
+    // Update step2 header labels
+    const dateLabel = document.getElementById('step2-date-label');
+    const baiaLabel = document.getElementById('step2-baia-label');
+    if(dateLabel) dateLabel.textContent = formatDateIT(selectedDate);
+    if(baiaLabel) baiaLabel.textContent = vehicle.icon + ' ' + vehicle.name;
+    // Switch views (always happens, even if loading failed)
+    document.getElementById('step-select').style.display = 'none';
+    document.getElementById('step-slots').style.display = 'flex';
+    document.getElementById('step-slots').style.flexDirection = 'column';
+    document.getElementById('step-slots').style.gap = 'var(--space-4)';
+    _goToStep2Busy = false;
+  }
 }
 
 function goHome(){
