@@ -2720,6 +2720,8 @@ async function loadAndRender(){
     toast('Errore caricamento: '+e.message,'error-t');
     currentBookings=[];
   }
+  const vNow = VEHICLES.find(v=>v.id===selectedVehicle);
+  if(vNow){ selectedVehicleObj = vNow; SLOTS = generateSlotsForVehicle(vNow); }
   renderGrid();
   renderAdminBookings();
   updateStats();
@@ -3876,7 +3878,8 @@ function renderUserSchedule(){
     }
     col.innerHTML = vBookings.map(b => {
       const idx = parseInt(b.slot_index);
-      const time = (!isNaN(idx) && SLOTS[idx]) ? formatTime(SLOTS[idx].hour, SLOTS[idx].min) : '--:--';
+      const vSlots = generateSlotsForVehicle(v);
+      const time = (!isNaN(idx) && vSlots[idx]) ? formatTime(vSlots[idx].hour, vSlots[idx].min) : '--:--';
       const isMine = b.user_id === currentUser?.id;
       return `<div class="schedule-slot-pill${isMine ? ' mine' : ''}">
         ${time}${isMine ? ' <span class="schedule-mine-dot">●</span>' : ''}
