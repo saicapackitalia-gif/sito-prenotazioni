@@ -1959,12 +1959,31 @@ table.slots-table td{padding:0;}
 }
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
+window.addEventListener('error', function(e){
+  console.error(e.error || e.message);
+  const el=document.getElementById('app-crash');
+  if(el) el.style.display='block';
+});
+window.addEventListener('unhandledrejection', function(e){
+  console.error(e.reason);
+  const el=document.getElementById('app-crash');
+  if(el) el.style.display='block';
+});
+
+</script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
 </head>
 <body>
+<div id="app-crash" style="display:none;position:fixed;inset:0;z-index:99999;background:#f4f7f4;color:#0f1f10;padding:24px;font-family:Inter,sans-serif">
+  <div style="max-width:720px;margin:60px auto;background:#fff;border:1px solid #cfe0d0;border-radius:20px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.08)">
+    <h1 style="margin:0 0 12px 0">Il sito non si è caricato correttamente</h1>
+    <p style="margin:0 0 12px 0">Ho aggiunto un fallback visibile per evitare lo schermo bianco. Se lo vedi, significa che c’è un errore JavaScript all’avvio.</p>
+    <p style="margin:0">Apri la console del browser e inviami il primo errore rosso.</p>
+  </div>
+</div>
 
 <!-- ========== SETUP PAGE ========== -->
 <div class="page hidden" id="page-setup">
