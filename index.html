@@ -2722,9 +2722,14 @@ async function loadAndRender(){
   }
   const vNow = VEHICLES.find(v=>v.id===selectedVehicle);
   if(vNow){ selectedVehicleObj = vNow; SLOTS = generateSlotsForVehicle(vNow); }
-  renderGrid();
-  renderAdminBookings();
-  updateStats();
+  try{
+    renderGrid();
+    renderAdminBookings();
+    updateStats();
+  }catch(e){
+    console.error('Errore di rendering griglia:', e);
+    toast('Errore nel mostrare gli slot. Ricarica la pagina.','error-t');
+  }
 }
 
 function renderGridSkeleton(){
@@ -2852,8 +2857,9 @@ function renderGrid(){
     const el=tr.querySelector('.slot');
     if(!past){
       if(!isFull){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
-      else if(b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
+      else if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
       else if(isAdmin()&&b&&!b.mine){el.addEventListener('click',()=>openAdminEdit(b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAdminEdit(b);}});}
+      // else: slot full due to cross-baia capacity with no booking on THIS vehicle → not clickable, no handler needed
     }
     tbody.appendChild(tr);
   });
@@ -2968,20 +2974,27 @@ if(datePicker){
     datePicker.value=selectedDate;
     loadAndRender();
   });
-  document.getElementById('prev-day').addEventListener('click',()=>{
+  let _navBusyS2 = false;
+  function _navGuardS2(fn){
+    if(_navBusyS2) return;
+    _navBusyS2 = true;
+    fn();
+    setTimeout(()=>{_navBusyS2=false;}, 350);
+  }
+  document.getElementById('prev-day').addEventListener('click',()=>_navGuardS2(()=>{
     const d=new Date(selectedDate+'T00:00:00');
     d.setDate(d.getDate()-1);
     // skip weekends going back
     while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()-1);
     selectedDate=formatDate(d);datePicker.value=selectedDate;loadAndRender();
-  });
-  document.getElementById('next-day').addEventListener('click',()=>{
+  }));
+  document.getElementById('next-day').addEventListener('click',()=>_navGuardS2(()=>{
     const d=new Date(selectedDate+'T00:00:00');
     d.setDate(d.getDate()+1);
     // skip weekends going forward
     while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1);
     selectedDate=formatDate(d);datePicker.value=selectedDate;loadAndRender();
-  });
+  }));
 }
 
 // ===== LOGOUT =====
@@ -3501,22 +3514,29 @@ function initStep1Controls(){
   }
   const prev = document.getElementById('prev-day-s1');
   const next = document.getElementById('next-day-s1');
-  if(prev) prev.addEventListener('click', () => {
+  let _navBusyS1 = false;
+  function _navGuard(fn){
+    if(_navBusyS1) return;
+    _navBusyS1 = true;
+    fn();
+    setTimeout(()=>{_navBusyS1=false;}, 350);
+  }
+  if(prev) prev.addEventListener('click', () => _navGuard(() => {
     const d = new Date(selectedDate+'T00:00:00');
     d.setDate(d.getDate()-1);
     selectedDate = formatDate(d);
     if(dp) dp.value = selectedDate;
     if(mainDp) mainDp.value = selectedDate;
     loadBookingsForStep1();
-  });
-  if(next) next.addEventListener('click', () => {
+  }));
+  if(next) next.addEventListener('click', () => _navGuard(() => {
     const d = new Date(selectedDate+'T00:00:00');
     d.setDate(d.getDate()+1);
     selectedDate = formatDate(d);
     if(dp) dp.value = selectedDate;
     if(mainDp) mainDp.value = selectedDate;
     loadBookingsForStep1();
-  });
+  }));
   const backBtn = document.getElementById('btn-back-step1');
   if(backBtn) backBtn.addEventListener('click', goToStep1);
   const homeBtn = document.getElementById('btn-home-step2');
