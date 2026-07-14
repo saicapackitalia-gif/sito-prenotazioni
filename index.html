@@ -2743,18 +2743,32 @@ async function updateBooking(id, nome, destinazione, targa, slot_index){
 }
 
 // ===== VEHICLES & SLOTS =====
+// TICK_MINUTI è la risoluzione condivisa della griglia (30 minuti), usata per calcolare
+// lo slot_index salvato nel database — resta INVARIATA per compatibilità con tutte le
+// prenotazioni già esistenti. "durataMinuti" invece è quanto dura realmente un carico su
+// quella baia: per Fogli ora è 60 minuti (2 tick), per le altre baie resta 30 minuti (1 tick).
+const TICK_MINUTI = 30;
 const VEHICLES=[
-  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:30, startHour:6,  endHour:20, maxPerSlot:1},
-  {id:'baia-2', name:'Scatole',  icon:'📦', slotStep:30, startHour:6,  endHour:20, maxPerSlot:2},
-  {id:'baia-3', name:'Depositi', icon:'🏭', slotStep:30, startHour:6,  endHour:10, maxPerSlot:1},
+  {id:'baia-1', name:'Fogli',    icon:'📄', durataMinuti:60, startHour:6,  endHour:20, maxPerSlot:1},
+  {id:'baia-2', name:'Scatole',  icon:'📦', durataMinuti:30, startHour:6,  endHour:20, maxPerSlot:2},
+  {id:'baia-3', name:'Depositi', icon:'🏭', durataMinuti:30, startHour:6,  endHour:10, maxPerSlot:1},
 ];
 
-// Generate slots for a specific vehicle
+// Genera gli slot prenotabili per una baia. Ogni slot include "idx", che è il vero
+// slot_index da salvare nel database (basato sui tick da 30 minuti), diverso dalla
+// posizione nell'array quando la durata è maggiore di un tick (es. Fogli: 60 minuti = 2 tick).
 function generateSlotsForVehicle(v){
   const s=[];
-  let total=v.startHour*60;
-  const end=v.endHour*60;
-  while(total<end){s.push({hour:Math.floor(total/60),min:total%60});total+=v.slotStep;}
+  let totalMin = v.startHour*60;
+  const endMin = v.endHour*60;
+  while(totalMin + v.durataMinuti <= endMin){
+    s.push({
+      hour: Math.floor(totalMin/60),
+      min: totalMin%60,
+      idx: Math.round((totalMin - v.startHour*60) / TICK_MINUTI)
+    });
+    totalMin += v.durataMinuti;
+  }
   return s;
 }
 
@@ -2858,43 +2872,70 @@ function renderGridSkeleton(){
 // ===== CROSS-BAIA AVAILABILITY (specchio del vincolo ora imposto anche dal DB) =====
 // Rules:
 //   - 2 carrellisti totali
-//   - Fogli: max 1 per slot
-//   - Depositi: max 1 per slot
-//   - Scatole: max 2 per slot (ma limitato dai carrellisti disponibili)
-//   - Totale prenotazioni su TUTTE le baie nello stesso slot_index <= 2
+//   - Fogli: max 1 per slot, durata 60 minuti (occupa 2 tick da 30 minuti)
+//   - Depositi: max 1 per slot, durata 30 minuti
+//   - Scatole: max 2 per slot (ma limitato dai carrellisti disponibili), durata 30 minuti
+//   - Il confronto tra prenotazioni avviene per SOVRAPPOSIZIONE DI ORARIO, non più per
+//     semplice uguaglianza di slot_index: uno slot Fogli da 60 minuti deve "vedere" e
+//     bloccare anche la mezz'ora successiva sulle altre baie.
 // NOTA: questo calcolo lato client serve SOLO per la UI (mostrare colori/stati).
-// La vera protezione anti-doppio-booking è il trigger SQL sul database.
+// La vera protezione anti-doppio-booking è il trigger SQL sul database (identica logica).
 
 const TOTAL_CARRELLISTI = 2;
 
-function countBookingsForSlot(vehicleId, slotIdx){
-  return currentBookings.filter(b => b.vehicle_id === vehicleId && parseInt(b.slot_index) === slotIdx).length;
+// slotIdx qui è sempre il vero slot_index del database (il tick da 30 minuti), non la
+// posizione nell'array degli slot mostrati — per questo si usa "idx" dagli oggetti
+// generati da generateSlotsForVehicle, non la posizione del forEach.
+function orarioInizioMinuti(vehicleId, slotIdx){
+  const v = VEHICLES.find(x => x.id === vehicleId);
+  if(!v) return null;
+  return v.startHour*60 + slotIdx*TICK_MINUTI;
+}
+function orarioFineMinuti(vehicleId, slotIdx){
+  const v = VEHICLES.find(x => x.id === vehicleId);
+  if(!v) return null;
+  return orarioInizioMinuti(vehicleId, slotIdx) + v.durataMinuti;
+}
+function siSovrappongono(aInizio, aFine, bInizio, bFine){
+  return aInizio < bFine && bInizio < aFine;
+}
+// Calcola l'orario (stringa HH:MM) di uno slot conoscendo baia + slot_index, indipendentemente
+// dalla baia attualmente mostrata a schermo — utile per liste che mescolano più baie (es. admin).
+function formatTimeFromSlot(vehicleId, slotIdx){
+  const mins = orarioInizioMinuti(vehicleId, slotIdx);
+  if(mins===null || isNaN(mins)) return '--:--';
+  return formatTime(Math.floor(mins/60)%24, mins%60);
 }
 
-function totalBusyAtTime(hour, min){
-  let total = 0;
-  VEHICLES.forEach(v => {
-    const vSlots = generateSlotsForVehicle(v);
-    const matchIdx = vSlots.findIndex(s => s.hour === hour && s.min === min);
-    if(matchIdx >= 0){
-      const count = currentBookings.filter(b => b.vehicle_id === v.id && parseInt(b.slot_index) === matchIdx).length;
-      total += count;
-    }
-  });
-  return total;
+function countBookingsForSlot(vehicleId, slotIdx){
+  const inizio = orarioInizioMinuti(vehicleId, slotIdx);
+  const fine = orarioFineMinuti(vehicleId, slotIdx);
+  return currentBookings.filter(b => {
+    if(b.vehicle_id !== vehicleId) return false;
+    const bInizio = orarioInizioMinuti(b.vehicle_id, parseInt(b.slot_index));
+    const bFine = orarioFineMinuti(b.vehicle_id, parseInt(b.slot_index));
+    return siSovrappongono(inizio, fine, bInizio, bFine);
+  }).length;
+}
+
+function totalBusyForSlot(vehicleId, slotIdx){
+  const inizio = orarioInizioMinuti(vehicleId, slotIdx);
+  const fine = orarioFineMinuti(vehicleId, slotIdx);
+  return currentBookings.filter(b => {
+    const bInizio = orarioInizioMinuti(b.vehicle_id, parseInt(b.slot_index));
+    const bFine = orarioFineMinuti(b.vehicle_id, parseInt(b.slot_index));
+    return siSovrappongono(inizio, fine, bInizio, bFine);
+  }).length;
 }
 
 function canBookSlot(vehicleId, slotIdx){
   const v = VEHICLES.find(x => x.id === vehicleId);
   if(!v) return false;
-  const vSlots = generateSlotsForVehicle(v);
-  if(slotIdx >= vSlots.length) return false;
-  const slot = vSlots[slotIdx];
 
   const currentCount = countBookingsForSlot(vehicleId, slotIdx);
   if(currentCount >= v.maxPerSlot) return false;
 
-  const busy = totalBusyAtTime(slot.hour, slot.min);
+  const busy = totalBusyForSlot(vehicleId, slotIdx);
   if(busy >= TOTAL_CARRELLISTI) return false;
 
   return true;
@@ -2903,10 +2944,7 @@ function canBookSlot(vehicleId, slotIdx){
 function maxAllowedForSlot(vehicleId, slotIdx){
   const v = VEHICLES.find(x => x.id === vehicleId);
   if(!v) return 0;
-  const vSlots = generateSlotsForVehicle(v);
-  if(slotIdx >= vSlots.length) return 0;
-  const slot = vSlots[slotIdx];
-  const busy = totalBusyAtTime(slot.hour, slot.min);
+  const busy = totalBusyForSlot(vehicleId, slotIdx);
   const available = TOTAL_CARRELLISTI - busy;
   const currentCount = countBookingsForSlot(vehicleId, slotIdx);
   return Math.min(v.maxPerSlot, currentCount + Math.max(0, available));
@@ -2925,7 +2963,8 @@ function renderGrid(){
   const map={};
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
   const weekend=isWeekend(selectedDate);
-  vehicleSlots.forEach((slot,idx)=>{
+  vehicleSlots.forEach((slot)=>{
+    const idx = slot.idx;
     const b=map[idx];
     const booked_count=countBookingsForSlot(selectedVehicle,idx);
     const max_allowed=maxAllowedForSlot(selectedVehicle,idx);
@@ -2983,9 +3022,9 @@ function updateStats(){
   const map={};
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
   let free=0,booked=0,mine=0;
-  vehicleSlots.forEach((slot,idx)=>{
+  vehicleSlots.forEach((slot)=>{
     if(isPast(slot.hour,slot.min) || isWeekend(selectedDate)) return;
-    const b=map[idx];
+    const b=map[slot.idx];
     if(!b) free++; else{booked++;if(b.mine) mine++;}
   });
   const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
@@ -3419,8 +3458,7 @@ async function tryOpenGuestManagePage(){
     if(error) throw new Error(error.message);
     const booking = data;
     const v = VEHICLES.find(v=>v.id===booking.vehicle_id) || {name:booking.vehicle_id, icon:''};
-    const vSlots = generateSlotsForVehicle(v.startHour!==undefined?v:VEHICLES.find(x=>x.id===booking.vehicle_id));
-    const orario = vSlots[booking.slot_index] ? formatTime(vSlots[booking.slot_index].hour, vSlots[booking.slot_index].min) : '—';
+    const orario = formatTimeFromSlot(booking.vehicle_id, parseInt(booking.slot_index));
 
     body.innerHTML = `
       <div class="slot-info-box">
@@ -3548,9 +3586,8 @@ function renderAdminBookings(){
     const v = VEHICLES.find(v=>v.id===b.vehicle_id)||{icon:'🚪',name:b.vehicle_id};
     let time = '--:--';
     const idx = parseInt(b.slot_index);
-    if(!isNaN(idx) && SLOTS[idx]){
-      const s = SLOTS[idx];
-      time = formatTime(s.hour, s.min);
+    if(!isNaN(idx)){
+      time = formatTimeFromSlot(b.vehicle_id, idx);
     }
     const name = b.nome || b.trasportatore || b.user_nome || b.user_email || 'N/D';
     const targa = b.targa || '';
@@ -3868,7 +3905,8 @@ function showInlineSlots(vehicle){
   const booked = currentBookings.filter(b => b.vehicle_id === vehicle.id);
 
   let slotsHTML = '';
-  vehicleSlots.forEach((s, idx) => {
+  vehicleSlots.forEach((s) => {
+    const idx = s.idx;
     const slotBookings = booked.filter(b => parseInt(b.slot_index) === idx);
     const bookingCount = slotBookings.length;
     const isTaken = !canBookSlot(vehicle.id, idx);
@@ -3952,7 +3990,9 @@ function showInlineSlots(vehicle){
     btn.addEventListener('click', () => {
       selectedVehicle = vehicle.id;
       const vSlots2 = generateSlotsForVehicle(vehicle);
-      openBookingModal(parseInt(btn.dataset.idx), vSlots2[parseInt(btn.dataset.idx)]);
+      const idxCliccato = parseInt(btn.dataset.idx);
+      const slotTrovato = vSlots2.find(s => s.idx === idxCliccato);
+      openBookingModal(idxCliccato, slotTrovato);
     });
   });
 }
@@ -3973,13 +4013,14 @@ function openUserEditModal(idx, slot, booking){
     .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
     .map(b => parseInt(b.slot_index));
   slotSel.innerHTML = '';
-  SLOTS.forEach((s, i) => {
+  const vSlotsPerModifica = generateSlotsForVehicle(v.startHour!==undefined ? v : VEHICLES.find(x=>x.id===booking.vehicle_id));
+  vSlotsPerModifica.forEach((s) => {
     if(isPast(s.hour, s.min)) return;
-    if(occupied.includes(i)) return;
+    if(occupied.includes(s.idx)) return;
     const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = formatTime(s.hour, s.min) + (i === idx ? ' (attuale)' : '');
-    if(i === idx) opt.selected = true;
+    opt.value = s.idx;
+    opt.textContent = formatTime(s.hour, s.min) + (s.idx === idx ? ' (attuale)' : '');
+    if(s.idx === idx) opt.selected = true;
     slotSel.appendChild(opt);
   });
 
@@ -4104,7 +4145,7 @@ function openAdminEdit(booking){
   adminEditBookingId = booking.id;
   const currentIdx = parseInt(booking.slot_index);
   const v = VEHICLES.find(v=>v.id===booking.vehicle_id)||{name:booking.vehicle_id};
-  const timeStr = (!isNaN(currentIdx) && SLOTS[currentIdx]) ? formatTime(SLOTS[currentIdx].hour, SLOTS[currentIdx].min) : '';
+  const timeStr = !isNaN(currentIdx) ? formatTimeFromSlot(booking.vehicle_id, currentIdx) : '';
   document.getElementById('admin-edit-title').textContent = 'Modifica prenotazione';
   document.getElementById('admin-edit-subtitle').textContent = `${timeStr} · ${v.name}`;
 
@@ -4113,12 +4154,13 @@ function openAdminEdit(booking){
     .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
     .map(b => parseInt(b.slot_index));
   slotSel.innerHTML = '';
-  SLOTS.forEach((s, idx) => {
-    if(occupiedByOthers.includes(idx)) return;
+  const slotsDellaBaia = generateSlotsForVehicle(v.startHour!==undefined ? v : VEHICLES.find(x=>x.id===booking.vehicle_id));
+  slotsDellaBaia.forEach((s) => {
+    if(occupiedByOthers.includes(s.idx)) return;
     const opt = document.createElement('option');
-    opt.value = idx;
-    opt.textContent = formatTime(s.hour, s.min) + (idx === currentIdx ? ' (attuale)' : '');
-    if(idx === currentIdx) opt.selected = true;
+    opt.value = s.idx;
+    opt.textContent = formatTime(s.hour, s.min) + (s.idx === currentIdx ? ' (attuale)' : '');
+    if(s.idx === currentIdx) opt.selected = true;
     slotSel.appendChild(opt);
   });
 
@@ -4178,8 +4220,7 @@ function renderUserSchedule(){
     }
     col.innerHTML = vBookings.map(b => {
       const idx = parseInt(b.slot_index);
-      const vSlots = generateSlotsForVehicle(v);
-      const time = (!isNaN(idx) && vSlots[idx]) ? formatTime(vSlots[idx].hour, vSlots[idx].min) : '--:--';
+      const time = !isNaN(idx) ? formatTimeFromSlot(b.vehicle_id, idx) : '--:--';
       const isMine = b.user_id === currentUser?.id;
       return `<div class="schedule-slot-pill${isMine ? ' mine' : ''}">
         ${time}${isMine ? ' <span class="schedule-mine-dot">●</span>' : ''}
@@ -4231,9 +4272,8 @@ function renderUserSchedule(){
       return { rows, from, to };
     }
 
-    function slotToTime(idx){
-      const s = SLOTS[idx];
-      return s ? formatTime(s.hour, s.min) : '—';
+    function slotToTime(vehicleId, idx){
+      return formatTimeFromSlot(vehicleId, idx);
     }
     function vehicleName(id){
       const v = VEHICLES.find(v=>v.id===id);
@@ -4263,7 +4303,7 @@ function renderUserSchedule(){
         const row = [
           formatDateITShort(r.data),
           days[dt.getDay()],
-          slotToTime(r.slot_index),
+          slotToTime(r.vehicle_id, r.slot_index),
           vehicleName(r.vehicle_id),
           `"${(r.nome||'').replace(/"/g,'""')}"`,
           `"${(r.destinazione||'').replace(/"/g,'""')}"`,
@@ -4312,7 +4352,7 @@ function renderUserSchedule(){
         wsData.push([
           formatDateITShort(r.data),
           days[dt.getDay()],
-          slotToTime(r.slot_index),
+          slotToTime(r.vehicle_id, r.slot_index),
           vehicleName(r.vehicle_id),
           r.nome||'',
           r.destinazione||'',
