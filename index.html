@@ -3597,7 +3597,10 @@ function updateBulkBar(){
   }
 }
 
+let _adminFiltersInizializzati = false;
 function initAdminFilters(){
+  if(_adminFiltersInizializzati) return;
+  _adminFiltersInizializzati = true;
   document.querySelectorAll('.admin-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       adminFilter = btn.dataset.filter;
@@ -3747,7 +3750,10 @@ function updateWeekendBannerS1(){
 }
 
 document.addEventListener('DOMContentLoaded', () => {});
+let _step1ControlsInizializzati = false;
 function initStep1Controls(){
+  if(_step1ControlsInizializzati) return; // evita di registrare due volte gli stessi pulsanti
+  _step1ControlsInizializzati = true;
   const dp = document.getElementById('date-picker-s1');
   const mainDp = document.getElementById('date-picker');
   if(dp){
@@ -3790,7 +3796,10 @@ function initStep1Controls(){
 }
 
 // ===== ADMIN ADD BOOKING =====
+let _adminAddBookingInizializzato = false;
 function initAdminAddBooking(){
+  if(_adminAddBookingInizializzato) return;
+  _adminAddBookingInizializzato = true;
   const btn = document.getElementById('admin-add-booking-btn');
   if(btn) {
     btn.style.display = isAdmin() ? 'inline-flex' : 'none';
@@ -3987,7 +3996,10 @@ function closeUserEdit(){
   userEditBookingId = null;
 }
 
+let _userEditModalInizializzato = false;
 function initUserEditModal(){
+  if(_userEditModalInizializzato) return;
+  _userEditModalInizializzato = true;
   document.getElementById('user-edit-close').addEventListener('click', closeUserEdit);
   document.getElementById('user-edit-cancel').addEventListener('click', closeUserEdit);
   document.getElementById('user-edit-overlay').addEventListener('click', e => {
@@ -4053,7 +4065,10 @@ function initUserEditModal(){
 // ===== ADMIN EDIT/DELETE =====
 let adminEditBookingId = null;
 
+let _adminEditModalInizializzato = false;
 function initAdminEditModal(){
+  if(_adminEditModalInizializzato) return;
+  _adminEditModalInizializzato = true;
   const overlay = document.getElementById('admin-edit-overlay');
   document.getElementById('admin-edit-close').addEventListener('click', closeAdminEdit);
   document.getElementById('admin-edit-cancel').addEventListener('click', closeAdminEdit);
