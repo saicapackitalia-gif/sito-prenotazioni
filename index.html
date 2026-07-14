@@ -2569,6 +2569,13 @@ function isAdmin(){
 function isGuest(){
   return currentUser && currentUser.guest === true;
 }
+// Determina se una prenotazione è "mia": per utenti loggati confronta lo user_id,
+// per ospiti confronta con l'elenco locale di {id, token} salvato nel browser.
+function calcolaSeMia(b){
+  if(currentUser && !currentUser.guest && b.user_id === currentUser.id) return true;
+  if(myGuestBookings.some(g => g.id === b.id)) return true;
+  return false;
+}
 function formatDateIT(s){
   const [y,mo,da]=s.split('-');
   const days=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
@@ -2768,6 +2775,26 @@ let deleteBookingId=null;
 let lastNome='', lastReparto='';
 let lastManagementToken=null; // token della prenotazione appena creata da un guest
 
+// ===== TRACCIAMENTO PRENOTAZIONI GUEST NEL BROWSER =====
+// Un ospite non ha un account, quindi per riconoscere "quali sono le mie prenotazioni"
+// nella griglia teniamo un elenco locale {id, token} salvato nel browser (persiste
+// tra le visite sullo stesso dispositivo/browser, si perde se si cancella la cronologia
+// o si usa un altro dispositivo — in quel caso resta comunque il link personale ricevuto).
+function caricaGuestBookingsLocali(){
+  try{
+    return JSON.parse(localStorage.getItem('guest_bookings_v1') || '[]');
+  }catch(e){ return []; }
+}
+function salvaGuestBookingLocale(id, token){
+  myGuestBookings.push({ id, token });
+  try{ localStorage.setItem('guest_bookings_v1', JSON.stringify(myGuestBookings)); }catch(e){}
+}
+function trovaTokenGuestPerId(id){
+  const f = myGuestBookings.find(g => g.id === id);
+  return f ? f.token : null;
+}
+let myGuestBookings = caricaGuestBookingsLocali();
+
 // ===== DB STATUS =====
 function setDbStatus(s){
   const dot=document.getElementById('db-dot'), txt=document.getElementById('db-status-text');
@@ -2798,7 +2825,7 @@ async function loadAndRender(){
   try{
     // Lettura pubblica via anon key (policy select_all) — niente più service key qui.
     currentBookings = await fetchBookings(selectedDate);
-    currentBookings.forEach(b=>{ b.mine = currentUser && !currentUser.guest && b.user_id===currentUser?.id; });
+    currentBookings.forEach(b=>{ b.mine = calcolaSeMia(b); });
     setDbStatus('ok');
   }catch(e){
     setDbStatus('error');
@@ -2916,19 +2943,25 @@ function renderGrid(){
         else {cls='past';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
       } else {cls='past';txt='—';}
     }
-    else if(isFull&&b){if(b.mine){
-          cls='mine';
-          txt=`✓ ${b.destinazione||b.targa||b.nome}`;
-          aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione: ${b.destinazione||''} (${b.targa||''})`;
-        } else if(isAdmin()){
-          cls='booked';
-          txt=`${b.nome}`;
-          aria=`${formatTime(slot.hour,slot.min)} - ${b.nome} | ${b.destinazione} | ${b.targa}`;
-        } else {
-          cls='occupied-other';
-          txt='Occupato';
-          aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
-        }}
+    // IMPORTANTE: controlliamo PRIMA se lo slot è una MIA prenotazione, indipendentemente
+    // dal fatto che la baia risulti "piena" o meno (es. Scatole con ancora 1 posto libero:
+    // prima il click apriva per sbaglio "nuova prenotazione" invece di mostrare la mia).
+    else if(b&&b.mine){
+      cls='mine';
+      txt=`✓ ${b.destinazione||b.targa||b.nome}`;
+      aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione: ${b.destinazione||''} (${b.targa||''})`;
+    }
+    else if(isFull&&b){
+      if(isAdmin()){
+        cls='booked';
+        txt=`${b.nome}`;
+        aria=`${formatTime(slot.hour,slot.min)} - ${b.nome} | ${b.destinazione} | ${b.targa}`;
+      } else {
+        cls='occupied-other';
+        txt='Occupato';
+        aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
+      }
+    }
     else if(isFull&&!b&&!past){cls='occupied-other';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
     const mineTitle = b && b.mine ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const adminTitle = b && !b.mine && isAdmin() ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
@@ -2936,8 +2969,8 @@ function renderGrid(){
     tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
     const el=tr.querySelector('.slot');
     if(!past){
-      if(!isFull){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
-      else if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
+      if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
+      else if(!isFull){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
       else if(isAdmin()&&b&&!b.mine){el.addEventListener('click',()=>openAdminEdit(b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAdminEdit(b);}});}
     }
     tbody.appendChild(tr);
@@ -3012,7 +3045,8 @@ document.getElementById('modal-confirm').addEventListener('click',async()=>{
     const res=await createBooking(selectedVehicle,selectedDate,pendingSlot.idx,nome,destinazione,targa,{azienda,telefono});
     lastNome=nome; lastReparto='';
     const nb=Array.isArray(res)?res[0]:res;
-    if(nb){nb.mine = !isGuest(); currentBookings.push(nb);}
+    if(nb && isGuest()){ salvaGuestBookingLocale(nb.id, nb.management_token); }
+    if(nb){nb.mine = calcolaSeMia(nb); currentBookings.push(nb);}
     closeModal('modal-overlay');
     renderGrid(); loadBookingsForStep1(); updateStats();
     if(isGuest() && nb){
@@ -3686,7 +3720,7 @@ async function loadBookingsForStep1(){
   try {
     // Sia per admin che per utenti/ospiti: lettura pubblica via anon key, senza service key.
     currentBookings = await fetchBookings(selectedDate);
-    currentBookings.forEach(b=>{ b.mine = currentUser && !currentUser.guest && b.user_id===currentUser?.id; });
+    currentBookings.forEach(b=>{ b.mine = calcolaSeMia(b); });
   } catch(e){ console.error('loadBookingsForStep1 error:', e); }
   renderBaiaCards();
   renderAdminBookings();
@@ -3971,12 +4005,21 @@ function initUserEditModal(){
     const btn = document.getElementById('user-edit-save');
     btn.disabled=true; btn.textContent='Salvataggio...';
     try{
-      // L'utente loggato modifica la PROPRIA prenotazione direttamente (permesso da RLS
-      // solo se auth.uid()=user_id — qui usiamo un update diretto, non l'edge function admin).
-      const { error } = await sbClient.from('prenotazioni').update({
-        nome, destinazione: dest, targa, slot_index: newSlot
-      }).eq('id', userEditBookingId);
-      if(error) throw new Error(error.message);
+      const guestToken = trovaTokenGuestPerId(userEditBookingId);
+      if(guestToken){
+        // Prenotazione fatta come ospite: nessun login, si usa la funzione sicura via token.
+        const { error } = await sbClient.rpc('guest_update_booking', {
+          p_id: userEditBookingId, p_token: guestToken, p_nome: nome,
+          p_destinazione: dest, p_targa: targa, p_telefono: null, p_slot_index: newSlot
+        });
+        if(error) throw new Error(error.message);
+      } else {
+        // Utente loggato: modifica la PROPRIA prenotazione (permesso dalla policy "update_own").
+        const { error } = await sbClient.from('prenotazioni').update({
+          nome, destinazione: dest, targa, slot_index: newSlot
+        }).eq('id', userEditBookingId);
+        if(error) throw new Error(error.message);
+      }
       toast('✓ Prenotazione modificata','success');
       closeUserEdit();
       loadAndRender();
@@ -3992,7 +4035,13 @@ function initUserEditModal(){
   document.getElementById('user-edit-delete').addEventListener('click', async () => {
     if(!confirm('Eliminare questa prenotazione?')) return;
     try{
-      await deleteBooking(userEditBookingId);
+      const guestToken = trovaTokenGuestPerId(userEditBookingId);
+      if(guestToken){
+        const { error } = await sbClient.rpc('guest_delete_booking', { p_id: userEditBookingId, p_token: guestToken });
+        if(error) throw new Error(error.message);
+      } else {
+        await deleteBooking(userEditBookingId);
+      }
       toast('✓ Prenotazione eliminata','success');
       closeUserEdit();
       loadAndRender();
