@@ -1,10 +1,48 @@
 <!DOCTYPE html>
-<!-- v202606191403 -->
+<!-- v202608242 — + rate limiting server-side ospiti, favicon/manifest/meta, CSP -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Prenotazione Mezzi - Stabilimento</title>
+<meta name="description" content="Prenotazione baie di carico/scarico (Fogli, Scatole, Depositi) per lo stabilimento SAICA Pack Italia di Santa Maria Hoè (LC).">
+<meta name="theme-color" content="#006633">
+
+<!-- ===== FAVICON (SVG inline, nessun file esterno da ospitare) ===== -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23006633'/%3E%3Ctext x='32' y='43' font-family='Arial,Helvetica,sans-serif' font-size='30' font-weight='700' fill='%23ffffff' text-anchor='middle'%3ESP%3C/text%3E%3C/svg%3E">
+<!-- Nota: come apple-touch-icon una SVG ha supporto parziale/incostante su iOS.
+     Se in futuro serve un'icona più rifinita per l'installazione su home screen,
+     conviene generare un vero PNG 180x180 dedicato. -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23006633'/%3E%3Ctext x='32' y='43' font-family='Arial,Helvetica,sans-serif' font-size='30' font-weight='700' fill='%23ffffff' text-anchor='middle'%3ESP%3C/text%3E%3C/svg%3E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Prenotazione Mezzi">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<!-- ===== WEB APP MANIFEST (inline via data URI: resta un unico file, nessun manifest.json da aggiungere al repo) ===== -->
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Prenotazione%20Mezzi%20-%20Stabilimento%20SAICA%22%2C%22short_name%22%3A%22Prenotazioni%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f4f7f4%22%2C%22theme_color%22%3A%22%23006633%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%25270%25200%252064%252064%2527%253E%253Crect%2520width%3D%252764%2527%2520height%3D%252764%2527%2520rx%3D%252714%2527%2520fill%3D%2527%2523006633%2527%252F%253E%253Ctext%2520x%3D%252732%2527%2520y%3D%252743%2527%2520font-family%3D%2527Arial%252CHelvetica%252Csans-serif%2527%2520font-size%3D%252730%2527%2520font-weight%3D%2527700%2527%2520fill%3D%2527%2523ffffff%2527%2520text-anchor%3D%2527middle%2527%253ESP%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%2264x64%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%22%7D%5D%7D">
+
+<!-- ===== OPEN GRAPH / SOCIAL PREVIEW =====
+     Niente og:image: non esiste un asset immagine dedicato nel repo e non voglio
+     inventare un riferimento a un file che darebbe 404. Se serve un'anteprima con
+     immagine (es. per link condivisi su WhatsApp/Teams), va creata un'immagine reale
+     e ospitata; posso occuparmene su richiesta. -->
+<meta property="og:title" content="Prenotazione Mezzi - Stabilimento SAICA">
+<meta property="og:description" content="Prenota le baie di carico/scarico dello stabilimento in pochi click.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+
+<!-- ===== CONTENT SECURITY POLICY =====
+     Limiti: (1) via <meta> il CSP NON supporta frame-ancestors/sandbox/report-uri —
+     per quelli servirebbe un header HTTP reale (GitHub Pages non permette di impostare
+     header custom senza infrastruttura aggiuntiva tipo Cloudflare davanti al sito).
+     (2) 'unsafe-inline' su script/style resta necessario: l'app è un singolo file HTML
+     con JS e CSS inline, senza nonce/hash — è una scelta pragmatica per non
+     riscrivere l'architettura del progetto. Anche così il CSP blocca comunque il
+     caricamento di script da domini esterni non autorizzati e limita dove il
+     JavaScript della pagina può inviare dati (connect-src), riducendo il danno
+     potenziale di eventuali vulnerabilità future. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://jmhwxpgwakrqmnwefqrs.supabase.co wss://jmhwxpgwakrqmnwefqrs.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self';">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -2370,15 +2408,15 @@ CREATE POLICY "delete_own" ON prenotazioni
         </div>
         <div class="field">
           <label class="field-label" for="admin-edit-nome">Nome trasportatore *</label>
-          <input type="text" class="field-input" id="admin-edit-nome" placeholder="Es. Mario Rossi">
+          <input type="text" class="field-input" id="admin-edit-nome" placeholder="Es. Mario Rossi" maxlength="80">
         </div>
         <div class="field">
           <label class="field-label" for="admin-edit-dest">Destinazione *</label>
-          <input type="text" class="field-input" id="admin-edit-dest" placeholder="Es. Milano">
+          <input type="text" class="field-input" id="admin-edit-dest" placeholder="Es. Milano" maxlength="80">
         </div>
         <div class="field">
           <label class="field-label" for="admin-edit-targa">Targa mezzo *</label>
-          <input type="text" class="field-input" id="admin-edit-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" spellcheck="false">
+          <input type="text" class="field-input" id="admin-edit-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" spellcheck="false" maxlength="15">
         </div>
         <div class="error-msg" id="admin-edit-error"></div>
       </div>
@@ -2410,15 +2448,15 @@ CREATE POLICY "delete_own" ON prenotazioni
         </div>
         <div class="field">
           <label class="field-label" for="user-edit-nome">Nome trasportatore *</label>
-          <input type="text" class="field-input" id="user-edit-nome" placeholder="Es. Mario Rossi">
+          <input type="text" class="field-input" id="user-edit-nome" placeholder="Es. Mario Rossi" maxlength="80">
         </div>
         <div class="field">
           <label class="field-label" for="user-edit-dest">Destinazione *</label>
-          <input type="text" class="field-input" id="user-edit-dest" placeholder="Es. Milano">
+          <input type="text" class="field-input" id="user-edit-dest" placeholder="Es. Milano" maxlength="80">
         </div>
         <div class="field">
           <label class="field-label" for="user-edit-targa">Targa mezzo *</label>
-          <input type="text" class="field-input" id="user-edit-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" spellcheck="false">
+          <input type="text" class="field-input" id="user-edit-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" spellcheck="false" maxlength="15">
         </div>
         <div class="error-msg" id="user-edit-error"></div>
       </div>
@@ -2452,23 +2490,23 @@ CREATE POLICY "delete_own" ON prenotazioni
       <div class="slot-info-box" id="slot-info-box"></div>
       <div class="field">
         <label class="field-label" for="field-nome">Nome trasportatore *</label>
-        <input type="text" class="field-input" id="field-nome" placeholder="Es. Mario Rossi" autocomplete="name">
+        <input type="text" class="field-input" id="field-nome" placeholder="Es. Mario Rossi" autocomplete="name" maxlength="80">
       </div>
       <div class="field" id="field-azienda-wrap" style="display:none;">
         <label class="field-label" for="field-azienda">Azienda *</label>
-        <input type="text" class="field-input" id="field-azienda" placeholder="Es. Trasporti Rossi Srl" autocomplete="organization">
+        <input type="text" class="field-input" id="field-azienda" placeholder="Es. Trasporti Rossi Srl" autocomplete="organization" maxlength="80">
       </div>
       <div class="field" id="field-telefono-wrap" style="display:none;">
         <label class="field-label" for="field-telefono">Telefono *</label>
-        <input type="tel" class="field-input" id="field-telefono" placeholder="Es. 333 1234567" autocomplete="tel">
+        <input type="tel" class="field-input" id="field-telefono" placeholder="Es. 333 1234567" autocomplete="tel" maxlength="20">
       </div>
       <div class="field">
         <label class="field-label" for="field-destinazione">Destinazione *</label>
-        <input type="text" class="field-input" id="field-destinazione" placeholder="Es. Milano, Magazzino A...">
+        <input type="text" class="field-input" id="field-destinazione" placeholder="Es. Milano, Magazzino A..." maxlength="80">
       </div>
       <div class="field">
         <label class="field-label" for="field-targa">Targa mezzo *</label>
-        <input type="text" class="field-input" id="field-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" autocomplete="off" spellcheck="false">
+        <input type="text" class="field-input" id="field-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" autocomplete="off" spellcheck="false" maxlength="15">
       </div>
     </div>
     <div class="modal-footer">
@@ -2560,6 +2598,20 @@ function toast(msg, type){
   c.appendChild(t);
   requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),350);},3200);
+}
+// ===== SICUREZZA: escaping dati utente prima di iniettarli in innerHTML =====
+// Nome, destinazione, targa, azienda sono testo libero inserito da utenti/ospiti
+// non autenticati. Vanno SEMPRE passati da qui prima di finire in un template
+// innerHTML, altrimenti un valore tipo <img src=x onerror=...> verrebbe eseguito
+// nel browser di chi visualizza la griglia o il pannello admin (stored XSS).
+function escapeHtml(str){
+  if(str===null || str===undefined) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
 }
 function formatTime(h,m){return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
 function formatDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -2743,32 +2795,18 @@ async function updateBooking(id, nome, destinazione, targa, slot_index){
 }
 
 // ===== VEHICLES & SLOTS =====
-// TICK_MINUTI è la risoluzione condivisa della griglia (30 minuti), usata per calcolare
-// lo slot_index salvato nel database — resta INVARIATA per compatibilità con tutte le
-// prenotazioni già esistenti. "durataMinuti" invece è quanto dura realmente un carico su
-// quella baia: per Fogli ora è 60 minuti (2 tick), per le altre baie resta 30 minuti (1 tick).
-const TICK_MINUTI = 30;
 const VEHICLES=[
-  {id:'baia-1', name:'Fogli',    icon:'📄', durataMinuti:60, startHour:6,  endHour:20, maxPerSlot:1},
-  {id:'baia-2', name:'Scatole',  icon:'📦', durataMinuti:30, startHour:6,  endHour:20, maxPerSlot:2},
-  {id:'baia-3', name:'Depositi', icon:'🏭', durataMinuti:30, startHour:6,  endHour:10, maxPerSlot:1},
+  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:30, startHour:6,  endHour:20, maxPerSlot:1},
+  {id:'baia-2', name:'Scatole',  icon:'📦', slotStep:30, startHour:6,  endHour:20, maxPerSlot:2},
+  {id:'baia-3', name:'Depositi', icon:'🏭', slotStep:30, startHour:6,  endHour:10, maxPerSlot:1},
 ];
 
-// Genera gli slot prenotabili per una baia. Ogni slot include "idx", che è il vero
-// slot_index da salvare nel database (basato sui tick da 30 minuti), diverso dalla
-// posizione nell'array quando la durata è maggiore di un tick (es. Fogli: 60 minuti = 2 tick).
+// Generate slots for a specific vehicle
 function generateSlotsForVehicle(v){
   const s=[];
-  let totalMin = v.startHour*60;
-  const endMin = v.endHour*60;
-  while(totalMin + v.durataMinuti <= endMin){
-    s.push({
-      hour: Math.floor(totalMin/60),
-      min: totalMin%60,
-      idx: Math.round((totalMin - v.startHour*60) / TICK_MINUTI)
-    });
-    totalMin += v.durataMinuti;
-  }
+  let total=v.startHour*60;
+  const end=v.endHour*60;
+  while(total<end){s.push({hour:Math.floor(total/60),min:total%60});total+=v.slotStep;}
   return s;
 }
 
@@ -2872,70 +2910,43 @@ function renderGridSkeleton(){
 // ===== CROSS-BAIA AVAILABILITY (specchio del vincolo ora imposto anche dal DB) =====
 // Rules:
 //   - 2 carrellisti totali
-//   - Fogli: max 1 per slot, durata 60 minuti (occupa 2 tick da 30 minuti)
-//   - Depositi: max 1 per slot, durata 30 minuti
-//   - Scatole: max 2 per slot (ma limitato dai carrellisti disponibili), durata 30 minuti
-//   - Il confronto tra prenotazioni avviene per SOVRAPPOSIZIONE DI ORARIO, non più per
-//     semplice uguaglianza di slot_index: uno slot Fogli da 60 minuti deve "vedere" e
-//     bloccare anche la mezz'ora successiva sulle altre baie.
+//   - Fogli: max 1 per slot
+//   - Depositi: max 1 per slot
+//   - Scatole: max 2 per slot (ma limitato dai carrellisti disponibili)
+//   - Totale prenotazioni su TUTTE le baie nello stesso slot_index <= 2
 // NOTA: questo calcolo lato client serve SOLO per la UI (mostrare colori/stati).
-// La vera protezione anti-doppio-booking è il trigger SQL sul database (identica logica).
+// La vera protezione anti-doppio-booking è il trigger SQL sul database.
 
 const TOTAL_CARRELLISTI = 2;
 
-// slotIdx qui è sempre il vero slot_index del database (il tick da 30 minuti), non la
-// posizione nell'array degli slot mostrati — per questo si usa "idx" dagli oggetti
-// generati da generateSlotsForVehicle, non la posizione del forEach.
-function orarioInizioMinuti(vehicleId, slotIdx){
-  const v = VEHICLES.find(x => x.id === vehicleId);
-  if(!v) return null;
-  return v.startHour*60 + slotIdx*TICK_MINUTI;
-}
-function orarioFineMinuti(vehicleId, slotIdx){
-  const v = VEHICLES.find(x => x.id === vehicleId);
-  if(!v) return null;
-  return orarioInizioMinuti(vehicleId, slotIdx) + v.durataMinuti;
-}
-function siSovrappongono(aInizio, aFine, bInizio, bFine){
-  return aInizio < bFine && bInizio < aFine;
-}
-// Calcola l'orario (stringa HH:MM) di uno slot conoscendo baia + slot_index, indipendentemente
-// dalla baia attualmente mostrata a schermo — utile per liste che mescolano più baie (es. admin).
-function formatTimeFromSlot(vehicleId, slotIdx){
-  const mins = orarioInizioMinuti(vehicleId, slotIdx);
-  if(mins===null || isNaN(mins)) return '--:--';
-  return formatTime(Math.floor(mins/60)%24, mins%60);
-}
-
 function countBookingsForSlot(vehicleId, slotIdx){
-  const inizio = orarioInizioMinuti(vehicleId, slotIdx);
-  const fine = orarioFineMinuti(vehicleId, slotIdx);
-  return currentBookings.filter(b => {
-    if(b.vehicle_id !== vehicleId) return false;
-    const bInizio = orarioInizioMinuti(b.vehicle_id, parseInt(b.slot_index));
-    const bFine = orarioFineMinuti(b.vehicle_id, parseInt(b.slot_index));
-    return siSovrappongono(inizio, fine, bInizio, bFine);
-  }).length;
+  return currentBookings.filter(b => b.vehicle_id === vehicleId && parseInt(b.slot_index) === slotIdx).length;
 }
 
-function totalBusyForSlot(vehicleId, slotIdx){
-  const inizio = orarioInizioMinuti(vehicleId, slotIdx);
-  const fine = orarioFineMinuti(vehicleId, slotIdx);
-  return currentBookings.filter(b => {
-    const bInizio = orarioInizioMinuti(b.vehicle_id, parseInt(b.slot_index));
-    const bFine = orarioFineMinuti(b.vehicle_id, parseInt(b.slot_index));
-    return siSovrappongono(inizio, fine, bInizio, bFine);
-  }).length;
+function totalBusyAtTime(hour, min){
+  let total = 0;
+  VEHICLES.forEach(v => {
+    const vSlots = generateSlotsForVehicle(v);
+    const matchIdx = vSlots.findIndex(s => s.hour === hour && s.min === min);
+    if(matchIdx >= 0){
+      const count = currentBookings.filter(b => b.vehicle_id === v.id && parseInt(b.slot_index) === matchIdx).length;
+      total += count;
+    }
+  });
+  return total;
 }
 
 function canBookSlot(vehicleId, slotIdx){
   const v = VEHICLES.find(x => x.id === vehicleId);
   if(!v) return false;
+  const vSlots = generateSlotsForVehicle(v);
+  if(slotIdx >= vSlots.length) return false;
+  const slot = vSlots[slotIdx];
 
   const currentCount = countBookingsForSlot(vehicleId, slotIdx);
   if(currentCount >= v.maxPerSlot) return false;
 
-  const busy = totalBusyForSlot(vehicleId, slotIdx);
+  const busy = totalBusyAtTime(slot.hour, slot.min);
   if(busy >= TOTAL_CARRELLISTI) return false;
 
   return true;
@@ -2944,7 +2955,10 @@ function canBookSlot(vehicleId, slotIdx){
 function maxAllowedForSlot(vehicleId, slotIdx){
   const v = VEHICLES.find(x => x.id === vehicleId);
   if(!v) return 0;
-  const busy = totalBusyForSlot(vehicleId, slotIdx);
+  const vSlots = generateSlotsForVehicle(v);
+  if(slotIdx >= vSlots.length) return 0;
+  const slot = vSlots[slotIdx];
+  const busy = totalBusyAtTime(slot.hour, slot.min);
   const available = TOTAL_CARRELLISTI - busy;
   const currentCount = countBookingsForSlot(vehicleId, slotIdx);
   return Math.min(v.maxPerSlot, currentCount + Math.max(0, available));
@@ -2963,8 +2977,7 @@ function renderGrid(){
   const map={};
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
   const weekend=isWeekend(selectedDate);
-  vehicleSlots.forEach((slot)=>{
-    const idx = slot.idx;
+  vehicleSlots.forEach((slot,idx)=>{
     const b=map[idx];
     const booked_count=countBookingsForSlot(selectedVehicle,idx);
     const max_allowed=maxAllowedForSlot(selectedVehicle,idx);
@@ -2975,6 +2988,10 @@ function renderGrid(){
       cls='free'; txt=`Disponibile (${booked_count}/${max_allowed})`;
       aria=`${formatTime(slot.hour,slot.min)} - Parzialmente occupato`;
     }
+    // NOTA SICUREZZA: nome/destinazione/targa sono testo libero inserito da utenti/ospiti
+    // NON autenticati. txt e aria vengono costruiti qui in CHIARO (senza escape) e
+    // sanitizzati una sola volta, tutti insieme, subito prima di finire in innerHTML
+    // (vedi escapeHtml(txt)/escapeHtml(aria) più sotto) — evita il doppio escaping.
     if(past){
       if(b){
         if(b.mine){cls='past mine';txt=`✓ ${b.destinazione||b.targa||b.nome}`;aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione: ${b.destinazione||''}`;}
@@ -3002,10 +3019,10 @@ function renderGrid(){
       }
     }
     else if(isFull&&!b&&!past){cls='occupied-other';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
-    const mineTitle = b && b.mine ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
-    const adminTitle = b && !b.mine && isAdmin() ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
+    const mineTitle = b && b.mine ? `title="${escapeHtml(b.nome)} → ${escapeHtml(b.destinazione)} | ${escapeHtml(b.targa)}"` : '';
+    const adminTitle = b && !b.mine && isAdmin() ? `title="${escapeHtml(b.nome)} → ${escapeHtml(b.destinazione)} | ${escapeHtml(b.targa)}"` : '';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
+    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${escapeHtml(aria)}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${escapeHtml(txt)}</span></div></td>`;
     const el=tr.querySelector('.slot');
     if(!past){
       if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
@@ -3022,9 +3039,9 @@ function updateStats(){
   const map={};
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
   let free=0,booked=0,mine=0;
-  vehicleSlots.forEach((slot)=>{
+  vehicleSlots.forEach((slot,idx)=>{
     if(isPast(slot.hour,slot.min) || isWeekend(selectedDate)) return;
-    const b=map[slot.idx];
+    const b=map[idx];
     if(!b) free++; else{booked++;if(b.mine) mine++;}
   });
   const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
@@ -3458,7 +3475,8 @@ async function tryOpenGuestManagePage(){
     if(error) throw new Error(error.message);
     const booking = data;
     const v = VEHICLES.find(v=>v.id===booking.vehicle_id) || {name:booking.vehicle_id, icon:''};
-    const orario = formatTimeFromSlot(booking.vehicle_id, parseInt(booking.slot_index));
+    const vSlots = generateSlotsForVehicle(v.startHour!==undefined?v:VEHICLES.find(x=>x.id===booking.vehicle_id));
+    const orario = vSlots[booking.slot_index] ? formatTime(vSlots[booking.slot_index].hour, vSlots[booking.slot_index].min) : '—';
 
     body.innerHTML = `
       <div class="slot-info-box">
@@ -3468,15 +3486,15 @@ async function tryOpenGuestManagePage(){
       </div>
       <div class="field">
         <label class="field-label" for="gm-nome">Nome trasportatore *</label>
-        <input type="text" class="field-input" id="gm-nome" value="${(booking.nome||'').replace(/"/g,'&quot;')}">
+        <input type="text" class="field-input" id="gm-nome" value="${escapeHtml(booking.nome||'')}" maxlength="80">
       </div>
       <div class="field">
         <label class="field-label" for="gm-dest">Destinazione *</label>
-        <input type="text" class="field-input" id="gm-dest" value="${(booking.destinazione||'').replace(/"/g,'&quot;')}">
+        <input type="text" class="field-input" id="gm-dest" value="${escapeHtml(booking.destinazione||'')}" maxlength="80">
       </div>
       <div class="field">
         <label class="field-label" for="gm-targa">Targa mezzo *</label>
-        <input type="text" class="field-input" id="gm-targa" value="${(booking.targa||'').replace(/"/g,'&quot;')}" style="text-transform:uppercase;">
+        <input type="text" class="field-input" id="gm-targa" value="${escapeHtml(booking.targa||'')}" style="text-transform:uppercase;" maxlength="15">
       </div>
       <div class="error-msg" id="gm-error"></div>
       <button class="btn btn-primary" id="gm-save-btn">
@@ -3586,26 +3604,32 @@ function renderAdminBookings(){
     const v = VEHICLES.find(v=>v.id===b.vehicle_id)||{icon:'🚪',name:b.vehicle_id};
     let time = '--:--';
     const idx = parseInt(b.slot_index);
-    if(!isNaN(idx)){
-      time = formatTimeFromSlot(b.vehicle_id, idx);
+    if(!isNaN(idx) && SLOTS[idx]){
+      const s = SLOTS[idx];
+      time = formatTime(s.hour, s.min);
     }
-    const name = b.nome || b.trasportatore || b.user_nome || b.user_email || 'N/D';
-    const targa = b.targa || '';
-    const dest = b.destinazione || '';
-    return `<div class="admin-booking-row" data-id="${b.id}">
-      <input type="checkbox" class="admin-row-check" data-id="${b.id}" title="Seleziona">
+    // SICUREZZA: name/targa/dest arrivano da input liberi di utenti/ospiti non
+    // autenticati -> SEMPRE escapeHtml() prima di iniettarli in innerHTML (stored XSS
+    // altrimenti, qui nel pannello admin). b.id è un id/UUID generato dal DB, ma lo
+    // sanitizziamo comunque come difesa in profondità sugli attributi data-id.
+    const safeId = escapeHtml(b.id);
+    const name = escapeHtml(b.nome || b.trasportatore || b.user_nome || b.user_email || 'N/D');
+    const targa = escapeHtml(b.targa || '');
+    const dest = escapeHtml(b.destinazione || '');
+    return `<div class="admin-booking-row" data-id="${safeId}">
+      <input type="checkbox" class="admin-row-check" data-id="${safeId}" title="Seleziona">
       <div class="admin-booking-time">${time}</div>
-      <div class="admin-booking-baia">${v.icon} ${v.name}</div>
+      <div class="admin-booking-baia">${v.icon} ${escapeHtml(v.name)}</div>
       <div class="admin-booking-info">
         <span class="admin-booking-name">${name}</span>
         ${targa ? `<span class="admin-booking-targa">${targa}</span>` : ''}
         ${dest ? `<span class="admin-booking-dest">→ ${dest}</span>` : ''}
       </div>
       <div class="admin-row-actions">
-        <button class="admin-row-btn admin-edit-btn" data-id="${b.id}" title="Modifica">
+        <button class="admin-row-btn admin-edit-btn" data-id="${safeId}" title="Modifica">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="admin-row-btn admin-delete-btn" data-id="${b.id}" title="Elimina">
+        <button class="admin-row-btn admin-delete-btn" data-id="${safeId}" title="Elimina">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
       </div>
@@ -3905,8 +3929,7 @@ function showInlineSlots(vehicle){
   const booked = currentBookings.filter(b => b.vehicle_id === vehicle.id);
 
   let slotsHTML = '';
-  vehicleSlots.forEach((s) => {
-    const idx = s.idx;
+  vehicleSlots.forEach((s, idx) => {
     const slotBookings = booked.filter(b => parseInt(b.slot_index) === idx);
     const bookingCount = slotBookings.length;
     const isTaken = !canBookSlot(vehicle.id, idx);
@@ -3990,9 +4013,7 @@ function showInlineSlots(vehicle){
     btn.addEventListener('click', () => {
       selectedVehicle = vehicle.id;
       const vSlots2 = generateSlotsForVehicle(vehicle);
-      const idxCliccato = parseInt(btn.dataset.idx);
-      const slotTrovato = vSlots2.find(s => s.idx === idxCliccato);
-      openBookingModal(idxCliccato, slotTrovato);
+      openBookingModal(parseInt(btn.dataset.idx), vSlots2[parseInt(btn.dataset.idx)]);
     });
   });
 }
@@ -4013,14 +4034,13 @@ function openUserEditModal(idx, slot, booking){
     .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
     .map(b => parseInt(b.slot_index));
   slotSel.innerHTML = '';
-  const vSlotsPerModifica = generateSlotsForVehicle(v.startHour!==undefined ? v : VEHICLES.find(x=>x.id===booking.vehicle_id));
-  vSlotsPerModifica.forEach((s) => {
+  SLOTS.forEach((s, i) => {
     if(isPast(s.hour, s.min)) return;
-    if(occupied.includes(s.idx)) return;
+    if(occupied.includes(i)) return;
     const opt = document.createElement('option');
-    opt.value = s.idx;
-    opt.textContent = formatTime(s.hour, s.min) + (s.idx === idx ? ' (attuale)' : '');
-    if(s.idx === idx) opt.selected = true;
+    opt.value = i;
+    opt.textContent = formatTime(s.hour, s.min) + (i === idx ? ' (attuale)' : '');
+    if(i === idx) opt.selected = true;
     slotSel.appendChild(opt);
   });
 
@@ -4145,7 +4165,7 @@ function openAdminEdit(booking){
   adminEditBookingId = booking.id;
   const currentIdx = parseInt(booking.slot_index);
   const v = VEHICLES.find(v=>v.id===booking.vehicle_id)||{name:booking.vehicle_id};
-  const timeStr = !isNaN(currentIdx) ? formatTimeFromSlot(booking.vehicle_id, currentIdx) : '';
+  const timeStr = (!isNaN(currentIdx) && SLOTS[currentIdx]) ? formatTime(SLOTS[currentIdx].hour, SLOTS[currentIdx].min) : '';
   document.getElementById('admin-edit-title').textContent = 'Modifica prenotazione';
   document.getElementById('admin-edit-subtitle').textContent = `${timeStr} · ${v.name}`;
 
@@ -4154,13 +4174,12 @@ function openAdminEdit(booking){
     .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
     .map(b => parseInt(b.slot_index));
   slotSel.innerHTML = '';
-  const slotsDellaBaia = generateSlotsForVehicle(v.startHour!==undefined ? v : VEHICLES.find(x=>x.id===booking.vehicle_id));
-  slotsDellaBaia.forEach((s) => {
-    if(occupiedByOthers.includes(s.idx)) return;
+  SLOTS.forEach((s, idx) => {
+    if(occupiedByOthers.includes(idx)) return;
     const opt = document.createElement('option');
-    opt.value = s.idx;
-    opt.textContent = formatTime(s.hour, s.min) + (s.idx === currentIdx ? ' (attuale)' : '');
-    if(s.idx === currentIdx) opt.selected = true;
+    opt.value = idx;
+    opt.textContent = formatTime(s.hour, s.min) + (idx === currentIdx ? ' (attuale)' : '');
+    if(idx === currentIdx) opt.selected = true;
     slotSel.appendChild(opt);
   });
 
@@ -4220,7 +4239,8 @@ function renderUserSchedule(){
     }
     col.innerHTML = vBookings.map(b => {
       const idx = parseInt(b.slot_index);
-      const time = !isNaN(idx) ? formatTimeFromSlot(b.vehicle_id, idx) : '--:--';
+      const vSlots = generateSlotsForVehicle(v);
+      const time = (!isNaN(idx) && vSlots[idx]) ? formatTime(vSlots[idx].hour, vSlots[idx].min) : '--:--';
       const isMine = b.user_id === currentUser?.id;
       return `<div class="schedule-slot-pill${isMine ? ' mine' : ''}">
         ${time}${isMine ? ' <span class="schedule-mine-dot">●</span>' : ''}
@@ -4272,8 +4292,9 @@ function renderUserSchedule(){
       return { rows, from, to };
     }
 
-    function slotToTime(vehicleId, idx){
-      return formatTimeFromSlot(vehicleId, idx);
+    function slotToTime(idx){
+      const s = SLOTS[idx];
+      return s ? formatTime(s.hour, s.min) : '—';
     }
     function vehicleName(id){
       const v = VEHICLES.find(v=>v.id===id);
@@ -4283,6 +4304,15 @@ function renderUserSchedule(){
       if(!s) return '';
       const [y,mo,da] = s.split('-');
       return `${da}/${mo}/${y}`;
+    }
+
+    // SICUREZZA: neutralizza il CSV/formula injection. Se un campo testo libero
+    // (nome, destinazione...) inizia con = + - @ tab o a capo, Excel/LibreOffice
+    // possono interpretarlo come formula all'apertura del file esportato.
+    // Prefissando con un apostrofo lo si forza a essere trattato come testo.
+    function csvSafe(val){
+      const s = String(val==null ? '' : val);
+      return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
     }
 
     // ===== CSV =====
@@ -4303,11 +4333,11 @@ function renderUserSchedule(){
         const row = [
           formatDateITShort(r.data),
           days[dt.getDay()],
-          slotToTime(r.vehicle_id, r.slot_index),
+          slotToTime(r.slot_index),
           vehicleName(r.vehicle_id),
-          `"${(r.nome||'').replace(/"/g,'""')}"`,
-          `"${(r.destinazione||'').replace(/"/g,'""')}"`,
-          (r.targa||'').toUpperCase(),
+          `"${csvSafe(r.nome||'').replace(/"/g,'""')}"`,
+          `"${csvSafe(r.destinazione||'').replace(/"/g,'""')}"`,
+          csvSafe((r.targa||'').toUpperCase()),
           created
         ];
         csvRows.push(row.join(';'));
@@ -4352,11 +4382,11 @@ function renderUserSchedule(){
         wsData.push([
           formatDateITShort(r.data),
           days[dt.getDay()],
-          slotToTime(r.vehicle_id, r.slot_index),
+          slotToTime(r.slot_index),
           vehicleName(r.vehicle_id),
-          r.nome||'',
-          r.destinazione||'',
-          (r.targa||'').toUpperCase(),
+          csvSafe(r.nome||''),
+          csvSafe(r.destinazione||''),
+          csvSafe((r.targa||'').toUpperCase()),
           created
         ]);
       });
