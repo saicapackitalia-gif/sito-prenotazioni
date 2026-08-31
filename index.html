@@ -1,48 +1,10 @@
 <!DOCTYPE html>
-<!-- v202608242 — + rate limiting server-side ospiti, favicon/manifest/meta, CSP -->
+<!-- v202606191403 -->
 <html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Prenotazione Mezzi - Stabilimento</title>
-<meta name="description" content="Prenotazione baie di carico/scarico (Fogli, Scatole, Depositi) per lo stabilimento SAICA Pack Italia di Santa Maria Hoè (LC).">
-<meta name="theme-color" content="#006633">
-
-<!-- ===== FAVICON (SVG inline, nessun file esterno da ospitare) ===== -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23006633'/%3E%3Ctext x='32' y='43' font-family='Arial,Helvetica,sans-serif' font-size='30' font-weight='700' fill='%23ffffff' text-anchor='middle'%3ESP%3C/text%3E%3C/svg%3E">
-<!-- Nota: come apple-touch-icon una SVG ha supporto parziale/incostante su iOS.
-     Se in futuro serve un'icona più rifinita per l'installazione su home screen,
-     conviene generare un vero PNG 180x180 dedicato. -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23006633'/%3E%3Ctext x='32' y='43' font-family='Arial,Helvetica,sans-serif' font-size='30' font-weight='700' fill='%23ffffff' text-anchor='middle'%3ESP%3C/text%3E%3C/svg%3E">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Prenotazione Mezzi">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-<!-- ===== WEB APP MANIFEST (inline via data URI: resta un unico file, nessun manifest.json da aggiungere al repo) ===== -->
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Prenotazione%20Mezzi%20-%20Stabilimento%20SAICA%22%2C%22short_name%22%3A%22Prenotazioni%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f4f7f4%22%2C%22theme_color%22%3A%22%23006633%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%25270%25200%252064%252064%2527%253E%253Crect%2520width%3D%252764%2527%2520height%3D%252764%2527%2520rx%3D%252714%2527%2520fill%3D%2527%2523006633%2527%252F%253E%253Ctext%2520x%3D%252732%2527%2520y%3D%252743%2527%2520font-family%3D%2527Arial%252CHelvetica%252Csans-serif%2527%2520font-size%3D%252730%2527%2520font-weight%3D%2527700%2527%2520fill%3D%2527%2523ffffff%2527%2520text-anchor%3D%2527middle%2527%253ESP%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%2264x64%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%22%7D%5D%7D">
-
-<!-- ===== OPEN GRAPH / SOCIAL PREVIEW =====
-     Niente og:image: non esiste un asset immagine dedicato nel repo e non voglio
-     inventare un riferimento a un file che darebbe 404. Se serve un'anteprima con
-     immagine (es. per link condivisi su WhatsApp/Teams), va creata un'immagine reale
-     e ospitata; posso occuparmene su richiesta. -->
-<meta property="og:title" content="Prenotazione Mezzi - Stabilimento SAICA">
-<meta property="og:description" content="Prenota le baie di carico/scarico dello stabilimento in pochi click.">
-<meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
-
-<!-- ===== CONTENT SECURITY POLICY =====
-     Limiti: (1) via <meta> il CSP NON supporta frame-ancestors/sandbox/report-uri —
-     per quelli servirebbe un header HTTP reale (GitHub Pages non permette di impostare
-     header custom senza infrastruttura aggiuntiva tipo Cloudflare davanti al sito).
-     (2) 'unsafe-inline' su script/style resta necessario: l'app è un singolo file HTML
-     con JS e CSS inline, senza nonce/hash — è una scelta pragmatica per non
-     riscrivere l'architettura del progetto. Anche così il CSP blocca comunque il
-     caricamento di script da domini esterni non autorizzati e limita dove il
-     JavaScript della pagina può inviare dati (connect-src), riducendo il danno
-     potenziale di eventuali vulnerabilità future. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://jmhwxpgwakrqmnwefqrs.supabase.co wss://jmhwxpgwakrqmnwefqrs.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self';">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1996,31 +1958,6 @@ table.slots-table td{padding:0;}
   background:var(--color-primary-highlight)!important;
 }
 
-
-/* ===== GUEST BANNER + MANAGE LINK (nuovo) ===== */
-.guest-banner{
-  background:var(--color-primary-highlight);
-  border:1px solid var(--color-primary);
-  border-radius:var(--radius-xl);
-  padding:var(--space-3) var(--space-5);
-  display:flex;align-items:center;gap:var(--space-3);
-  font-size:var(--text-sm);font-weight:600;
-  color:var(--color-primary);
-}
-.guest-link-box{
-  background:var(--color-surface-offset);
-  border:1.5px dashed var(--color-primary);
-  border-radius:var(--radius-lg);
-  padding:var(--space-3) var(--space-4);
-  display:flex;flex-direction:column;gap:var(--space-2);
-}
-.guest-link-row{display:flex;gap:var(--space-2);align-items:center;}
-.guest-link-input{
-  flex:1;background:var(--color-surface);border:1.5px solid var(--color-border);
-  border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);
-  font-size:var(--text-xs);font-family:var(--font-mono);color:var(--color-text);
-}
-
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -2090,11 +2027,11 @@ CREATE POLICY "delete_own" ON prenotazioni
       </div>
       <div class="field">
         <label class="field-label" for="setup-url">Project URL</label>
-        <input type="url" class="field-input" id="setup-url" placeholder="https://xxxxxxxxxxx.supabase.co" autocomplete="off" spellcheck="false">
+        <input type="url" class="field-input" id="setup-url" placeholder="https://xxxxxxxxxxx.supabase.co" value="https://jmhwxpgwakrqmnwefqrs.supabase.co" autocomplete="off" spellcheck="false">
       </div>
       <div class="field">
         <label class="field-label" for="setup-key">Anon Public Key</label>
-        <input type="text" class="field-input" id="setup-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." autocomplete="off" spellcheck="false">
+        <input type="text" class="field-input" id="setup-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU" autocomplete="off" spellcheck="false">
       </div>
       <div class="error-msg" id="setup-error"></div>
     </div>
@@ -2143,30 +2080,6 @@ CREATE POLICY "delete_own" ON prenotazioni
   </div>
 </div>
 
-<!-- ========== GUEST SELF-SERVICE PAGE (gestisci prenotazione via link, senza account) ========== -->
-<div class="page hidden" id="page-guest-manage">
-  <div class="auth-card" style="max-width:480px;">
-    <div class="auth-header">
-      <div class="auth-logo-saica" aria-label="Saica"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 100" width="76" height="40" aria-label="Saica">
-  <path d="M59 20 C72 20 80 42 95 38 C110 34 112 27 121 27" stroke="white" stroke-width="7" stroke-linecap="round" fill="none"/>
-  <circle cx="59" cy="20" r="18" fill="white"/>
-  <circle cx="121" cy="27" r="21" fill="rgba(255,255,255,0.7)"/>
-  <text x="5" y="92" font-family="'Arial Black','Arial','Helvetica Neue',sans-serif" font-size="42" font-weight="900" letter-spacing="6" fill="white">SAICA</text>
-</svg></div>
-      <div>
-        <div class="auth-header-title">La tua prenotazione</div>
-        <div class="auth-header-sub">Gestione senza account</div>
-      </div>
-    </div>
-    <div class="auth-body" id="guest-manage-body">
-      <div style="text-align:center;color:var(--color-text-muted);padding:var(--space-6) 0;">
-        <span class="spinner" style="width:24px;height:24px;"></span>
-        <p style="margin-top:var(--space-3);">Carico la prenotazione…</p>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ========== APP ========== -->
 <div class="app-wrapper hidden" id="app-wrapper">
   <header class="topbar">
@@ -2210,12 +2123,7 @@ CREATE POLICY "delete_own" ON prenotazioni
   </header>
 
   <main class="main-content">
-
-    <!-- Banner modalità ospite -->
-    <div class="guest-banner" id="guest-mode-banner" style="display:none;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-      <span>Stai prenotando come ospite, senza account. Dopo la conferma riceverai un link personale per modificare o annullare.</span>
-    </div>
+    
 
     <!-- ===== STEP 1: Selezione Data + Baia ===== -->
     <div id="step-select">
@@ -2388,7 +2296,7 @@ CREATE POLICY "delete_own" ON prenotazioni
 
 
     
-
+  
   <!-- ADMIN EDIT MODAL -->
   <div class="modal-overlay" id="admin-edit-overlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="admin-edit-title">
@@ -2408,15 +2316,15 @@ CREATE POLICY "delete_own" ON prenotazioni
         </div>
         <div class="field">
           <label class="field-label" for="admin-edit-nome">Nome trasportatore *</label>
-          <input type="text" class="field-input" id="admin-edit-nome" placeholder="Es. Mario Rossi" maxlength="80">
+          <input type="text" class="field-input" id="admin-edit-nome" placeholder="Es. Mario Rossi">
         </div>
         <div class="field">
           <label class="field-label" for="admin-edit-dest">Destinazione *</label>
-          <input type="text" class="field-input" id="admin-edit-dest" placeholder="Es. Milano" maxlength="80">
+          <input type="text" class="field-input" id="admin-edit-dest" placeholder="Es. Milano">
         </div>
         <div class="field">
           <label class="field-label" for="admin-edit-targa">Targa mezzo *</label>
-          <input type="text" class="field-input" id="admin-edit-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" spellcheck="false" maxlength="15">
+          <input type="text" class="field-input" id="admin-edit-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" spellcheck="false">
         </div>
         <div class="error-msg" id="admin-edit-error"></div>
       </div>
@@ -2448,15 +2356,15 @@ CREATE POLICY "delete_own" ON prenotazioni
         </div>
         <div class="field">
           <label class="field-label" for="user-edit-nome">Nome trasportatore *</label>
-          <input type="text" class="field-input" id="user-edit-nome" placeholder="Es. Mario Rossi" maxlength="80">
+          <input type="text" class="field-input" id="user-edit-nome" placeholder="Es. Mario Rossi">
         </div>
         <div class="field">
           <label class="field-label" for="user-edit-dest">Destinazione *</label>
-          <input type="text" class="field-input" id="user-edit-dest" placeholder="Es. Milano" maxlength="80">
+          <input type="text" class="field-input" id="user-edit-dest" placeholder="Es. Milano">
         </div>
         <div class="field">
           <label class="field-label" for="user-edit-targa">Targa mezzo *</label>
-          <input type="text" class="field-input" id="user-edit-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" spellcheck="false" maxlength="15">
+          <input type="text" class="field-input" id="user-edit-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" spellcheck="false">
         </div>
         <div class="error-msg" id="user-edit-error"></div>
       </div>
@@ -2475,6 +2383,8 @@ CREATE POLICY "delete_own" ON prenotazioni
       </div>
     </div>
   </div>
+    </div>
+  </div>
 
 </main>
 </div>
@@ -2490,23 +2400,15 @@ CREATE POLICY "delete_own" ON prenotazioni
       <div class="slot-info-box" id="slot-info-box"></div>
       <div class="field">
         <label class="field-label" for="field-nome">Nome trasportatore *</label>
-        <input type="text" class="field-input" id="field-nome" placeholder="Es. Mario Rossi" autocomplete="name" maxlength="80">
-      </div>
-      <div class="field" id="field-azienda-wrap" style="display:none;">
-        <label class="field-label" for="field-azienda">Azienda *</label>
-        <input type="text" class="field-input" id="field-azienda" placeholder="Es. Trasporti Rossi Srl" autocomplete="organization" maxlength="80">
-      </div>
-      <div class="field" id="field-telefono-wrap" style="display:none;">
-        <label class="field-label" for="field-telefono">Telefono *</label>
-        <input type="tel" class="field-input" id="field-telefono" placeholder="Es. 333 1234567" autocomplete="tel" maxlength="20">
+        <input type="text" class="field-input" id="field-nome" placeholder="Es. Mario Rossi" autocomplete="name">
       </div>
       <div class="field">
         <label class="field-label" for="field-destinazione">Destinazione *</label>
-        <input type="text" class="field-input" id="field-destinazione" placeholder="Es. Milano, Magazzino A..." maxlength="80">
+        <input type="text" class="field-input" id="field-destinazione" placeholder="Es. Milano, Magazzino A...">
       </div>
       <div class="field">
         <label class="field-label" for="field-targa">Targa mezzo *</label>
-        <input type="text" class="field-input" id="field-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" autocomplete="off" spellcheck="false" maxlength="15">
+        <input type="text" class="field-input" id="field-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" autocomplete="off" spellcheck="false">
       </div>
     </div>
     <div class="modal-footer">
@@ -2515,30 +2417,6 @@ CREATE POLICY "delete_own" ON prenotazioni
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
         Conferma
       </button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL CONFERMA GUEST (mostra link di gestione dopo la prenotazione) -->
-<div class="modal-overlay" id="modal-guest-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-guest-confirm-title">
-  <div class="modal">
-    <div class="modal-header">
-      <div><h2 class="modal-title" id="modal-guest-confirm-title">✓ Prenotazione confermata</h2></div>
-      <button class="modal-close" id="modal-guest-confirm-close" aria-label="Chiudi">&times;</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:var(--text-sm);color:var(--color-text-muted);">
-        Salva questo link: ti servirà per modificare o cancellare la prenotazione in futuro, senza bisogno di creare un account.
-      </p>
-      <div class="guest-link-box">
-        <div class="guest-link-row">
-          <input type="text" class="guest-link-input" id="guest-manage-link" readonly>
-          <button class="btn btn-outline btn-sm" id="guest-copy-link-btn" style="width:auto;white-space:nowrap;">Copia</button>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" id="modal-guest-confirm-ok">Ho salvato il link</button>
     </div>
   </div>
 </div>
@@ -2584,7 +2462,7 @@ themeToggle && themeToggle.addEventListener('click', ()=>{ curTheme=curTheme==='
 
 // ===== UTILS =====
 function showPage(id){
-  ['page-setup','page-login','page-guest-manage','app-wrapper'].forEach(p=>{
+  ['page-setup','page-login','app-wrapper'].forEach(p=>{
     const el=document.getElementById(p);
     if(el) el.classList.toggle('hidden', p!==id);
   });
@@ -2599,34 +2477,10 @@ function toast(msg, type){
   requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),350);},3200);
 }
-// ===== SICUREZZA: escaping dati utente prima di iniettarli in innerHTML =====
-// Nome, destinazione, targa, azienda sono testo libero inserito da utenti/ospiti
-// non autenticati. Vanno SEMPRE passati da qui prima di finire in un template
-// innerHTML, altrimenti un valore tipo <img src=x onerror=...> verrebbe eseguito
-// nel browser di chi visualizza la griglia o il pannello admin (stored XSS).
-function escapeHtml(str){
-  if(str===null || str===undefined) return '';
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
 function formatTime(h,m){return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
 function formatDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function isAdmin(){
   return currentUser && currentUser.email === ADMIN_EMAIL_CONST;
-}
-function isGuest(){
-  return currentUser && currentUser.guest === true;
-}
-// Determina se una prenotazione è "mia": per utenti loggati confronta lo user_id,
-// per ospiti confronta con l'elenco locale di {id, token} salvato nel browser.
-function calcolaSeMia(b){
-  if(currentUser && !currentUser.guest && b.user_id === currentUser.id) return true;
-  if(myGuestBookings.some(g => g.id === b.id)) return true;
-  return false;
 }
 function formatDateIT(s){
   const [y,mo,da]=s.split('-');
@@ -2660,16 +2514,15 @@ function updateWeekendBanner(){
 let SB_URL='', SB_KEY='';
 let offlineMode=false;
 let offlineDb={};
-let currentUser=null; // {id, email} oppure {id:null, guest:true, nome, telefono, azienda}
+let currentUser=null; // {id, email}
 const ADMIN_EMAIL_CONST='giacomo.rigamonti@saica.com';
-
-// URL della Edge Function che esegue le operazioni privilegiate (delete/update) lato server.
-// NESSUNA service_role key vive più qui nel client: la verifica "sei admin?" e l'uso
-// della chiave privilegiata avvengono solo dentro la Edge Function, sul server Supabase.
-const ADMIN_OPS_URL = 'https://jmhwxpgwakrqmnwefqrs.supabase.co/functions/v1/admin-ops';
+const ADMIN_UID='f3bb2b25-e625-4e9d-b902-bbc8e6ea8ff1';
+// Service role used ONLY for admin delete (bypasses RLS)
+const SB_SVC='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTU0MDA5NywiZXhwIjoyMDk3MTE2MDk3fQ.vHoh21d1itwUP7apg8QMwKVD_dxyJdct8TUgnmA-K_o';
 
 // ===== SUPABASE JS CLIENT =====
 let sbClient = null;
+let adminClient = null; // service_role client, bypasses RLS
 
 function initSupabaseClient(){
   sbClient = supabase.createClient(SB_URL, SB_KEY, {
@@ -2679,24 +2532,15 @@ function initSupabaseClient(){
       detectSessionInUrl: false
     }
   });
-}
-
-// Chiama la Edge Function admin-ops passando il token della sessione admin loggata.
-// Se la chiamata non è fatta da un admin autenticato, il server la rifiuta (403).
-async function callAdminOp(action, payload){
-  const { data: { session } } = await sbClient.auth.getSession();
-  if(!session){ throw new Error('Sessione admin scaduta, effettua di nuovo il login.'); }
-  const res = await fetch(ADMIN_OPS_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`
-    },
-    body: JSON.stringify({ action, ...payload })
+  // Single persistent admin client — created once, reused everywhere
+  adminClient = supabase.createClient(SB_URL, SB_SVC, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+      storageKey: 'sb-admin-session'
+    }
   });
-  const json = await res.json().catch(()=>({}));
-  if(!res.ok || json.error){ throw new Error(json.error || `Errore server (${res.status})`); }
-  return json;
 }
 
 // Auth
@@ -2714,7 +2558,7 @@ async function signIn(email, password){
   return data;
 }
 async function signOut(){
-  if(sbClient) await sbClient.auth.signOut();
+  await sbClient.auth.signOut();
   currentUser = null;
 }
 async function getUser(){
@@ -2730,46 +2574,42 @@ async function fetchBookings(date){
       .filter(([k]) => k.includes('_'+date+'_'))
       .map(([k,v]) => { const p=k.split('_'); return {...v, vehicle_id:p[0], data:date, slot_index:parseInt(p[2])}; });
   }
-  // Lettura semplice via anon key: la policy "select_all" del DB permette a chiunque
-  // di leggere gli slot (serve per mostrare la disponibilità). Non serve la service key.
   const { data, error } = await sbClient.from('prenotazioni').select('*').eq('data', date);
   if(error) throw new Error(error.message);
   return data;
 }
-async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa, extra){
-  extra = extra || {};
+async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa){
+  // Re-fetch fresh bookings for accurate cross-baia check
+  try {
+    // using persistent adminClient (service_role)
+    const { data: fresh, error } = await adminClient.from('prenotazioni').select('*').eq('data', data);
+    if(!error && fresh) {
+      currentBookings = fresh;
+      currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
+    }
+  } catch(e) { /* use existing currentBookings if fetch fails */ }
+
   const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
   if(vehicle_id==='baia-3' && !isAdmin() && !isZini){ throw new Error('La baia Depositi è riservata a ZINI Autotrasporti Srl.'); }
-
+  // Pre-check: cross-baia carrellista availability
+  if(!canBookSlot(vehicle_id, slot_index)){
+    const target = slotTimeRange(vehicle_id, slot_index);
+    const busy = target ? totalBusyInRange(target.start, target.end) : TOTAL_CARRELLISTI;
+    if(busy >= TOTAL_CARRELLISTI){
+      throw new Error('Slot non disponibile: entrambi i carrellisti sono già impegnati in questo orario.');
+    }
+    throw new Error('Slot già occupato.');
+  }
   if(offlineMode){
     const k=`${vehicle_id}_${data}_${slot_index}_${Date.now()}`;
     const id='offline-'+Date.now();
     offlineDb[k]={id,vehicle_id,data,slot_index,nome,destinazione,targa,user_id:'offline'};
     return [offlineDb[k]];
   }
-
-  const payload = {
-    vehicle_id, data, slot_index, nome, destinazione,
-    targa: (targa||'').toUpperCase(),
-  };
-  if(currentUser && currentUser.id && !currentUser.guest){
-    payload.user_id = currentUser.id;
-  } else {
-    payload.user_id = null;
-    payload.telefono = extra.telefono || null;
-    payload.azienda = extra.azienda || null;
-  }
-
-  // Il vincolo di capacità (max per baia + max 2 carrellisti totali) è applicato
-  // DAVVERO dal database tramite trigger: qui non serve più un pre-check lato client,
-  // il server risponderà con un errore chiaro se lo slot non è più disponibile.
-  const { data: res, error } = await sbClient.from('prenotazioni').insert(payload).select();
-  if(error){
-    if(error.code === '23505' || /capacit|pien|occupat/i.test(error.message)){
-      throw new Error(error.message.replace(/^.*?:\s*/,'') || 'Slot già occupato.');
-    }
-    throw new Error(error.message);
-  }
+  const { data: res, error } = await sbClient.from('prenotazioni').insert({
+    user_id: currentUser.id, vehicle_id, data, slot_index, nome, destinazione, targa
+  }).select();
+  if(error) throw new Error(error.code==='23505'?'Slot già occupato.':error.message);
   return res;
 }
 async function deleteBooking(id){
@@ -2777,29 +2617,41 @@ async function deleteBooking(id){
     const k=Object.keys(offlineDb).find(k=>offlineDb[k].id===id);
     if(k) delete offlineDb[k]; return;
   }
-  if(isAdmin()){
-    // Passa dalla Edge Function: la service key resta lato server, mai nel browser.
-    await callAdminOp('delete', { id: String(id) });
-    return;
+  // Always use adminClient for delete (bypasses RLS for any booking)
+  // using persistent adminClient (service_role)
+  const { error, count } = await adminClient
+    .from('prenotazioni')
+    .delete({ count: 'exact' })
+    .eq('id', String(id));
+  if(error){
+    console.error('[deleteBooking] error:', error);
+    throw new Error(error.message);
   }
-  // Utente loggato che cancella la propria prenotazione: permesso dalla policy "delete_own".
-  const { error } = await sbClient.from('prenotazioni').delete().eq('id', String(id));
-  if(error) throw new Error(error.message);
-}
-async function updateBooking(id, nome, destinazione, targa, slot_index){
-  if(isAdmin()){
-    await callAdminOp('update', { id: String(id), nome, destinazione, targa, slot_index });
-    return;
+  if(count === 0){
+    console.warn('[deleteBooking] 0 rows deleted for id:', id);
+    // Try fallback: delete by user sbClient in case it is own booking
+    const { error: e2 } = await sbClient.from('prenotazioni').delete().eq('id', String(id));
+    if(e2) throw new Error(e2.message);
   }
-  throw new Error('Operazione non permessa per questo utente.');
 }
 
 // ===== VEHICLES & SLOTS =====
 const VEHICLES=[
-  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:30, startHour:6,  endHour:20, maxPerSlot:1},
-  {id:'baia-2', name:'Scatole',  icon:'📦', slotStep:30, startHour:6,  endHour:20, maxPerSlot:2},
-  {id:'baia-3', name:'Depositi', icon:'🏭', slotStep:30, startHour:6,  endHour:10, maxPerSlot:1},
+  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:30, startHour:6,  endHour:20, maxPerSlot:1, durataSlot:60},
+  {id:'baia-2', name:'Scatole',  icon:'📦', slotStep:30, startHour:6,  endHour:20, maxPerSlot:2, durataSlot:30},
+  {id:'baia-3', name:'Depositi', icon:'🏭', slotStep:30, startHour:6,  endHour:10, maxPerSlot:1, durataSlot:30},
 ];
+
+// Time range [start,end) in minutes-from-midnight actually occupied by a booking
+// on this vehicle/slot_index. Mirrors the DB functions orario_da_slot/orario_fine_slot
+// and the trg_verifica_capacita trigger, so the UI and the DB agree on what's free.
+function slotTimeRange(vehicleId, slotIdx){
+  const v = VEHICLES.find(x=>x.id===vehicleId);
+  if(!v) return null;
+  const start = v.startHour*60 + slotIdx*v.slotStep;
+  return {start, end: start + (v.durataSlot||v.slotStep)};
+}
+function rangesOverlap(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
 
 // Generate slots for a specific vehicle
 function generateSlotsForVehicle(v){
@@ -2825,27 +2677,6 @@ let currentBookings=[];
 let pendingSlot=null;
 let deleteBookingId=null;
 let lastNome='', lastReparto='';
-let lastManagementToken=null; // token della prenotazione appena creata da un guest
-
-// ===== TRACCIAMENTO PRENOTAZIONI GUEST NEL BROWSER =====
-// Un ospite non ha un account, quindi per riconoscere "quali sono le mie prenotazioni"
-// nella griglia teniamo un elenco locale {id, token} salvato nel browser (persiste
-// tra le visite sullo stesso dispositivo/browser, si perde se si cancella la cronologia
-// o si usa un altro dispositivo — in quel caso resta comunque il link personale ricevuto).
-function caricaGuestBookingsLocali(){
-  try{
-    return JSON.parse(localStorage.getItem('guest_bookings_v1') || '[]');
-  }catch(e){ return []; }
-}
-function salvaGuestBookingLocale(id, token){
-  myGuestBookings.push({ id, token });
-  try{ localStorage.setItem('guest_bookings_v1', JSON.stringify(myGuestBookings)); }catch(e){}
-}
-function trovaTokenGuestPerId(id){
-  const f = myGuestBookings.find(g => g.id === id);
-  return f ? f.token : null;
-}
-let myGuestBookings = caricaGuestBookingsLocali();
 
 // ===== DB STATUS =====
 function setDbStatus(s){
@@ -2870,14 +2701,28 @@ function renderTabs(){
   });
 }
 
+
+async function updateBooking(id, nome, destinazione, targa, slot_index){
+  // using persistent adminClient (service_role)
+  const patch = { nome, destinazione, targa };
+  if(slot_index !== undefined && slot_index !== null) patch.slot_index = parseInt(slot_index);
+  const { error } = await adminClient.from('prenotazioni').update(patch).eq('id', String(id));
+  if(error){
+    console.error('[updateBooking] error:', error);
+    throw new Error(error.code==='23505'?'Slot già occupato. Scegline un altro.':error.message);
+  }
+}
 // ===== LOAD & RENDER =====
 async function loadAndRender(){
   updateWeekendBanner();
   renderGridSkeleton();
   try{
-    // Lettura pubblica via anon key (policy select_all) — niente più service key qui.
-    currentBookings = await fetchBookings(selectedDate);
-    currentBookings.forEach(b=>{ b.mine = calcolaSeMia(b); });
+    // Always fetch ALL baie for correct cross-baia availability check
+    // using persistent adminClient (service_role)
+    const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate);
+    if(!error && data) currentBookings = data;
+    else currentBookings = await fetchBookings(selectedDate);
+    currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
     setDbStatus('ok');
   }catch(e){
     setDbStatus('error');
@@ -2907,58 +2752,73 @@ function renderGridSkeleton(){
 }
 
 
-// ===== CROSS-BAIA AVAILABILITY (specchio del vincolo ora imposto anche dal DB) =====
+// ===== CROSS-BAIA AVAILABILITY =====
 // Rules:
 //   - 2 carrellisti totali
 //   - Fogli: max 1 per slot
 //   - Depositi: max 1 per slot
 //   - Scatole: max 2 per slot (ma limitato dai carrellisti disponibili)
 //   - Totale prenotazioni su TUTTE le baie nello stesso slot_index <= 2
-// NOTA: questo calcolo lato client serve SOLO per la UI (mostrare colori/stati).
-// La vera protezione anti-doppio-booking è il trigger SQL sul database.
 
 const TOTAL_CARRELLISTI = 2;
 
+// Count bookings on a specific vehicle/slot whose real time range OVERLAPS this slot's
+// time range (not just exact slot_index match) — mirrors the DB trigger's overlap check,
+// needed because Fogli bookings last 60 minutes but the grid ticks every 30.
 function countBookingsForSlot(vehicleId, slotIdx){
-  return currentBookings.filter(b => b.vehicle_id === vehicleId && parseInt(b.slot_index) === slotIdx).length;
+  const target = slotTimeRange(vehicleId, slotIdx);
+  if(!target) return 0;
+  return currentBookings.filter(b => {
+    if(b.vehicle_id !== vehicleId) return false;
+    const r = slotTimeRange(b.vehicle_id, parseInt(b.slot_index));
+    return r && rangesOverlap(target.start, target.end, r.start, r.end);
+  }).length;
 }
 
-function totalBusyAtTime(hour, min){
+// Count total carrellisti busy across ALL baie whose booking time range overlaps [start,end)
+function totalBusyInRange(start, end){
   let total = 0;
-  VEHICLES.forEach(v => {
-    const vSlots = generateSlotsForVehicle(v);
-    const matchIdx = vSlots.findIndex(s => s.hour === hour && s.min === min);
-    if(matchIdx >= 0){
-      const count = currentBookings.filter(b => b.vehicle_id === v.id && parseInt(b.slot_index) === matchIdx).length;
-      total += count;
-    }
+  currentBookings.forEach(b => {
+    const r = slotTimeRange(b.vehicle_id, parseInt(b.slot_index));
+    if(r && rangesOverlap(start, end, r.start, r.end)) total++;
   });
   return total;
 }
+// Kept for compatibility with any other caller expecting hour/min at 30-min granularity
+function totalBusyAtTime(hour, min){
+  const start = hour*60+min;
+  return totalBusyInRange(start, start+30);
+}
 
+// Can we add one more booking to vehicleId at slotIdx?
 function canBookSlot(vehicleId, slotIdx){
   const v = VEHICLES.find(x => x.id === vehicleId);
   if(!v) return false;
   const vSlots = generateSlotsForVehicle(v);
   if(slotIdx >= vSlots.length) return false;
-  const slot = vSlots[slotIdx];
+  const target = slotTimeRange(vehicleId, slotIdx);
+  if(!target) return false;
 
+  // Check 1: vehicle-specific max not exceeded (by overlap, not exact index)
   const currentCount = countBookingsForSlot(vehicleId, slotIdx);
   if(currentCount >= v.maxPerSlot) return false;
 
-  const busy = totalBusyAtTime(slot.hour, slot.min);
+  // Check 2: total carrellisti not exceeded (by overlap, across ALL baie)
+  const busy = totalBusyInRange(target.start, target.end);
   if(busy >= TOTAL_CARRELLISTI) return false;
 
   return true;
 }
 
+// Legacy compatibility: returns max allowed (used in render)
 function maxAllowedForSlot(vehicleId, slotIdx){
   const v = VEHICLES.find(x => x.id === vehicleId);
   if(!v) return 0;
   const vSlots = generateSlotsForVehicle(v);
   if(slotIdx >= vSlots.length) return 0;
-  const slot = vSlots[slotIdx];
-  const busy = totalBusyAtTime(slot.hour, slot.min);
+  const target = slotTimeRange(vehicleId, slotIdx);
+  if(!target) return 0;
+  const busy = totalBusyInRange(target.start, target.end);
   const available = TOTAL_CARRELLISTI - busy;
   const currentCount = countBookingsForSlot(vehicleId, slotIdx);
   return Math.min(v.maxPerSlot, currentCount + Math.max(0, available));
@@ -2988,10 +2848,6 @@ function renderGrid(){
       cls='free'; txt=`Disponibile (${booked_count}/${max_allowed})`;
       aria=`${formatTime(slot.hour,slot.min)} - Parzialmente occupato`;
     }
-    // NOTA SICUREZZA: nome/destinazione/targa sono testo libero inserito da utenti/ospiti
-    // NON autenticati. txt e aria vengono costruiti qui in CHIARO (senza escape) e
-    // sanitizzati una sola volta, tutti insieme, subito prima di finire in innerHTML
-    // (vedi escapeHtml(txt)/escapeHtml(aria) più sotto) — evita il doppio escaping.
     if(past){
       if(b){
         if(b.mine){cls='past mine';txt=`✓ ${b.destinazione||b.targa||b.nome}`;aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione: ${b.destinazione||''}`;}
@@ -2999,35 +2855,30 @@ function renderGrid(){
         else {cls='past';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
       } else {cls='past';txt='—';}
     }
-    // IMPORTANTE: controlliamo PRIMA se lo slot è una MIA prenotazione, indipendentemente
-    // dal fatto che la baia risulti "piena" o meno (es. Scatole con ancora 1 posto libero:
-    // prima il click apriva per sbaglio "nuova prenotazione" invece di mostrare la mia).
-    else if(b&&b.mine){
-      cls='mine';
-      txt=`✓ ${b.destinazione||b.targa||b.nome}`;
-      aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione: ${b.destinazione||''} (${b.targa||''})`;
-    }
-    else if(isFull&&b){
-      if(isAdmin()){
-        cls='booked';
-        txt=`${b.nome}`;
-        aria=`${formatTime(slot.hour,slot.min)} - ${b.nome} | ${b.destinazione} | ${b.targa}`;
-      } else {
-        cls='occupied-other';
-        txt='Occupato';
-        aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
-      }
-    }
+    else if(isFull&&b){if(b.mine){
+          cls='mine';
+          txt=`✓ ${b.destinazione||b.targa||b.nome}`;
+          aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione: ${b.destinazione||''} (${b.targa||''})`;
+        } else if(isAdmin()){
+          cls='booked';
+          txt=`${b.nome}`;
+          aria=`${formatTime(slot.hour,slot.min)} - ${b.nome} | ${b.destinazione} | ${b.targa}`;
+        } else {
+          cls='occupied-other';
+          txt='Occupato';
+          aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
+        }}
     else if(isFull&&!b&&!past){cls='occupied-other';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
-    const mineTitle = b && b.mine ? `title="${escapeHtml(b.nome)} → ${escapeHtml(b.destinazione)} | ${escapeHtml(b.targa)}"` : '';
-    const adminTitle = b && !b.mine && isAdmin() ? `title="${escapeHtml(b.nome)} → ${escapeHtml(b.destinazione)} | ${escapeHtml(b.targa)}"` : '';
+    const mineTitle = b && b.mine ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
+    const adminTitle = b && !b.mine && isAdmin() ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${escapeHtml(aria)}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${escapeHtml(txt)}</span></div></td>`;
+    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
     const el=tr.querySelector('.slot');
     if(!past){
-      if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
-      else if(!isFull){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
+      if(!isFull){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
+      else if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
       else if(isAdmin()&&b&&!b.mine){el.addEventListener('click',()=>openAdminEdit(b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAdminEdit(b);}});}
+      // else: slot full due to cross-baia capacity with no booking on THIS vehicle → not clickable, no handler needed
     }
     tbody.appendChild(tr);
   });
@@ -3066,14 +2917,6 @@ function openBookingModal(idx,slot){
   document.getElementById('field-nome').value=lastNome;
   document.getElementById('field-destinazione').value='';
   document.getElementById('field-targa').value='';
-  // Campi aggiuntivi solo per chi prenota come ospite (senza account)
-  const aziendaWrap=document.getElementById('field-azienda-wrap');
-  const telefonoWrap=document.getElementById('field-telefono-wrap');
-  const showGuestFields = isGuest();
-  aziendaWrap.style.display = showGuestFields ? 'flex' : 'none';
-  telefonoWrap.style.display = showGuestFields ? 'flex' : 'none';
-  document.getElementById('field-azienda').value='';
-  document.getElementById('field-telefono').value='';
   document.getElementById('modal-overlay').classList.add('visible');
   setTimeout(()=>{const f=document.getElementById('field-nome');f.focus();},100);
 }
@@ -3087,56 +2930,24 @@ document.getElementById('modal-confirm').addEventListener('click',async()=>{
   const nome=document.getElementById('field-nome').value.trim();
   const destinazione=document.getElementById('field-destinazione').value.trim();
   const targa=document.getElementById('field-targa').value.trim().toUpperCase();
-  const azienda=document.getElementById('field-azienda').value.trim();
-  const telefono=document.getElementById('field-telefono').value.trim();
   if(!nome){document.getElementById('field-nome').focus();toast('Inserisci il nome del trasportatore.','error-t');return;}
-  if(isGuest() && !azienda){document.getElementById('field-azienda').focus();toast('Inserisci il nome della tua azienda.','error-t');return;}
-  if(isGuest() && !telefono){document.getElementById('field-telefono').focus();toast('Inserisci un numero di telefono.','error-t');return;}
   if(!destinazione){document.getElementById('field-destinazione').focus();toast('Inserisci la destinazione.','error-t');return;}
   if(!targa){document.getElementById('field-targa').focus();toast('Inserisci la targa del mezzo.','error-t');return;}
   const btn=document.getElementById('modal-confirm');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Salvo...';
   try{
     if(!pendingSlot){toast('Errore: nessuno slot selezionato.','error-t');return;}
-    const res=await createBooking(selectedVehicle,selectedDate,pendingSlot.idx,nome,destinazione,targa,{azienda,telefono});
+  const res=await createBooking(selectedVehicle,selectedDate,pendingSlot.idx,nome,destinazione,targa);
     lastNome=nome; lastReparto='';
     const nb=Array.isArray(res)?res[0]:res;
-    if(nb && isGuest()){ salvaGuestBookingLocale(nb.id, nb.management_token); }
-    if(nb){nb.mine = calcolaSeMia(nb); currentBookings.push(nb);}
+    if(nb){nb.mine=true;currentBookings.push(nb);}
     closeModal('modal-overlay');
     renderGrid(); loadBookingsForStep1(); updateStats();
-    if(isGuest() && nb){
-      lastManagementToken = nb.management_token;
-      showGuestManageLink(nb.id, nb.management_token);
-    } else {
-      toast(`✓ Prenotato per le ${formatTime(pendingSlot.slot.hour,pendingSlot.slot.min)}!`,'success');
-    }
+    toast(`✓ Prenotato per le ${formatTime(pendingSlot.slot.hour,pendingSlot.slot.min)}!`,'success');
     pendingSlot=null;
   }catch(e){ toast('Errore: '+(e.message.includes('unique')||e.message.includes('duplicate')?'Slot già occupato.':e.message),'error-t'); }
   btn.disabled=false;
   btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Conferma';
-});
-
-// ===== GUEST: link di gestione dopo la prenotazione =====
-function showGuestManageLink(bookingId, token){
-  const url = new URL(window.location.href);
-  url.search = '';
-  url.searchParams.set('g', bookingId);
-  url.searchParams.set('t', token);
-  document.getElementById('guest-manage-link').value = url.toString();
-  document.getElementById('modal-guest-confirm-overlay').classList.add('visible');
-}
-document.getElementById('modal-guest-confirm-close').addEventListener('click',()=>closeModal('modal-guest-confirm-overlay'));
-document.getElementById('modal-guest-confirm-ok').addEventListener('click',()=>closeModal('modal-guest-confirm-overlay'));
-document.getElementById('guest-copy-link-btn').addEventListener('click',async()=>{
-  const input=document.getElementById('guest-manage-link');
-  try{
-    await navigator.clipboard.writeText(input.value);
-    toast('✓ Link copiato','success');
-  }catch(e){
-    input.select();
-    toast('Seleziona e copia manualmente il link.','warning');
-  }
 });
 
 // ===== DELETE MODAL =====
@@ -3192,12 +3003,14 @@ if(datePicker){
   document.getElementById('prev-day').addEventListener('click',()=>_navGuardS2(()=>{
     const d=new Date(selectedDate+'T00:00:00');
     d.setDate(d.getDate()-1);
+    // skip weekends going back
     while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()-1);
     selectedDate=formatDate(d);datePicker.value=selectedDate;loadAndRender();
   }));
   document.getElementById('next-day').addEventListener('click',()=>_navGuardS2(()=>{
     const d=new Date(selectedDate+'T00:00:00');
     d.setDate(d.getDate()+1);
+    // skip weekends going forward
     while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1);
     selectedDate=formatDate(d);datePicker.value=selectedDate;loadAndRender();
   }));
@@ -3209,6 +3022,13 @@ document.getElementById('btn-logout')&&document.getElementById('btn-logout').add
   toast('Logout effettuato.');
   showPage('page-login');
   renderAuthLogin();
+});
+
+// ===== SETTINGS =====
+document.getElementById('btn-settings')&&document.getElementById('btn-settings').addEventListener('click',()=>{
+  document.getElementById('setup-url').value=SB_URL;
+  document.getElementById('setup-key').value=SB_KEY;
+  showPage('page-setup');
 });
 
 // ===== ESC =====
@@ -3244,11 +3064,9 @@ function renderAuthLogin(){
       Accedi
     </button>
     <div class="auth-switch">Non hai un account? <button onclick="renderAuthRegister()">Registrati</button></div>
-    <div class="auth-switch"><button id="guest-flow-btn" style="color:var(--color-text-muted);">Prenota senza account, come ospite →</button></div>
   `;
   document.getElementById('auth-submit').addEventListener('click', doLogin);
   document.getElementById('auth-pw').addEventListener('keydown',e=>{if(e.key==='Enter') doLogin();});
-  document.getElementById('guest-flow-btn').addEventListener('click', renderAuthGuest);
   setTimeout(()=>document.getElementById('auth-email').focus(),100);
 }
 
@@ -3292,53 +3110,8 @@ function renderAuthRegister(){
   setTimeout(()=>document.getElementById('reg-nome').focus(),100);
 }
 
-// ===== NUOVO: flusso ospite (nessun account, nessuna password) =====
-function renderAuthGuest(){
-  authMode='guest';
-  document.getElementById('auth-title').textContent='Prenota come ospite';
-  document.getElementById('auth-body').innerHTML=`
-    <p style="font-size:var(--text-sm);color:var(--color-text-muted);margin:0;">
-      Compila questi dati una sola volta. Dopo la prenotazione riceverai un link personale
-      per modificarla o cancellarla, senza bisogno di creare un account.
-    </p>
-    <div class="field">
-      <label class="field-label" for="guest-nome">Nome e Cognome *</label>
-      <input type="text" class="field-input" id="guest-nome" placeholder="Es. Mario Rossi" autocomplete="name">
-    </div>
-    <div class="field">
-      <label class="field-label" for="guest-azienda">Azienda *</label>
-      <input type="text" class="field-input" id="guest-azienda" placeholder="Es. Trasporti Rossi Srl" autocomplete="organization">
-    </div>
-    <div class="field">
-      <label class="field-label" for="guest-telefono">Telefono *</label>
-      <input type="tel" class="field-input" id="guest-telefono" placeholder="Es. 333 1234567" autocomplete="tel">
-    </div>
-    <div class="error-msg" id="auth-error"></div>
-  `;
-  document.getElementById('auth-footer').innerHTML=`
-    <button class="btn btn-primary" id="auth-submit">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      Continua
-    </button>
-    <div class="auth-switch">Hai già un account? <button onclick="renderAuthLogin()">Accedi</button></div>
-  `;
-  document.getElementById('auth-submit').addEventListener('click', doGuestContinue);
-  setTimeout(()=>document.getElementById('guest-nome').focus(),100);
-}
-function doGuestContinue(){
-  const nome=(document.getElementById('guest-nome')||{}).value?.trim();
-  const azienda=(document.getElementById('guest-azienda')||{}).value?.trim();
-  const telefono=(document.getElementById('guest-telefono')||{}).value?.trim();
-  if(!nome||!azienda||!telefono){showAuthError('Compila tutti i campi.');return;}
-  hideAuthError();
-  currentUser={ id:null, guest:true, nome, azienda, telefono, reparto:azienda };
-  lastNome=nome; lastReparto=azienda;
-  startApp();
-}
-
 window.renderAuthLogin=renderAuthLogin;
 window.renderAuthRegister=renderAuthRegister;
-window.renderAuthGuest=renderAuthGuest;
 window.togglePw=function(id,btn){
   const inp=document.getElementById(id);
   const show=inp.type==='password';
@@ -3389,6 +3162,7 @@ async function doRegister(){
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Creo account...';
   try{
     await signUp(email,pw,nome,reparto);
+    // Try immediate login
     try{
       const r=await signIn(email,pw);
       const user = r.user || await getUser();
@@ -3396,6 +3170,7 @@ async function doRegister(){
       lastNome=nome; lastReparto=reparto;
       startApp();
     }catch(e2){
+      // Email confirmation required
       const s=document.getElementById('auth-success');
       if(s){s.textContent='✓ Account creato! Controlla la tua email per confermare, poi accedi.';s.classList.add('show');}
       btn.disabled=false;
@@ -3410,6 +3185,7 @@ async function doRegister(){
 }
 
 function startApp(){
+  // Update user chip
   const avatar=document.getElementById('user-avatar');
   const emailLabel=document.getElementById('user-email-label');
   if(avatar) avatar.textContent=(currentUser?.nome||currentUser?.email||'?').charAt(0).toUpperCase();
@@ -3417,14 +3193,15 @@ function startApp(){
   setDbStatus('ok');
   showPage('app-wrapper');
   renderTabs();
+  // Show export bar only to admin
   const exportBar = document.getElementById('export-bar');
   if(exportBar) exportBar.style.display = isAdmin() ? '' : 'none';
+  // Show admin panel section only to admin
   const adminSection = document.getElementById('admin-all-bookings');
   if(adminSection) adminSection.style.display = isAdmin() ? '' : 'none';
-  const guestBanner = document.getElementById('guest-mode-banner');
-  if(guestBanner) guestBanner.style.display = isGuest() ? 'flex' : 'none';
   if(isAdmin()){ initAdminFilters(); initAdminEditModal(); initAdminAddBooking(); }
   initUserEditModal();
+  // Start on step 1 (baia selection)
   initStep1Controls();
   goToStep1();
   if(window._initExportDates) window._initExportDates();
@@ -3461,101 +3238,14 @@ document.getElementById('setup-connect').addEventListener('click',async()=>{
   }
 });
 
-// ===== GUEST SELF-SERVICE (link ?g=<id>&t=<token>) =====
-async function tryOpenGuestManagePage(){
-  const params = new URLSearchParams(window.location.search);
-  const g = params.get('g');
-  const t = params.get('t');
-  if(!g || !t) return false;
-
-  showPage('page-guest-manage');
-  const body = document.getElementById('guest-manage-body');
-  try{
-    const { data, error } = await sbClient.rpc('guest_get_booking', { p_id: g, p_token: t });
-    if(error) throw new Error(error.message);
-    const booking = data;
-    const v = VEHICLES.find(v=>v.id===booking.vehicle_id) || {name:booking.vehicle_id, icon:''};
-    const vSlots = generateSlotsForVehicle(v.startHour!==undefined?v:VEHICLES.find(x=>x.id===booking.vehicle_id));
-    const orario = vSlots[booking.slot_index] ? formatTime(vSlots[booking.slot_index].hour, vSlots[booking.slot_index].min) : '—';
-
-    body.innerHTML = `
-      <div class="slot-info-box">
-        <div class="slot-info-item"><div class="slot-info-item-label">Baia</div><div class="slot-info-item-value">${v.icon||''} ${v.name}</div></div>
-        <div class="slot-info-item"><div class="slot-info-item-label">Data</div><div class="slot-info-item-value">${formatDateIT(booking.data)}</div></div>
-        <div class="slot-info-item"><div class="slot-info-item-label">Orario</div><div class="slot-info-item-value">${orario}</div></div>
-      </div>
-      <div class="field">
-        <label class="field-label" for="gm-nome">Nome trasportatore *</label>
-        <input type="text" class="field-input" id="gm-nome" value="${escapeHtml(booking.nome||'')}" maxlength="80">
-      </div>
-      <div class="field">
-        <label class="field-label" for="gm-dest">Destinazione *</label>
-        <input type="text" class="field-input" id="gm-dest" value="${escapeHtml(booking.destinazione||'')}" maxlength="80">
-      </div>
-      <div class="field">
-        <label class="field-label" for="gm-targa">Targa mezzo *</label>
-        <input type="text" class="field-input" id="gm-targa" value="${escapeHtml(booking.targa||'')}" style="text-transform:uppercase;" maxlength="15">
-      </div>
-      <div class="error-msg" id="gm-error"></div>
-      <button class="btn btn-primary" id="gm-save-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        Salva modifiche
-      </button>
-      <button class="btn btn-danger" id="gm-delete-btn" style="width:100%;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-        Cancella prenotazione
-      </button>
-    `;
-
-    document.getElementById('gm-save-btn').addEventListener('click', async ()=>{
-      const nome=document.getElementById('gm-nome').value.trim();
-      const dest=document.getElementById('gm-dest').value.trim();
-      const targa=document.getElementById('gm-targa').value.trim().toUpperCase();
-      const errEl=document.getElementById('gm-error');
-      if(!nome||!dest||!targa){errEl.textContent='Compila tutti i campi.';errEl.classList.add('show');return;}
-      errEl.classList.remove('show');
-      const btn=document.getElementById('gm-save-btn');
-      btn.disabled=true; btn.textContent='Salvataggio...';
-      try{
-        const { error: upErr } = await sbClient.rpc('guest_update_booking', {
-          p_id:g, p_token:t, p_nome:nome, p_destinazione:dest, p_targa:targa, p_telefono:null, p_slot_index:null
-        });
-        if(upErr) throw new Error(upErr.message);
-        toast('✓ Prenotazione modificata','success');
-      }catch(e){
-        errEl.textContent=e.message; errEl.classList.add('show');
-      }finally{
-        btn.disabled=false;
-        btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salva modifiche';
-      }
-    });
-
-    document.getElementById('gm-delete-btn').addEventListener('click', async ()=>{
-      if(!confirm('Sei sicuro di voler cancellare questa prenotazione?')) return;
-      try{
-        const { error: delErr } = await sbClient.rpc('guest_delete_booking', { p_id:g, p_token:t });
-        if(delErr) throw new Error(delErr.message);
-        body.innerHTML = '<div class="success-msg show">✓ Prenotazione cancellata. Puoi chiudere questa pagina.</div>';
-      }catch(e){ toast('Errore: '+e.message,'error-t'); }
-    });
-
-  }catch(e){
-    body.innerHTML = `<div class="error-msg show">Link non valido o prenotazione non trovata. ${e.message||''}</div>`;
-  }
-  return true;
-}
-
 // ===== INIT =====
 SB_URL = 'https://jmhwxpgwakrqmnwefqrs.supabase.co';
 SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU';
 offlineMode = false;
 initSupabaseClient();
 
+// Controlla sessione esistente → se loggato salta il login
 (async () => {
-  // Prima controlla se è un link di autogestione guest (?g=&t=)
-  const gestitoDaGuest = await tryOpenGuestManagePage();
-  if(gestitoDaGuest) return;
-
   try {
     const { data: { session } } = await sbClient.auth.getSession();
     if (session && session.user) {
@@ -3592,6 +3282,7 @@ function renderAdminBookings(){
   const all = currentBookings || [];
   if(badge) badge.textContent = all.length;
 
+  // Apply filter
   const filtered = adminFilter === 'all' ? all : all.filter(b => b.vehicle_id === adminFilter);
 
   if(filtered.length === 0){
@@ -3599,6 +3290,7 @@ function renderAdminBookings(){
     updateBulkBar();
     return;
   }
+  // Sort by slot_index
   const sorted = [...filtered].sort((a,b)=>(a.slot_index||0)-(b.slot_index||0));
   list.innerHTML = sorted.map(b => {
     const v = VEHICLES.find(v=>v.id===b.vehicle_id)||{icon:'🚪',name:b.vehicle_id};
@@ -3608,34 +3300,30 @@ function renderAdminBookings(){
       const s = SLOTS[idx];
       time = formatTime(s.hour, s.min);
     }
-    // SICUREZZA: name/targa/dest arrivano da input liberi di utenti/ospiti non
-    // autenticati -> SEMPRE escapeHtml() prima di iniettarli in innerHTML (stored XSS
-    // altrimenti, qui nel pannello admin). b.id è un id/UUID generato dal DB, ma lo
-    // sanitizziamo comunque come difesa in profondità sugli attributi data-id.
-    const safeId = escapeHtml(b.id);
-    const name = escapeHtml(b.nome || b.trasportatore || b.user_nome || b.user_email || 'N/D');
-    const targa = escapeHtml(b.targa || '');
-    const dest = escapeHtml(b.destinazione || '');
-    return `<div class="admin-booking-row" data-id="${safeId}">
-      <input type="checkbox" class="admin-row-check" data-id="${safeId}" title="Seleziona">
+    const name = b.nome || b.trasportatore || b.user_nome || b.user_email || 'N/D';
+    const targa = b.targa || '';
+    const dest = b.destinazione || '';
+    return `<div class="admin-booking-row" data-id="${b.id}">
+      <input type="checkbox" class="admin-row-check" data-id="${b.id}" title="Seleziona">
       <div class="admin-booking-time">${time}</div>
-      <div class="admin-booking-baia">${v.icon} ${escapeHtml(v.name)}</div>
+      <div class="admin-booking-baia">${v.icon} ${v.name}</div>
       <div class="admin-booking-info">
         <span class="admin-booking-name">${name}</span>
         ${targa ? `<span class="admin-booking-targa">${targa}</span>` : ''}
         ${dest ? `<span class="admin-booking-dest">→ ${dest}</span>` : ''}
       </div>
       <div class="admin-row-actions">
-        <button class="admin-row-btn admin-edit-btn" data-id="${safeId}" title="Modifica">
+        <button class="admin-row-btn admin-edit-btn" data-id="${b.id}" title="Modifica">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="admin-row-btn admin-delete-btn" data-id="${safeId}" title="Elimina">
+        <button class="admin-row-btn admin-delete-btn" data-id="${b.id}" title="Elimina">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
       </div>
     </div>`;
   }).join('');
 
+  // Re-attach checkbox listeners
   list.querySelectorAll('.admin-row-check').forEach(chk => {
     chk.addEventListener('change', updateBulkBar);
   });
@@ -3658,10 +3346,7 @@ function updateBulkBar(){
   }
 }
 
-let _adminFiltersInizializzati = false;
 function initAdminFilters(){
-  if(_adminFiltersInizializzati) return;
-  _adminFiltersInizializzati = true;
   document.querySelectorAll('.admin-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       adminFilter = btn.dataset.filter;
@@ -3671,6 +3356,7 @@ function initAdminFilters(){
     });
   });
 
+  // Select all button
   document.getElementById('admin-select-all-btn')?.addEventListener('click', () => {
     const checks = document.querySelectorAll('.admin-row-check');
     const allChecked = [...checks].every(c => c.checked);
@@ -3678,17 +3364,19 @@ function initAdminFilters(){
     updateBulkBar();
   });
 
+  // Bulk delete button
   document.getElementById('admin-bulk-delete-btn')?.addEventListener('click', async () => {
     const checked = document.querySelectorAll('.admin-row-check:checked');
     if(checked.length === 0) return;
     if(!confirm(`Eliminare ${checked.length} prenotazion${checked.length===1?'e':'i'}?`)) return;
     const ids = [...checked].map(c => c.dataset.id);
-    try{
-      await callAdminOp('bulk_delete', { ids });
-      toast(`✓ ${ids.length} prenotazion${ids.length===1?'e':'i'} eliminat${ids.length===1?'a':'e'}`, 'success');
-    }catch(e){
-      toast('Errore: '+e.message, 'error-t');
+    let errors = 0;
+    for(const id of ids){
+      try{ await deleteBooking(id); }
+      catch(e){ errors++; }
     }
+    if(errors === 0) toast(`✓ ${ids.length} prenotazion${ids.length===1?'e':'i'} eliminat${ids.length===1?'a':'e'}`, 'success');
+    else toast(`Eliminat${ids.length-errors===1?'a':'e'} ${ids.length-errors} su ${ids.length}. Errori: ${errors}`, 'warning');
     await loadAndRender();
   });
 }
@@ -3698,6 +3386,7 @@ function renderBaiaCards(){
   const c = document.getElementById('baia-cards-container');
   if(!c) return;
   const titleEl = document.querySelector('.baia-select-title');
+  // Admin: only show baia cards when in add-booking mode
   if(isAdmin()){
     if(adminAddBookingMode && !isWeekend(selectedDate)){
       renderBaiaCardsForAdmin();
@@ -3717,6 +3406,7 @@ function renderBaiaCards(){
     const card = document.createElement('button');
     card.className = 'baia-card';
     card.setAttribute('aria-label', 'Seleziona ' + v.name);
+    // Count free slots for this vehicle today
     const vSlots = generateSlotsForVehicle(v);
     const booked = currentBookings.filter(b => b.vehicle_id === v.id).length;
     const free = vSlots.length - booked;
@@ -3734,7 +3424,7 @@ function renderBaiaCards(){
 
 let _goToStep2Busy = false;
 async function goToStep2(vehicle) {
-  if(_goToStep2Busy) return;
+  if(_goToStep2Busy) return; // avoid double-tap causing a stuck/half-loaded state
   _goToStep2Busy = true;
   selectedVehicle = vehicle.id;
   selectedVehicleObj = vehicle;
@@ -3743,12 +3433,16 @@ async function goToStep2(vehicle) {
   try{
     await loadAndRender();
   }catch(e){
+    // loadAndRender already handles its own errors internally, but guard here too
+    // so a network hiccup never leaves the user stuck on step 1 with no feedback.
     toast('Errore di connessione, riprova.','error-t');
   }finally{
+    // Update step2 header labels
     const dateLabel = document.getElementById('step2-date-label');
     const baiaLabel = document.getElementById('step2-baia-label');
     if(dateLabel) dateLabel.textContent = formatDateIT(selectedDate);
     if(baiaLabel) baiaLabel.textContent = vehicle.icon + ' ' + vehicle.name;
+    // Switch views (always happens, even if loading failed)
     document.getElementById('step-select').style.display = 'none';
     document.getElementById('step-slots').style.display = 'flex';
     document.getElementById('step-slots').style.flexDirection = 'column';
@@ -3767,6 +3461,7 @@ function goToStep1(){
   document.getElementById('step-select').style.display = 'flex';
   document.getElementById('step-select').style.flexDirection = 'column';
   document.getElementById('step-select').style.gap = 'var(--space-4)';
+  // Restore admin panels if hidden
   if(isAdmin()){
     const adminAll = document.getElementById('admin-all-bookings');
     const exportBar = document.getElementById('export-bar');
@@ -3774,17 +3469,29 @@ function goToStep1(){
     if(adminAll) adminAll.style.display = '';
     if(exportBar) exportBar.style.display = '';
     if(addBtn) addBtn.style.display = 'inline-flex';
+    // Remove inline slots panel if present
     const inlineSlots = document.getElementById('admin-inline-slots');
     if(inlineSlots) inlineSlots.remove();
   }
+  // Refresh bookings count on cards
   loadBookingsForStep1();
 }
 
 async function loadBookingsForStep1(){
   try {
-    // Sia per admin che per utenti/ospiti: lettura pubblica via anon key, senza service key.
-    currentBookings = await fetchBookings(selectedDate);
-    currentBookings.forEach(b=>{ b.mine = calcolaSeMia(b); });
+    if(isAdmin()){
+      // Admin fetches ALL bookings using service role (bypasses RLS)
+      // using persistent adminClient (service_role)
+      const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate);
+      if(!error && data) {
+        currentBookings = data;
+      } else {
+        currentBookings = await fetchBookings(selectedDate);
+      }
+    } else {
+      currentBookings = await fetchBookings(selectedDate);
+    }
+    currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
   } catch(e){ console.error('loadBookingsForStep1 error:', e); }
   renderBaiaCards();
   renderAdminBookings();
@@ -3800,6 +3507,7 @@ function updateWeekendBannerS1(){
   const dayName = d.getDay()===6?'sabato':'domenica';
   banner.style.display = isWeekend(selectedDate) ? 'flex' : 'none';
   if(txt) txt.textContent = `Stabilimento chiuso ${dayName}`;
+  // Hide baia cards + inline slots on weekend even in admin add-booking mode
   if(isWeekend(selectedDate) && adminAddBookingMode){
     const panel = document.getElementById('admin-inline-slots');
     const c = document.getElementById('baia-cards-container');
@@ -3810,11 +3518,9 @@ function updateWeekendBannerS1(){
   }
 }
 
+// Init step1 date pickers in sync with main
 document.addEventListener('DOMContentLoaded', () => {});
-let _step1ControlsInizializzati = false;
 function initStep1Controls(){
-  if(_step1ControlsInizializzati) return; // evita di registrare due volte gli stessi pulsanti
-  _step1ControlsInizializzati = true;
   const dp = document.getElementById('date-picker-s1');
   const mainDp = document.getElementById('date-picker');
   if(dp){
@@ -3856,11 +3562,12 @@ function initStep1Controls(){
   if(homeBtn) homeBtn.addEventListener('click', goHome);
 }
 
+
+
+
+
 // ===== ADMIN ADD BOOKING =====
-let _adminAddBookingInizializzato = false;
 function initAdminAddBooking(){
-  if(_adminAddBookingInizializzato) return;
-  _adminAddBookingInizializzato = true;
   const btn = document.getElementById('admin-add-booking-btn');
   if(btn) {
     btn.style.display = isAdmin() ? 'inline-flex' : 'none';
@@ -3870,6 +3577,7 @@ function initAdminAddBooking(){
 
 function showBaiaCardsForAdmin(){
   adminAddBookingMode = true;
+  // Show baia cards and title like a normal user
   const c = document.getElementById('baia-cards-container');
   const titleEl = document.querySelector('.baia-select-title');
   const adminAll = document.getElementById('admin-all-bookings');
@@ -3908,30 +3616,36 @@ function renderBaiaCardsForAdmin(){
     card.addEventListener('click', () => showInlineSlots(v));
     c.appendChild(card);
   });
+  // Remove any previous inline slot panel
   const old = document.getElementById('admin-inline-slots');
   if(old) old.remove();
 }
 
 function showInlineSlots(vehicle){
+  // Highlight selected card
   VEHICLES.forEach(v => {
     const card = document.getElementById('admin-baia-card-' + v.id);
     if(card) card.classList.toggle('baia-card--selected', v.id === vehicle.id);
   });
 
+  // Remove previous slot panel
   const old = document.getElementById('admin-inline-slots');
   if(old) old.remove();
 
+  // Build inline slot grid
   const panel = document.createElement('div');
   panel.id = 'admin-inline-slots';
   panel.className = 'admin-inline-slots';
 
   const vehicleSlots = generateSlotsForVehicle(vehicle);
   const booked = currentBookings.filter(b => b.vehicle_id === vehicle.id);
+  const bookedSlots = booked.map(b => parseInt(b.slot_index));
 
   let slotsHTML = '';
   vehicleSlots.forEach((s, idx) => {
     const slotBookings = booked.filter(b => parseInt(b.slot_index) === idx);
     const bookingCount = slotBookings.length;
+    const maxAllowed = maxAllowedForSlot(vehicle.id, idx);
     const isTaken = !canBookSlot(vehicle.id, idx);
     const booking = slotBookings[0];
     const label = s.hour.toString().padStart(2,'0') + ':' + s.min.toString().padStart(2,'0');
@@ -3946,6 +3660,7 @@ function showInlineSlots(vehicle){
         ${dest ? `<span class="inline-slot-detail">📍 ${dest}</span>` : ''}
       </div>`;
     } else if(bookingCount > 0 && canBookSlot(vehicle.id, idx)){
+      // Partially booked (only possible on Scatole)
       const nome = booking?.nome || '–';
       const targa = booking?.targa || '';
       slotsHTML += `<button class="inline-slot inline-slot--partial" data-idx="${idx}" data-vehicle="${vehicle.id}">
@@ -3971,6 +3686,7 @@ function showInlineSlots(vehicle){
     </div>
     <div class="inline-slots-grid">${slotsHTML}</div>`;
 
+  // Attach click on free slots → open booking modal
   const c = document.getElementById('baia-cards-container');
   c.after(panel);
 
@@ -3997,6 +3713,7 @@ function showInlineSlots(vehicle){
       if(card) card.classList.remove('baia-card--selected');
     });
     adminAddBookingMode = false;
+    // Hide baia cards, show bookings list + export bar
     const baiaContainer = document.getElementById('baia-cards-container');
     const titleEl = document.querySelector('.baia-select-title');
     const adminAll = document.getElementById('admin-all-bookings');
@@ -4029,6 +3746,7 @@ function openUserEditModal(idx, slot, booking){
   const timeStr = formatTime(slot.hour, slot.min);
   document.getElementById('user-edit-subtitle').textContent = `${timeStr} · ${v.name}`;
 
+  // Slot selector: current + free slots for this vehicle/date
   const slotSel = document.getElementById('user-edit-slot');
   const occupied = (currentBookings||[])
     .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
@@ -4057,10 +3775,7 @@ function closeUserEdit(){
   userEditBookingId = null;
 }
 
-let _userEditModalInizializzato = false;
 function initUserEditModal(){
-  if(_userEditModalInizializzato) return;
-  _userEditModalInizializzato = true;
   document.getElementById('user-edit-close').addEventListener('click', closeUserEdit);
   document.getElementById('user-edit-cancel').addEventListener('click', closeUserEdit);
   document.getElementById('user-edit-overlay').addEventListener('click', e => {
@@ -4078,21 +3793,7 @@ function initUserEditModal(){
     const btn = document.getElementById('user-edit-save');
     btn.disabled=true; btn.textContent='Salvataggio...';
     try{
-      const guestToken = trovaTokenGuestPerId(userEditBookingId);
-      if(guestToken){
-        // Prenotazione fatta come ospite: nessun login, si usa la funzione sicura via token.
-        const { error } = await sbClient.rpc('guest_update_booking', {
-          p_id: userEditBookingId, p_token: guestToken, p_nome: nome,
-          p_destinazione: dest, p_targa: targa, p_telefono: null, p_slot_index: newSlot
-        });
-        if(error) throw new Error(error.message);
-      } else {
-        // Utente loggato: modifica la PROPRIA prenotazione (permesso dalla policy "update_own").
-        const { error } = await sbClient.from('prenotazioni').update({
-          nome, destinazione: dest, targa, slot_index: newSlot
-        }).eq('id', userEditBookingId);
-        if(error) throw new Error(error.message);
-      }
+      await updateBooking(userEditBookingId, nome, dest, targa, newSlot);
       toast('✓ Prenotazione modificata','success');
       closeUserEdit();
       loadAndRender();
@@ -4108,13 +3809,7 @@ function initUserEditModal(){
   document.getElementById('user-edit-delete').addEventListener('click', async () => {
     if(!confirm('Eliminare questa prenotazione?')) return;
     try{
-      const guestToken = trovaTokenGuestPerId(userEditBookingId);
-      if(guestToken){
-        const { error } = await sbClient.rpc('guest_delete_booking', { p_id: userEditBookingId, p_token: guestToken });
-        if(error) throw new Error(error.message);
-      } else {
-        await deleteBooking(userEditBookingId);
-      }
+      await deleteBooking(userEditBookingId);
       toast('✓ Prenotazione eliminata','success');
       closeUserEdit();
       loadAndRender();
@@ -4126,10 +3821,7 @@ function initUserEditModal(){
 // ===== ADMIN EDIT/DELETE =====
 let adminEditBookingId = null;
 
-let _adminEditModalInizializzato = false;
 function initAdminEditModal(){
-  if(_adminEditModalInizializzato) return;
-  _adminEditModalInizializzato = true;
   const overlay = document.getElementById('admin-edit-overlay');
   document.getElementById('admin-edit-close').addEventListener('click', closeAdminEdit);
   document.getElementById('admin-edit-cancel').addEventListener('click', closeAdminEdit);
@@ -4169,13 +3861,14 @@ function openAdminEdit(booking){
   document.getElementById('admin-edit-title').textContent = 'Modifica prenotazione';
   document.getElementById('admin-edit-subtitle').textContent = `${timeStr} · ${v.name}`;
 
+  // Populate slot dropdown: current slot + all FREE slots for this vehicle/date
   const slotSel = document.getElementById('admin-edit-slot');
   const occupiedByOthers = (currentBookings||[])
     .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
     .map(b => parseInt(b.slot_index));
   slotSel.innerHTML = '';
   SLOTS.forEach((s, idx) => {
-    if(occupiedByOthers.includes(idx)) return;
+    if(occupiedByOthers.includes(idx)) return; // skip slots taken by others
     const opt = document.createElement('option');
     opt.value = idx;
     opt.textContent = formatTime(s.hour, s.min) + (idx === currentIdx ? ' (attuale)' : '');
@@ -4196,6 +3889,7 @@ function closeAdminEdit(){
   adminEditBookingId = null;
 }
 
+// Delegate click on admin list for edit/delete
 document.addEventListener('click', async e => {
   const editBtn = e.target.closest('.admin-edit-btn');
   const delBtn = e.target.closest('.admin-delete-btn');
@@ -4223,6 +3917,8 @@ document.addEventListener('click', async e => {
 function renderUserSchedule(){
   const section = document.getElementById('user-schedule-overview');
   if(!section) return;
+  // Hide for admin (they have the full panel)
+  // Show for regular users
   section.style.display = isAdmin() ? 'none' : 'block';
 
   const all = currentBookings || [];
@@ -4252,6 +3948,7 @@ function renderUserSchedule(){
 // ===== EXPORT =====
   (function(){
     const today = formatDate(new Date());
+    // Default range: primo del mese corrente → oggi
     const firstOfMonth = today.slice(0,8)+'01';
 
     function initExportDates(){
@@ -4273,20 +3970,14 @@ function renderUserSchedule(){
           .sort((a,b)=> a.data.localeCompare(b.data)||a.vehicle_id.localeCompare(b.vehicle_id)||a.slot_index-b.slot_index);
       } else {
         try{
-          // Solo admin: lettura via edge function (usa service role lato server).
-          // Utente normale: solo le proprie, via anon key (RLS lo garantisce già).
-          if(isAdmin()){
-            const res = await callAdminOp('list_all', { from, to });
-            rows = (res.data||[]).sort((a,b)=> a.data.localeCompare(b.data)||a.vehicle_id.localeCompare(b.vehicle_id)||a.slot_index-b.slot_index);
-          } else {
-            let query = sbClient.from('prenotazioni')
-              .select('*').gte('data', from).lte('data', to)
-              .eq('user_id', currentUser.id)
-              .order('data').order('vehicle_id').order('slot_index');
-            const { data: exportData, error: exportErr } = await query;
-            if(exportErr) throw new Error(exportErr.message);
-            rows = exportData;
-          }
+          let query = sbClient.from('prenotazioni')
+            .select('*').gte('data', from).lte('data', to)
+            .order('data').order('vehicle_id').order('slot_index');
+          // Non-admin: only own bookings
+          if(!isAdmin()) query = query.eq('user_id', currentUser.id);
+          const { data: exportData, error: exportErr } = await query;
+          if(exportErr) throw new Error(exportErr.message);
+          rows = exportData;
         }catch(e){ toast('Errore scaricamento dati: '+e.message,'error-t'); return null; }
       }
       return { rows, from, to };
@@ -4304,15 +3995,6 @@ function renderUserSchedule(){
       if(!s) return '';
       const [y,mo,da] = s.split('-');
       return `${da}/${mo}/${y}`;
-    }
-
-    // SICUREZZA: neutralizza il CSV/formula injection. Se un campo testo libero
-    // (nome, destinazione...) inizia con = + - @ tab o a capo, Excel/LibreOffice
-    // possono interpretarlo come formula all'apertura del file esportato.
-    // Prefissando con un apostrofo lo si forza a essere trattato come testo.
-    function csvSafe(val){
-      const s = String(val==null ? '' : val);
-      return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
     }
 
     // ===== CSV =====
@@ -4335,14 +4017,14 @@ function renderUserSchedule(){
           days[dt.getDay()],
           slotToTime(r.slot_index),
           vehicleName(r.vehicle_id),
-          `"${csvSafe(r.nome||'').replace(/"/g,'""')}"`,
-          `"${csvSafe(r.destinazione||'').replace(/"/g,'""')}"`,
-          csvSafe((r.targa||'').toUpperCase()),
+          `"${(r.nome||'').replace(/"/g,'""')}"`,
+          `"${(r.destinazione||'').replace(/"/g,'""')}"`,
+          (r.targa||'').toUpperCase(),
           created
         ];
         csvRows.push(row.join(';'));
       });
-      const bom = '\uFEFF';
+      const bom = '\uFEFF'; // UTF-8 BOM for Excel compatibility
       const csv = bom + csvRows.join('\r\n');
       const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
@@ -4363,6 +4045,7 @@ function renderUserSchedule(){
       if(!result){ btn.disabled=false; btn.innerHTML='Excel'; return; }
       const { rows, from, to } = result;
 
+      // Load SheetJS dynamically
       if(!window.XLSX){
         await new Promise((res,rej)=>{
           const s=document.createElement('script');
@@ -4384,9 +4067,9 @@ function renderUserSchedule(){
           days[dt.getDay()],
           slotToTime(r.slot_index),
           vehicleName(r.vehicle_id),
-          csvSafe(r.nome||''),
-          csvSafe(r.destinazione||''),
-          csvSafe((r.targa||'').toUpperCase()),
+          r.nome||'',
+          r.destinazione||'',
+          (r.targa||'').toUpperCase(),
           created
         ]);
       });
@@ -4394,11 +4077,13 @@ function renderUserSchedule(){
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(wsData);
 
+      // Column widths
       ws['!cols'] = [
         {wch:12},{wch:12},{wch:10},{wch:18},
         {wch:22},{wch:16},{wch:28},{wch:20}
       ];
 
+      // Header style (row 0)
       const range = XLSX.utils.decode_range(ws['!ref']);
       for(let c=range.s.c; c<=range.e.c; c++){
         const cell = ws[XLSX.utils.encode_cell({r:0,c})];
@@ -4414,6 +4099,7 @@ function renderUserSchedule(){
         }
       }
 
+      // Zebra rows
       for(let r=1; r<=rows.length; r++){
         for(let c=range.s.c; c<=range.e.c; c++){
           const cell = ws[XLSX.utils.encode_cell({r,c})];
@@ -4426,6 +4112,8 @@ function renderUserSchedule(){
         }
       }
 
+      // Summary sheet
+      const vehicles = VEHICLES.map(v=>v.name);
       const summary = [['Riepilogo per mezzo'],['']];
       summary.push(['Mezzo','Totale prenotazioni']);
       VEHICLES.forEach(v=>{
@@ -4447,9 +4135,9 @@ function renderUserSchedule(){
       btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 3v18M16 3v18M2 9h20M2 15h20"/></svg> Excel';
     });
 
+    // Init on app start
     window._initExportDates = initExportDates;
   })();
 
 })();
-</script></body>
-</html>
+</script>
