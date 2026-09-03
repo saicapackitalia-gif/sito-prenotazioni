@@ -2591,6 +2591,7 @@ async function createBooking(vehicle_id, data, slot_index, nome, destinazione, t
 
   const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
   if(vehicle_id==='baia-3' && !isAdmin() && !isZini){ throw new Error('La baia Depositi è riservata a ZINI Autotrasporti Srl.'); }
+  if(!isBookableSlotIndex(vehicle_id, slot_index)){ throw new Error('Su Fogli si può prenotare solo ad ore piene (es. 18:00, non 18:30).'); }
   // Pre-check: cross-baia carrellista availability
   if(!canBookSlot(vehicle_id, slot_index)){
     const target = slotTimeRange(vehicle_id, slot_index);
@@ -2652,6 +2653,14 @@ function slotTimeRange(vehicleId, slotIdx){
   return {start, end: start + (v.durataSlot||v.slotStep)};
 }
 function rangesOverlap(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
+
+// Which slot_index values are valid BOOKING START points for this vehicle.
+// Fogli (baia-1): only "whole hour" starts are allowed (matches the DB constraint
+// fogli_solo_ore_piene: slot_index must be even). Other baie: every tick.
+function isBookableSlotIndex(vehicleId, slotIdx){
+  if(vehicleId === 'baia-1') return slotIdx % 2 === 0;
+  return true;
+}
 
 // Generate slots for a specific vehicle
 function generateSlotsForVehicle(v){
@@ -2744,7 +2753,8 @@ async function loadAndRender(){
 function renderGridSkeleton(){
   const tbody=document.getElementById('booking-tbody'); if(!tbody) return;
   tbody.innerHTML='';
-  SLOTS.forEach(slot=>{
+  SLOTS.forEach((slot,idx)=>{
+    if(!isBookableSlotIndex(selectedVehicle, idx)) return;
     const tr=document.createElement('tr');
     tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot loading" style="height:44px;">&nbsp;</div></td>`;
     tbody.appendChild(tr);
@@ -2838,6 +2848,7 @@ function renderGrid(){
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
   const weekend=isWeekend(selectedDate);
   vehicleSlots.forEach((slot,idx)=>{
+    if(!isBookableSlotIndex(selectedVehicle, idx)) return;
     const b=map[idx];
     const booked_count=countBookingsForSlot(selectedVehicle,idx);
     const max_allowed=maxAllowedForSlot(selectedVehicle,idx);
@@ -2891,6 +2902,7 @@ function updateStats(){
   currentBookings.forEach(b=>{if(b.vehicle_id===selectedVehicle) map[b.slot_index]=b;});
   let free=0,booked=0,mine=0;
   vehicleSlots.forEach((slot,idx)=>{
+    if(!isBookableSlotIndex(selectedVehicle, idx)) return;
     if(isPast(slot.hour,slot.min) || isWeekend(selectedDate)) return;
     const b=map[idx];
     if(!b) free++; else{booked++;if(b.mine) mine++;}
@@ -3643,6 +3655,7 @@ function showInlineSlots(vehicle){
 
   let slotsHTML = '';
   vehicleSlots.forEach((s, idx) => {
+    if(!isBookableSlotIndex(vehicle.id, idx)) return;
     const slotBookings = booked.filter(b => parseInt(b.slot_index) === idx);
     const bookingCount = slotBookings.length;
     const maxAllowed = maxAllowedForSlot(vehicle.id, idx);
@@ -3753,8 +3766,9 @@ function openUserEditModal(idx, slot, booking){
     .map(b => parseInt(b.slot_index));
   slotSel.innerHTML = '';
   SLOTS.forEach((s, i) => {
+    if(!isBookableSlotIndex(booking.vehicle_id, i)) return;
     if(isPast(s.hour, s.min)) return;
-    if(occupied.includes(i)) return;
+    if(i !== idx && !canBookSlot(booking.vehicle_id, i)) return;
     const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = formatTime(s.hour, s.min) + (i === idx ? ' (attuale)' : '');
@@ -3868,7 +3882,8 @@ function openAdminEdit(booking){
     .map(b => parseInt(b.slot_index));
   slotSel.innerHTML = '';
   SLOTS.forEach((s, idx) => {
-    if(occupiedByOthers.includes(idx)) return; // skip slots taken by others
+    if(!isBookableSlotIndex(booking.vehicle_id, idx)) return;
+    if(idx !== currentIdx && occupiedByOthers.includes(idx)) return; // skip slots taken by others
     const opt = document.createElement('option');
     opt.value = idx;
     opt.textContent = formatTime(s.hour, s.min) + (idx === currentIdx ? ' (attuale)' : '');
