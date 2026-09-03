@@ -2410,6 +2410,14 @@ CREATE POLICY "delete_own" ON prenotazioni
         <label class="field-label" for="field-targa">Targa mezzo *</label>
         <input type="text" class="field-input" id="field-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" autocomplete="off" spellcheck="false">
       </div>
+      <div class="field" id="field-telefono-wrap" style="display:none;">
+        <label class="field-label" for="field-telefono">Telefono *</label>
+        <input type="tel" class="field-input" id="field-telefono" placeholder="Es. 333 1234567" autocomplete="tel">
+      </div>
+      <div class="field" id="field-azienda-wrap" style="display:none;">
+        <label class="field-label" for="field-azienda">Azienda</label>
+        <input type="text" class="field-input" id="field-azienda" placeholder="Es. Trasporti Rossi">
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="modal-cancel-btn">Annulla</button>
@@ -2515,6 +2523,22 @@ let SB_URL='', SB_KEY='';
 let offlineMode=false;
 let offlineDb={};
 let currentUser=null; // {id, email}
+let isGuest=false;
+// Guest bookings have no user_id (per DB schema), so "mine" is tracked via the
+// management_token returned on insert, saved locally in this browser only.
+function getGuestTokens(){
+  try{ return JSON.parse(localStorage.getItem('guestTokens')||'[]'); }catch(e){ return []; }
+}
+function saveGuestToken(token){
+  if(!token) return;
+  const list = getGuestTokens();
+  if(!list.includes(token)){ list.push(token); localStorage.setItem('guestTokens', JSON.stringify(list)); }
+}
+function isBookingMine(b){
+  if(currentUser) return b.user_id === currentUser.id;
+  if(isGuest) return !b.user_id && b.management_token && getGuestTokens().includes(b.management_token);
+  return false;
+}
 const ADMIN_EMAIL_CONST='giacomo.rigamonti@saica.com';
 const ADMIN_UID='f3bb2b25-e625-4e9d-b902-bbc8e6ea8ff1';
 // Service role used ONLY for admin delete (bypasses RLS)
@@ -2560,6 +2584,7 @@ async function signIn(email, password){
 async function signOut(){
   await sbClient.auth.signOut();
   currentUser = null;
+  isGuest = false;
 }
 async function getUser(){
   const { data: { user }, error } = await sbClient.auth.getUser();
@@ -2578,14 +2603,14 @@ async function fetchBookings(date){
   if(error) throw new Error(error.message);
   return data;
 }
-async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa){
+async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa, guestInfo){
   // Re-fetch fresh bookings for accurate cross-baia check
   try {
     // using persistent adminClient (service_role)
     const { data: fresh, error } = await adminClient.from('prenotazioni').select('*').eq('data', data);
     if(!error && fresh) {
       currentBookings = fresh;
-      currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
+      currentBookings.forEach(b=>{ b.mine = isBookingMine(b); });
     }
   } catch(e) { /* use existing currentBookings if fetch fails */ }
 
@@ -2607,9 +2632,10 @@ async function createBooking(vehicle_id, data, slot_index, nome, destinazione, t
     offlineDb[k]={id,vehicle_id,data,slot_index,nome,destinazione,targa,user_id:'offline'};
     return [offlineDb[k]];
   }
-  const { data: res, error } = await sbClient.from('prenotazioni').insert({
-    user_id: currentUser.id, vehicle_id, data, slot_index, nome, destinazione, targa
-  }).select();
+  const insertRow = guestInfo
+    ? { user_id: null, vehicle_id, data, slot_index, nome, destinazione, targa, telefono: guestInfo.telefono||null, azienda: guestInfo.azienda||null }
+    : { user_id: currentUser.id, vehicle_id, data, slot_index, nome, destinazione, targa };
+  const { data: res, error } = await sbClient.from('prenotazioni').insert(insertRow).select();
   if(error) throw new Error(error.code==='23505'?'Slot già occupato.':error.message);
   return res;
 }
@@ -2731,7 +2757,7 @@ async function loadAndRender(){
     const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate);
     if(!error && data) currentBookings = data;
     else currentBookings = await fetchBookings(selectedDate);
-    currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
+    currentBookings.forEach(b=>{ b.mine = isBookingMine(b); });
     setDbStatus('ok');
   }catch(e){
     setDbStatus('error');
@@ -2929,6 +2955,12 @@ function openBookingModal(idx,slot){
   document.getElementById('field-nome').value=lastNome;
   document.getElementById('field-destinazione').value='';
   document.getElementById('field-targa').value='';
+  const telWrap=document.getElementById('field-telefono-wrap');
+  const azWrap=document.getElementById('field-azienda-wrap');
+  if(telWrap) telWrap.style.display = isGuest ? '' : 'none';
+  if(azWrap) azWrap.style.display = isGuest ? '' : 'none';
+  const telField=document.getElementById('field-telefono'); if(telField) telField.value='';
+  const azField=document.getElementById('field-azienda'); if(azField) azField.value='';
   document.getElementById('modal-overlay').classList.add('visible');
   setTimeout(()=>{const f=document.getElementById('field-nome');f.focus();},100);
 }
@@ -2942,17 +2974,24 @@ document.getElementById('modal-confirm').addEventListener('click',async()=>{
   const nome=document.getElementById('field-nome').value.trim();
   const destinazione=document.getElementById('field-destinazione').value.trim();
   const targa=document.getElementById('field-targa').value.trim().toUpperCase();
+  const telefono=isGuest?document.getElementById('field-telefono').value.trim():'';
+  const azienda=isGuest?document.getElementById('field-azienda').value.trim():'';
   if(!nome){document.getElementById('field-nome').focus();toast('Inserisci il nome del trasportatore.','error-t');return;}
   if(!destinazione){document.getElementById('field-destinazione').focus();toast('Inserisci la destinazione.','error-t');return;}
   if(!targa){document.getElementById('field-targa').focus();toast('Inserisci la targa del mezzo.','error-t');return;}
+  if(isGuest && !telefono){document.getElementById('field-telefono').focus();toast('Inserisci un numero di telefono.','error-t');return;}
   const btn=document.getElementById('modal-confirm');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Salvo...';
   try{
     if(!pendingSlot){toast('Errore: nessuno slot selezionato.','error-t');return;}
-  const res=await createBooking(selectedVehicle,selectedDate,pendingSlot.idx,nome,destinazione,targa);
+  const res=await createBooking(selectedVehicle,selectedDate,pendingSlot.idx,nome,destinazione,targa,isGuest?{telefono,azienda}:null);
     lastNome=nome; lastReparto='';
     const nb=Array.isArray(res)?res[0]:res;
-    if(nb){nb.mine=true;currentBookings.push(nb);}
+    if(nb){
+      nb.mine=true;
+      currentBookings.push(nb);
+      if(isGuest && nb.management_token) saveGuestToken(nb.management_token);
+    }
     closeModal('modal-overlay');
     renderGrid(); loadBookingsForStep1(); updateStats();
     toast(`✓ Prenotato per le ${formatTime(pendingSlot.slot.hour,pendingSlot.slot.min)}!`,'success');
@@ -3075,9 +3114,14 @@ function renderAuthLogin(){
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Accedi
     </button>
+    <button class="btn btn-ghost" id="auth-guest" style="margin-top:8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Prenota senza account
+    </button>
     <div class="auth-switch">Non hai un account? <button onclick="renderAuthRegister()">Registrati</button></div>
   `;
   document.getElementById('auth-submit').addEventListener('click', doLogin);
+  document.getElementById('auth-guest').addEventListener('click', startGuestMode);
   document.getElementById('auth-pw').addEventListener('keydown',e=>{if(e.key==='Enter') doLogin();});
   setTimeout(()=>document.getElementById('auth-email').focus(),100);
 }
@@ -3196,12 +3240,18 @@ async function doRegister(){
   }
 }
 
+function startGuestMode(){
+  isGuest = true;
+  currentUser = null;
+  startApp();
+}
+
 function startApp(){
   // Update user chip
   const avatar=document.getElementById('user-avatar');
   const emailLabel=document.getElementById('user-email-label');
-  if(avatar) avatar.textContent=(currentUser?.nome||currentUser?.email||'?').charAt(0).toUpperCase();
-  if(emailLabel) emailLabel.textContent=currentUser?.nome||currentUser?.email||'';
+  if(avatar) avatar.textContent = isGuest ? 'O' : (currentUser?.nome||currentUser?.email||'?').charAt(0).toUpperCase();
+  if(emailLabel) emailLabel.textContent = isGuest ? 'Ospite' : (currentUser?.nome||currentUser?.email||'');
   setDbStatus('ok');
   showPage('app-wrapper');
   renderTabs();
@@ -3503,7 +3553,7 @@ async function loadBookingsForStep1(){
     } else {
       currentBookings = await fetchBookings(selectedDate);
     }
-    currentBookings.forEach(b=>{ b.mine = b.user_id===currentUser?.id; });
+    currentBookings.forEach(b=>{ b.mine = isBookingMine(b); });
   } catch(e){ console.error('loadBookingsForStep1 error:', e); }
   renderBaiaCards();
   renderAdminBookings();
@@ -3952,7 +4002,7 @@ function renderUserSchedule(){
       const idx = parseInt(b.slot_index);
       const vSlots = generateSlotsForVehicle(v);
       const time = (!isNaN(idx) && vSlots[idx]) ? formatTime(vSlots[idx].hour, vSlots[idx].min) : '--:--';
-      const isMine = b.user_id === currentUser?.id;
+      const isMine = isBookingMine(b);
       return `<div class="schedule-slot-pill${isMine ? ' mine' : ''}">
         ${time}${isMine ? ' <span class="schedule-mine-dot">●</span>' : ''}
       </div>`;
@@ -3989,7 +4039,7 @@ function renderUserSchedule(){
             .select('*').gte('data', from).lte('data', to)
             .order('data').order('vehicle_id').order('slot_index');
           // Non-admin: only own bookings
-          if(!isAdmin()) query = query.eq('user_id', currentUser.id);
+          if(!isAdmin()) query = query.eq('user_id', currentUser?.id||'');
           const { data: exportData, error: exportErr } = await query;
           if(exportErr) throw new Error(exportErr.message);
           rows = exportData;
