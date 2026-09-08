@@ -131,11 +131,9 @@ async function loadAndRender(){
   renderGridSkeleton();
   try{
     // Always fetch ALL baie for correct cross-baia availability check
-    // using persistent adminClient (service_role)
-    const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate);
-    if(!error && data) currentBookings = data;
-    else currentBookings = await fetchBookings(selectedDate);
-    currentBookings.forEach(b=>{ b.mine = isBookingMine(b); });
+    // (vedi refreshBookingsForDate in js/bookings-api.js: disponibilità di
+    // tutti + dettagli completi solo dove l'utente corrente ne ha diritto)
+    currentBookings = await refreshBookingsForDate(selectedDate);
     setDbStatus('ok');
   }catch(e){
     setDbStatus('error');
@@ -854,19 +852,7 @@ function goToStep1(){
 
 async function loadBookingsForStep1(){
   try {
-    if(isAdmin()){
-      // Admin fetches ALL bookings using service role (bypasses RLS)
-      // using persistent adminClient (service_role)
-      const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', selectedDate);
-      if(!error && data) {
-        currentBookings = data;
-      } else {
-        currentBookings = await fetchBookings(selectedDate);
-      }
-    } else {
-      currentBookings = await fetchBookings(selectedDate);
-    }
-    currentBookings.forEach(b=>{ b.mine = isBookingMine(b); });
+    currentBookings = await refreshBookingsForDate(selectedDate);
   } catch(e){ console.error('loadBookingsForStep1 error:', e?.message||String(e)); }
   renderBaiaCards();
   renderAdminBookings();
