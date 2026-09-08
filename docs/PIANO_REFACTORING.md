@@ -227,10 +227,34 @@ mano" nello sviluppo originale:
     screenshot della schermata di login confrontato prima/dopo la modifica
     → **hash SHA-256 identico**, nessuna differenza di un solo pixel.
   - Nessuna riga di JavaScript è stata toccata in questa fase.
-- ⏳ Fasi 2–7 (estrazione dati, layer Supabase, calcolo slot, rendering,
-  admin, export) non ancora eseguite: richiedono di toccare la logica
-  applicativa condivisa (le variabili `let` di stato) e vanno fatte una alla
-  volta con verifica funzionale, non solo visiva — vedi rischi al §2 e §6.
+- ✅ **Fase 2 — estrazione costanti/dati completata** (commit successivo).
+  `VEHICLES` (elenco baie), `ADMIN_EMAIL_CONST`, `ADMIN_UID` e `SB_SVC`
+  (chiave service_role) sono stati spostati in `js/config.js`, caricato con
+  un normale `<script>` (non un modulo) prima dello script principale:
+  restano dichiarazioni "top-level" visibili per nome anche nel file
+  successivo, quindi nessun riferimento nel codice esistente è cambiato.
+  Anche i valori di default di `SB_URL`/`SB_KEY` (URL progetto e chiave
+  anon) sono stati spostati come costanti `SUPABASE_URL_DEFAULT` /
+  `SUPABASE_ANON_KEY_DEFAULT`, mantenendo invariata la logica che le
+  assegna/sovrascrive a runtime (modalità offline, pagina di setup).
+  La chiave `service_role` **resta incorporata lato client come prima**
+  (isolata in un file dedicato per essere facile da individuare, non
+  rimossa: è un problema di sicurezza indipendente, fuori scope qui).
+  Verifica fatta:
+  - controllo sintassi (`node --check`) sia sul file di configurazione sia
+    sullo script principale modificato;
+  - rendering in Chromium headless con client Supabase finto, sia sulla
+    schermata di login (screenshot identico byte-per-byte a prima della
+    modifica) sia **simulando un utente già autenticato**, per far
+    eseguire davvero il codice che usa `VEHICLES` in profondità (schermata
+    di scelta baia): risultato corretto, "Fogli" e "Scatole" mostrate con
+    i rispettivi conteggi di slot liberi, "Depositi" correttamente nascosta
+    perché l'utente demo non è ZINI né admin — la regola di business è
+    rimasta intatta.
+- ⏳ Fasi 3–7 (layer Supabase, calcolo slot, rendering, admin, export) non
+  ancora eseguite: toccano la logica applicativa condivisa (le variabili
+  `let` di stato) e vanno fatte una alla volta con verifica funzionale
+  approfondita — vedi rischi al §2 e §6.
 
 ## 8. Prossimi passi
 

@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="css/03-mobile-misc.css">
 <link rel="stylesheet" href="css/04-admin-2step.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -592,10 +593,9 @@ function isBookingMine(b){
   if(isGuest) return !b.user_id && b.management_token && getGuestTokens().includes(b.management_token);
   return false;
 }
-const ADMIN_EMAIL_CONST='giacomo.rigamonti@saica.com';
-const ADMIN_UID='f3bb2b25-e625-4e9d-b902-bbc8e6ea8ff1';
-// Service role used ONLY for admin delete (bypasses RLS)
-const SB_SVC='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTU0MDA5NywiZXhwIjoyMDk3MTE2MDk3fQ.vHoh21d1itwUP7apg8QMwKVD_dxyJdct8TUgnmA-K_o';
+// ADMIN_EMAIL_CONST, ADMIN_UID e SB_SVC ora sono definiti in js/config.js
+// (caricato prima di questo script), per isolare i dati di configurazione
+// dalla logica applicativa. Comportamento invariato.
 
 // ===== SUPABASE JS CLIENT =====
 let sbClient = null;
@@ -718,11 +718,7 @@ async function deleteBooking(id){
 }
 
 // ===== VEHICLES & SLOTS =====
-const VEHICLES=[
-  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:45, startHour:6,  endHour:20, maxPerSlot:1, durataSlot:45},
-  {id:'baia-2', name:'Scatole',  icon:'📦', slotStep:30, startHour:6,  endHour:20, maxPerSlot:2, durataSlot:30},
-  {id:'baia-3', name:'Depositi', icon:'🏭', slotStep:30, startHour:6,  endHour:10, maxPerSlot:1, durataSlot:30},
-];
+// VEHICLES ora è definito in js/config.js. Comportamento invariato.
 
 // Time range [start,end) in minutes-from-midnight actually occupied by a booking
 // on this vehicle/slot_index. Mirrors the DB functions orario_da_slot/orario_fine_slot
@@ -1373,8 +1369,8 @@ document.getElementById('setup-connect').addEventListener('click',async()=>{
 });
 
 // ===== INIT =====
-SB_URL = 'https://jmhwxpgwakrqmnwefqrs.supabase.co';
-SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU';
+SB_URL = SUPABASE_URL_DEFAULT;
+SB_KEY = SUPABASE_ANON_KEY_DEFAULT;
 offlineMode = false;
 initSupabaseClient();
 
