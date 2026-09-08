@@ -297,8 +297,63 @@ mano" nello sviluppo originale:
     inserimento) funziona come prima;
   - schermata di login confrontata di nuovo con la versione precedente:
     hash identico, zero differenze.
-- ⏳ Fasi 5–7 (rendering griglia/modali, pannello admin, export) non ancora
-  eseguite — vedi rischi al §2 e §6.
+- ✅ **Fasi 5–7 — interfaccia rimanente (griglia, modali, autenticazione UI,
+  pannello admin, flusso a 2 step, export) spostata in un unico file**
+  (commit successivo), invece che negli N file separati previsti
+  originariamente. Motivo, scoperto analizzando le dipendenze prima di
+  spostare codice: queste parti si richiamano a vicenda **in tutte le
+  direzioni** tramite uno stato condiviso (baia/data/slot selezionati,
+  filtro admin attivo, ecc. — 10 variabili diverse usate in modo incrociato
+  da griglia, modali, admin e flusso a 2 step). Provare a separarle in file
+  diversi come fatto per le fasi 3-4 avrebbe richiesto prima di riprogettare
+  come condividono questo stato (es. un unico oggetto di stato esplicito),
+  che è un cambiamento di disegno più grande, non una semplice estrazione —
+  fuori scope per un passaggio a basso rischio. Ho verificato che **nessuna
+  di queste variabili è usata al di fuori di questo blocco** (i file già
+  estratti nelle fasi 1-4 non la toccano), quindi spostare l'intero blocco
+  così com'era, senza dividerlo, in `js/app-ui.js` è un'operazione a rischio
+  minimo — analoga alla Fase 1 (CSS): puro spostamento, ordine e contenuto
+  invariati, nessuna interdipendenza spezzata.
+
+  Effetto: `index.html` passa da un file misto di ~4200 righe a **511 righe
+  di solo markup**; tutto il JavaScript è ora fuori, in `js/`.
+
+  Verifica fatta:
+  - il contenuto di `js/app-ui.js` (a parte il commento di intestazione
+    aggiunto) è byte-per-byte identico al blocco `<script>` originale;
+  - `node --check` sul file spostato;
+  - test end-to-end ripetuto (login, scelta baia/slot, prenotazione confermata
+    con esito corretto) sulla nuova struttura: stesso risultato di prima;
+  - **nuovo test con utente admin simulato**: il pannello admin si apre
+    correttamente ("Aggiungi prenotazione", elenco prenotazioni del giorno,
+    filtri Tutte/Fogli/Scatole/Depositi con Depositi visibile solo per
+    admin, sezione export CSV/Excel), zero errori JavaScript;
+  - schermata di login confrontata di nuovo con la versione precedente:
+    hash identico, zero differenze.
+
+  **Nota per il futuro**: se in seguito si vorrà davvero suddividere anche
+  `js/app-ui.js` in più file tematici (griglia, admin, auth-UI, export),
+  serve prima introdurre un oggetto di stato condiviso esplicito (come
+  delineato al §4.2 per l'approccio a moduli ES) — è un lavoro di disegno
+  più che di semplice spostamento, e richiede probabilmente dei test end-to-end
+  scritti una volta e riutilizzabili (oggi rifatti a mano ad ogni fase con
+  Playwright), per poter continuare a verificare con la stessa affidabilità
+  vista finora man mano che le parti si separano.
+
+## 8. Stato finale di questo passaggio di lavoro
+
+Tutto il codice JavaScript è ora fuori da `index.html`, organizzato in 6
+file sotto `js/` in base a responsabilità chiare (configurazione, client
+Supabase, autenticazione, regole di disponibilità, accesso alle
+prenotazioni, interfaccia). Il CSS è in 4 file sotto `css/`. Nessuna
+regola di business, query Supabase o comportamento visibile è stato
+cambiato: ogni passaggio è stato verificato per fedeltà del codice
+(diff/hash) e per comportamento reale (test end-to-end in browser
+headless, incluso il caso admin). Il debito tecnico rimasto — lo stato
+condiviso non ancora esplicito in `js/app-ui.js`, la chiave `service_role`
+lato client, `VEHICLES` duplicato rispetto alla tabella `mezzi` — è
+documentato qui e non è stato toccato, per restare nello scope di una
+riorganizzazione a basso rischio.
 
 ## 8. Prossimi passi
 
