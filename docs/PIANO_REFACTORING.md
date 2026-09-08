@@ -212,10 +212,29 @@ mano" nello sviluppo originale:
   reale (Supabase, non Node/PostgreSQL) e di decidere se archiviare o
   rimuovere gli altri tre.
 
-## 7. Prossimi passi
+## 7. Stato di avanzamento
 
-1. Confermare se procedere con l'esecuzione del piano (e in che ordine tra
-   le fasi di §4.3), o se questo documento è il compito completo per ora.
+- ✅ **Fase 1 — estrazione CSS completata** (commit successivo a questo
+  documento). Il blocco `<style>` di ~1950 righe è stato spostato in 4 file
+  sotto `css/` (`01-base.css`, `02-layout-slots.css`, `03-mobile-misc.css`,
+  `04-admin-2step.css`), **preservando esattamente l'ordine originale delle
+  regole** (fondamentale: in CSS l'ordine determina quale regola vince a
+  parità di specificità). Verifica fatta:
+  - diff testuale: la concatenazione dei 4 file nuovi è **byte-per-byte
+    identica** al CSS originale estratto da `index.html`;
+  - verifica visiva: pagina caricata in un browser headless (Chromium via
+    Playwright) con un client Supabase finto (per evitare chiamate reali),
+    screenshot della schermata di login confrontato prima/dopo la modifica
+    → **hash SHA-256 identico**, nessuna differenza di un solo pixel.
+  - Nessuna riga di JavaScript è stata toccata in questa fase.
+- ⏳ Fasi 2–7 (estrazione dati, layer Supabase, calcolo slot, rendering,
+  admin, export) non ancora eseguite: richiedono di toccare la logica
+  applicativa condivisa (le variabili `let` di stato) e vanno fatte una alla
+  volta con verifica funzionale, non solo visiva — vedi rischi al §2 e §6.
+
+## 8. Prossimi passi
+
+1. Confermare se procedere con le fasi successive (2–7) e in che ordine.
 2. Decidere se aggiornare/rimuovere i file obsoleti di cui al §1/§6.
 3. Se si procede, eseguire una fase alla volta, con verifica della checklist
    di §5 dopo ciascuna, prima di passare alla successiva.
