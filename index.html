@@ -14,6 +14,10 @@
 <link rel="stylesheet" href="css/04-admin-2step.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/slots.js"></script>
+<script src="js/bookings-api.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -541,9 +545,7 @@ function toast(msg, type){
 }
 function formatTime(h,m){return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
 function formatDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function isAdmin(){
-  return currentUser && currentUser.email === ADMIN_EMAIL_CONST;
-}
+// isAdmin() ora è in js/slots.js. Comportamento invariato.
 function formatDateIT(s){
   const [y,mo,da]=s.split('-');
   const days=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
@@ -572,187 +574,16 @@ function updateWeekendBanner(){
   }
 }
 
-// ===== SUPABASE CONFIG =====
-let SB_URL='', SB_KEY='';
-let offlineMode=false;
-let offlineDb={};
-let currentUser=null; // {id, email}
-let isGuest=false;
-// Guest bookings have no user_id (per DB schema), so "mine" is tracked via the
-// management_token returned on insert, saved locally in this browser only.
-function getGuestTokens(){
-  try{ return JSON.parse(localStorage.getItem('guestTokens')||'[]'); }catch(e){ return []; }
-}
-function saveGuestToken(token){
-  if(!token) return;
-  const list = getGuestTokens();
-  if(!list.includes(token)){ list.push(token); localStorage.setItem('guestTokens', JSON.stringify(list)); }
-}
-function isBookingMine(b){
-  if(currentUser) return b.user_id === currentUser.id;
-  if(isGuest) return !b.user_id && b.management_token && getGuestTokens().includes(b.management_token);
-  return false;
-}
-// ADMIN_EMAIL_CONST, ADMIN_UID e SB_SVC ora sono definiti in js/config.js
-// (caricato prima di questo script), per isolare i dati di configurazione
-// dalla logica applicativa. Comportamento invariato.
-
-// ===== SUPABASE JS CLIENT =====
-let sbClient = null;
-let adminClient = null; // service_role client, bypasses RLS
-
-function initSupabaseClient(){
-  sbClient = supabase.createClient(SB_URL, SB_KEY, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false
-    }
-  });
-  // Single persistent admin client — created once, reused everywhere
-  adminClient = supabase.createClient(SB_URL, SB_SVC, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
-      storageKey: 'sb-admin-session'
-    }
-  });
-}
-
-// Auth
-async function signUp(email, password, nome, reparto){
-  const { data, error } = await sbClient.auth.signUp({
-    email, password,
-    options: { data: { nome, reparto } }
-  });
-  if(error) throw new Error(error.message);
-  return data;
-}
-async function signIn(email, password){
-  const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
-  if(error) throw new Error(error.message);
-  return data;
-}
-async function signOut(){
-  await sbClient.auth.signOut();
-  currentUser = null;
-  isGuest = false;
-}
-async function getUser(){
-  const { data: { user }, error } = await sbClient.auth.getUser();
-  if(error) throw new Error(error.message);
-  return user;
-}
-
-// Bookings
-async function fetchBookings(date){
-  if(offlineMode){
-    return Object.entries(offlineDb)
-      .filter(([k]) => k.includes('_'+date+'_'))
-      .map(([k,v]) => { const p=k.split('_'); return {...v, vehicle_id:p[0], data:date, slot_index:parseInt(p[2])}; });
-  }
-  const { data, error } = await sbClient.from('prenotazioni').select('*').eq('data', date);
-  if(error) throw new Error(error.message);
-  return data;
-}
-async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa, guestInfo){
-  // Re-fetch fresh bookings for accurate cross-baia check
-  try {
-    // using persistent adminClient (service_role)
-    const { data: fresh, error } = await adminClient.from('prenotazioni').select('*').eq('data', data);
-    if(!error && fresh) {
-      currentBookings = fresh;
-      currentBookings.forEach(b=>{ b.mine = isBookingMine(b); });
-    }
-  } catch(e) { /* use existing currentBookings if fetch fails */ }
-
-  const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
-  if(vehicle_id==='baia-3' && !isAdmin() && !isZini){ throw new Error('La baia Depositi è riservata a ZINI Autotrasporti Srl.'); }
-  if(hasConsecutiveConflict(vehicle_id, slot_index)){
-    throw new Error('Non puoi prenotare due slot consecutivi sulla stessa baia.');
-  }
-  // Pre-check: cross-baia carrellista availability
-  if(!canBookSlot(vehicle_id, slot_index)){
-    const target = slotTimeRange(vehicle_id, slot_index);
-    const busy = target ? totalBusyInRange(target.start, target.end) : TOTAL_CARRELLISTI;
-    if(busy >= TOTAL_CARRELLISTI){
-      throw new Error('Slot non disponibile: entrambi i carrellisti sono già impegnati in questo orario.');
-    }
-    throw new Error('Slot già occupato.');
-  }
-  if(offlineMode){
-    const k=`${vehicle_id}_${data}_${slot_index}_${Date.now()}`;
-    const id='offline-'+Date.now();
-    offlineDb[k]={id,vehicle_id,data,slot_index,nome,destinazione,targa,user_id:'offline'};
-    return [offlineDb[k]];
-  }
-  const insertRow = guestInfo
-    ? { user_id: null, vehicle_id, data, slot_index, nome, destinazione, targa, telefono: guestInfo.telefono||null, azienda: guestInfo.azienda||null }
-    : { user_id: currentUser.id, vehicle_id, data, slot_index, nome, destinazione, targa };
-  const { data: res, error } = await sbClient.from('prenotazioni').insert(insertRow).select();
-  if(error) throw new Error(error.code==='23505'?'Slot già occupato.':error.message);
-  return res;
-}
-async function deleteBooking(id){
-  if(offlineMode){
-    const k=Object.keys(offlineDb).find(k=>offlineDb[k].id===id);
-    if(k) delete offlineDb[k]; return;
-  }
-  // Always use adminClient for delete (bypasses RLS for any booking)
-  // using persistent adminClient (service_role)
-  const { error, count } = await adminClient
-    .from('prenotazioni')
-    .delete({ count: 'exact' })
-    .eq('id', String(id));
-  if(error){
-    console.error('[deleteBooking] error:', error);
-    throw new Error(error.message);
-  }
-  if(count === 0){
-    console.warn('[deleteBooking] 0 rows deleted for id:', id);
-    // Try fallback: delete by user sbClient in case it is own booking
-    const { error: e2 } = await sbClient.from('prenotazioni').delete().eq('id', String(id));
-    if(e2) throw new Error(e2.message);
-  }
-}
+// ===== SUPABASE CONFIG, CLIENT, AUTENTICAZIONE, ACCESSO PRENOTAZIONI =====
+// Tutto questo blocco (stato di connessione, login/logout, lettura e
+// scrittura delle prenotazioni) è stato spostato senza modifiche in
+// js/supabase-client.js, js/auth.js e js/bookings-api.js (caricati prima
+// di questo script). Comportamento invariato — vedi docs/PIANO_REFACTORING.md.
 
 // ===== VEHICLES & SLOTS =====
-// VEHICLES ora è definito in js/config.js. Comportamento invariato.
-
-// Time range [start,end) in minutes-from-midnight actually occupied by a booking
-// on this vehicle/slot_index. Mirrors the DB functions orario_da_slot/orario_fine_slot
-// and the trg_verifica_capacita trigger, so the UI and the DB agree on what's free.
-function slotTimeRange(vehicleId, slotIdx){
-  const v = VEHICLES.find(x=>x.id===vehicleId);
-  if(!v) return null;
-  const start = v.startHour*60 + slotIdx*v.slotStep;
-  return {start, end: start + (v.durataSlot||v.slotStep)};
-}
-function rangesOverlap(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
-
-// Which slot_index values are valid BOOKING START points for this vehicle.
-// Since every vehicle's step now matches its own real duration (Fogli 45/45,
-// Scatole 30/30, Depositi 30/30), every generated tick is naturally a valid,
-// non-overlapping start point. Kept as a hook in case a vehicle needs
-// restricting again in the future.
-function isBookableSlotIndex(vehicleId, slotIdx){
-  return true;
-}
-
-// Generate slots for a specific vehicle
-function generateSlotsForVehicle(v){
-  const s=[];
-  let total=v.startHour*60;
-  const end=v.endHour*60;
-  while(total<end){s.push({hour:Math.floor(total/60),min:total%60});total+=v.slotStep;}
-  return s;
-}
-
-// Default SLOTS for selected vehicle (updated dynamically)
-function generateSlots(){
-  return generateSlotsForVehicle(VEHICLES[0]);
-}
+// VEHICLES ora è in js/config.js; slotTimeRange, rangesOverlap,
+// isBookableSlotIndex, generateSlotsForVehicle, generateSlots e
+// currentBookings ora sono in js/slots.js. Comportamento invariato.
 let SLOTS=generateSlots();
 
 // ===== APP STATE =====
@@ -760,7 +591,6 @@ let selectedVehicle=VEHICLES[0].id;
 let selectedVehicleObj=VEHICLES[0];
 let adminAddBookingMode=false;
 let selectedDate=formatDate(new Date());
-let currentBookings=[];
 let pendingSlot=null;
 let deleteBookingId=null;
 let lastNome='', lastReparto='';
@@ -788,17 +618,7 @@ function renderTabs(){
   });
 }
 
-
-async function updateBooking(id, nome, destinazione, targa, slot_index){
-  // using persistent adminClient (service_role)
-  const patch = { nome, destinazione, targa };
-  if(slot_index !== undefined && slot_index !== null) patch.slot_index = parseInt(slot_index);
-  const { error } = await adminClient.from('prenotazioni').update(patch).eq('id', String(id));
-  if(error){
-    console.error('[updateBooking] error:', error);
-    throw new Error(error.code==='23505'?'Slot già occupato. Scegline un altro.':error.message);
-  }
-}
+// updateBooking() ora è in js/bookings-api.js. Comportamento invariato.
 // ===== LOAD & RENDER =====
 async function loadAndRender(){
   updateWeekendBanner();
@@ -841,90 +661,9 @@ function renderGridSkeleton(){
 
 
 // ===== CROSS-BAIA AVAILABILITY =====
-// Rules:
-//   - 2 carrellisti totali
-//   - Fogli: max 1 per slot
-//   - Depositi: max 1 per slot
-//   - Scatole: max 2 per slot (ma limitato dai carrellisti disponibili)
-//   - Totale prenotazioni su TUTTE le baie nello stesso slot_index <= 2
-
-const TOTAL_CARRELLISTI = 2;
-
-// Count bookings on a specific vehicle/slot whose real time range OVERLAPS this slot's
-// time range (not just exact slot_index match) — mirrors the DB trigger's overlap check,
-// needed because Fogli bookings last 60 minutes but the grid ticks every 30.
-function countBookingsForSlot(vehicleId, slotIdx){
-  const target = slotTimeRange(vehicleId, slotIdx);
-  if(!target) return 0;
-  return currentBookings.filter(b => {
-    if(b.vehicle_id !== vehicleId) return false;
-    const r = slotTimeRange(b.vehicle_id, parseInt(b.slot_index));
-    return r && rangesOverlap(target.start, target.end, r.start, r.end);
-  }).length;
-}
-
-// Count total carrellisti busy across ALL baie whose booking time range overlaps [start,end)
-function totalBusyInRange(start, end){
-  let total = 0;
-  currentBookings.forEach(b => {
-    const r = slotTimeRange(b.vehicle_id, parseInt(b.slot_index));
-    if(r && rangesOverlap(start, end, r.start, r.end)) total++;
-  });
-  return total;
-}
-// Kept for compatibility with any other caller expecting hour/min at 30-min granularity
-function totalBusyAtTime(hour, min){
-  const start = hour*60+min;
-  return totalBusyInRange(start, start+30);
-}
-
-// Same rule as the DB trigger trg_slot_non_consecutivi: same user (by account,
-// or by phone number for guests, already reflected in b.mine) can't book two
-// adjacent slots on Fogli/Scatole. Admin is exempt.
-function hasConsecutiveConflict(vehicleId, slotIdx){
-  if(vehicleId !== 'baia-1' && vehicleId !== 'baia-2') return false;
-  if(isAdmin()) return false;
-  return currentBookings.some(b => {
-    if(b.vehicle_id !== vehicleId) return false;
-    const bi = parseInt(b.slot_index);
-    if(bi !== slotIdx-1 && bi !== slotIdx+1) return false;
-    return b.mine;
-  });
-}
-
-// Can we add one more booking to vehicleId at slotIdx?
-function canBookSlot(vehicleId, slotIdx){
-  const v = VEHICLES.find(x => x.id === vehicleId);
-  if(!v) return false;
-  const vSlots = generateSlotsForVehicle(v);
-  if(slotIdx >= vSlots.length) return false;
-  const target = slotTimeRange(vehicleId, slotIdx);
-  if(!target) return false;
-
-  // Check 1: vehicle-specific max not exceeded (by overlap, not exact index)
-  const currentCount = countBookingsForSlot(vehicleId, slotIdx);
-  if(currentCount >= v.maxPerSlot) return false;
-
-  // Check 2: total carrellisti not exceeded (by overlap, across ALL baie)
-  const busy = totalBusyInRange(target.start, target.end);
-  if(busy >= TOTAL_CARRELLISTI) return false;
-
-  return true;
-}
-
-// Legacy compatibility: returns max allowed (used in render)
-function maxAllowedForSlot(vehicleId, slotIdx){
-  const v = VEHICLES.find(x => x.id === vehicleId);
-  if(!v) return 0;
-  const vSlots = generateSlotsForVehicle(v);
-  if(slotIdx >= vSlots.length) return 0;
-  const target = slotTimeRange(vehicleId, slotIdx);
-  if(!target) return 0;
-  const busy = totalBusyInRange(target.start, target.end);
-  const available = TOTAL_CARRELLISTI - busy;
-  const currentCount = countBookingsForSlot(vehicleId, slotIdx);
-  return Math.min(v.maxPerSlot, currentCount + Math.max(0, available));
-}
+// TOTAL_CARRELLISTI, countBookingsForSlot, totalBusyInRange, totalBusyAtTime,
+// hasConsecutiveConflict, canBookSlot, maxAllowedForSlot ora sono in
+// js/slots.js. Comportamento invariato.
 
 function renderGrid(){
   const tbody=document.getElementById('booking-tbody'); if(!tbody) return;

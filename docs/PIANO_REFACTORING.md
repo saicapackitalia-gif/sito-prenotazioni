@@ -251,10 +251,54 @@ mano" nello sviluppo originale:
     i rispettivi conteggi di slot liberi, "Depositi" correttamente nascosta
     perché l'utente demo non è ZINI né admin — la regola di business è
     rimasta intatta.
-- ⏳ Fasi 3–7 (layer Supabase, calcolo slot, rendering, admin, export) non
-  ancora eseguite: toccano la logica applicativa condivisa (le variabili
-  `let` di stato) e vanno fatte una alla volta con verifica funzionale
-  approfondita — vedi rischi al §2 e §6.
+- ✅ **Fasi 3 e 4 — layer Supabase e calcolo slot/disponibilità, eseguite
+  insieme** (commit successivo). Erano previste come due fasi separate, ma
+  si sono rivelate inseparabili: `createBooking()` (layer Supabase)
+  richiama direttamente `hasConsecutiveConflict()`, `canBookSlot()`,
+  `slotTimeRange()`, `totalBusyInRange()`, `isAdmin()` e la variabile
+  `currentBookings` (logica di disponibilità), quindi andavano estratte
+  nello stesso passaggio. Spostato in:
+  - `js/supabase-client.js`: stato di connessione (`SB_URL`/`SB_KEY`,
+    `sbClient`, `adminClient`) e `initSupabaseClient()`;
+  - `js/auth.js`: identità utente (`currentUser`, `isGuest`, `offlineMode`,
+    `offlineDb`), gestione token ospite, `signUp/signIn/signOut/getUser`;
+  - `js/slots.js`: `isAdmin()`, generazione slot, `slotTimeRange()` (punto
+    unico di calcolo orario — elimina per costruzione il rischio del bug
+    storico "griglia dell'ultimo mezzo caricato"), `currentBookings` e le
+    regole di capacità condivisa/slot consecutivi;
+  - `js/bookings-api.js`: `fetchBookings/createBooking/deleteBooking/updateBooking`.
+
+  **Nota tecnica importante per chi continua il lavoro**: questi file sono
+  `<script>` normali (non moduli), caricati in un ordine preciso PRIMA
+  dello script principale, perché tutti gli script della pagina condividono
+  lo stesso ambiente globale. Una dichiarazione `let`/`const`/`function` al
+  livello più esterno di un file è visibile dagli altri file caricati dopo
+  — ma **non** è visibile una dichiarazione fatta dentro una funzione o una
+  IIFE (come lo era, in origine, tutto il codice dentro `(function(){...})()`
+  dello script principale). Il primo tentativo di questa fase aveva
+  spostato `createBooking()` senza accorgersi che chiamava funzioni ancora
+  "intrappolate" dentro la IIFE originale (`hasConsecutiveConflict`,
+  `canBookSlot`, ecc.): il test funzionale end-to-end descritto sotto lo ha
+  fatto emergere subito con un errore chiaro (`hasConsecutiveConflict is
+  not defined`), permettendo di correggerlo prima del commit — prova
+  concreta di perché ogni fase va verificata con un test funzionale reale
+  e non solo con un controllo di sintassi.
+
+  Verifica fatta:
+  - diff funzione-per-funzione tra il codice originale e quello spostato
+    (12+ funzioni, tutte byte-per-byte identiche);
+  - `node --check` su tutti i file nuovi/modificati;
+  - **test end-to-end in Chromium headless con client Supabase finto**:
+    login automatico, apertura baia Fogli, scelta di uno slot futuro,
+    compilazione e invio del modale di prenotazione → la riga passata
+    all'insert è quella attesa (baia, data, slot, nome, destinazione,
+    targa corretti) e l'app mostra "✓ Prenotato per le 06:00!", a conferma
+    che tutta la catena (regola ZINI, slot consecutivi, capacità condivisa,
+    inserimento) funziona come prima;
+  - schermata di login confrontata di nuovo con la versione precedente:
+    hash identico, zero differenze.
+- ⏳ Fasi 5–7 (rendering griglia/modali, pannello admin, export) non ancora
+  eseguite — vedi rischi al §2 e §6.
 
 ## 8. Prossimi passi
 
