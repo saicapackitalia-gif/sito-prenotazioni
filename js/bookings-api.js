@@ -8,8 +8,22 @@
    tutti gli script della pagina condividono lo stesso ambiente globale ed
    eseguono per intero prima che un utente possa premere un pulsante che
    chiama queste funzioni async. Caricato con un normale <script> (non un
-   modulo) dopo js/auth.js e prima dello script principale. Comportamento
-   invariato: codice spostato senza modifiche. */
+   modulo) dopo js/auth.js e prima dello script principale.
+
+   IMPORTANTE (sicurezza): dal lato database, la tabella "prenotazioni"
+   ora è leggibile per intero (con nome/destinazione/targa/telefono) solo
+   dal proprietario della riga o dall'admin — vedi la policy
+   "select_own_or_admin" e la vista pubblica "prenotazioni_disponibilita"
+   (solo id/vehicle_id/data/slot_index/user_id, nessun dato personale),
+   applicate direttamente sul database Supabase (non tracciate in questo
+   repo). refreshBookingsForDate() qui sotto rispecchia lato client questa
+   stessa separazione: prende gli slot occupati/liberi di TUTTI dalla vista
+   pubblica, e arricchisce con i dettagli completi solo le righe che
+   l'utente corrente ha il diritto di vedere per intero (le proprie,
+   quelle dell'ospite tramite i codici salvati nel browser, o tutte se
+   admin). Va usata al posto di leggere "prenotazioni" per intero ogni
+   volta che serve lo stato di TUTTE le prenotazioni del giorno (non solo
+   le proprie) — vedi docs/PIANO_REFACTORING.md. */
 
 async function fetchBookings(date){
   if(offlineMode){
@@ -17,19 +31,54 @@ async function fetchBookings(date){
       .filter(([k]) => k.includes('_'+date+'_'))
       .map(([k,v]) => { const p=k.split('_'); return {...v, vehicle_id:p[0], data:date, slot_index:parseInt(p[2])}; });
   }
-  const { data, error } = await sbClient.from('prenotazioni').select('*').eq('data', date);
+  const { data, error } = await sbClient.from('prenotazioni_disponibilita').select('*').eq('data', date);
   if(error) throw new Error(error.message);
   return data;
+}
+
+// Stato completo del giorno (occupato/libero per tutti + dettagli completi
+// solo dove l'utente corrente ne ha diritto). Unico punto usato da
+// loadAndRender(), loadBookingsForStep1() e dal pre-check di createBooking(),
+// così un'eventuale correzione futura va fatta in un solo posto.
+async function refreshBookingsForDate(date){
+  if(offlineMode){
+    return fetchBookings(date).then(rows => { rows.forEach(b=>{ b.mine = isBookingMine(b); }); return rows; });
+  }
+  // 1) Disponibilità di TUTTI (nessun dato personale) — sempre leggibile.
+  const { data: availability, error: availErr } = await sbClient.from('prenotazioni_disponibilita').select('*').eq('data', date);
+  if(availErr) throw new Error(availErr.message);
+  const byId = {};
+  availability.forEach(r => { byId[r.id] = r; });
+
+  // 2) Dettagli completi delle sole righe che l'utente corrente può vedere
+  //    per intero. Se questa parte fallisce, gli slot restano comunque
+  //    corretti come occupati/liberi (arricchimento, non requisito).
+  try{
+    let fullRows = [];
+    if(isAdmin()){
+      const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', date);
+      if(!error && data) fullRows = data;
+    } else if(currentUser){
+      const { data, error } = await sbClient.from('prenotazioni').select('*').eq('data', date).eq('user_id', currentUser.id);
+      if(!error && data) fullRows = data;
+    } else if(isGuest){
+      const tokens = getGuestTokens();
+      if(tokens.length){
+        const { data, error } = await sbClient.rpc('guest_get_bookings_by_tokens', { p_tokens: tokens, p_data: date });
+        if(!error && data) fullRows = data;
+      }
+    }
+    fullRows.forEach(r => { byId[r.id] = r; });
+  }catch(e){ /* dettagli non essenziali: la griglia resta comunque corretta */ }
+
+  const merged = Object.values(byId);
+  merged.forEach(b => { b.mine = isBookingMine(b); });
+  return merged;
 }
 async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa, guestInfo){
   // Re-fetch fresh bookings for accurate cross-baia check
   try {
-    // using persistent adminClient (service_role)
-    const { data: fresh, error } = await adminClient.from('prenotazioni').select('*').eq('data', data);
-    if(!error && fresh) {
-      currentBookings = fresh;
-      currentBookings.forEach(b=>{ b.mine = isBookingMine(b); });
-    }
+    currentBookings = await refreshBookingsForDate(data);
   } catch(e) { /* use existing currentBookings if fetch fails */ }
 
   const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
