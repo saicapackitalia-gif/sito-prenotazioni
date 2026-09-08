@@ -2616,7 +2616,9 @@ async function createBooking(vehicle_id, data, slot_index, nome, destinazione, t
 
   const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
   if(vehicle_id==='baia-3' && !isAdmin() && !isZini){ throw new Error('La baia Depositi è riservata a ZINI Autotrasporti Srl.'); }
-  if(!isBookableSlotIndex(vehicle_id, slot_index)){ throw new Error('Su Fogli si può prenotare solo ad ore piene (es. 18:00, non 18:30).'); }
+  if(hasConsecutiveConflict(vehicle_id, slot_index)){
+    throw new Error('Non puoi prenotare due slot consecutivi sulla stessa baia.');
+  }
   // Pre-check: cross-baia carrellista availability
   if(!canBookSlot(vehicle_id, slot_index)){
     const target = slotTimeRange(vehicle_id, slot_index);
@@ -2664,7 +2666,7 @@ async function deleteBooking(id){
 
 // ===== VEHICLES & SLOTS =====
 const VEHICLES=[
-  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:30, startHour:6,  endHour:20, maxPerSlot:1, durataSlot:60},
+  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:45, startHour:6,  endHour:20, maxPerSlot:1, durataSlot:45},
   {id:'baia-2', name:'Scatole',  icon:'📦', slotStep:30, startHour:6,  endHour:20, maxPerSlot:2, durataSlot:30},
   {id:'baia-3', name:'Depositi', icon:'🏭', slotStep:30, startHour:6,  endHour:10, maxPerSlot:1, durataSlot:30},
 ];
@@ -2681,10 +2683,11 @@ function slotTimeRange(vehicleId, slotIdx){
 function rangesOverlap(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
 
 // Which slot_index values are valid BOOKING START points for this vehicle.
-// Fogli (baia-1): only "whole hour" starts are allowed (matches the DB constraint
-// fogli_solo_ore_piene: slot_index must be even). Other baie: every tick.
+// Since every vehicle's step now matches its own real duration (Fogli 45/45,
+// Scatole 30/30, Depositi 30/30), every generated tick is naturally a valid,
+// non-overlapping start point. Kept as a hook in case a vehicle needs
+// restricting again in the future.
 function isBookableSlotIndex(vehicleId, slotIdx){
-  if(vehicleId === 'baia-1') return slotIdx % 2 === 0;
   return true;
 }
 
@@ -2771,7 +2774,7 @@ async function loadAndRender(){
     renderAdminBookings();
     updateStats();
   }catch(e){
-    console.error('Errore di rendering griglia:', e);
+    console.error('Errore di rendering griglia:', e?.message||String(e));
     toast('Errore nel mostrare gli slot. Ricarica la pagina.','error-t');
   }
 }
@@ -2824,6 +2827,20 @@ function totalBusyInRange(start, end){
 function totalBusyAtTime(hour, min){
   const start = hour*60+min;
   return totalBusyInRange(start, start+30);
+}
+
+// Same rule as the DB trigger trg_slot_non_consecutivi: same user (by account,
+// or by phone number for guests, already reflected in b.mine) can't book two
+// adjacent slots on Fogli/Scatole. Admin is exempt.
+function hasConsecutiveConflict(vehicleId, slotIdx){
+  if(vehicleId !== 'baia-1' && vehicleId !== 'baia-2') return false;
+  if(isAdmin()) return false;
+  return currentBookings.some(b => {
+    if(b.vehicle_id !== vehicleId) return false;
+    const bi = parseInt(b.slot_index);
+    if(bi !== slotIdx-1 && bi !== slotIdx+1) return false;
+    return b.mine;
+  });
 }
 
 // Can we add one more booking to vehicleId at slotIdx?
@@ -2879,6 +2896,7 @@ function renderGrid(){
     const booked_count=countBookingsForSlot(selectedVehicle,idx);
     const max_allowed=maxAllowedForSlot(selectedVehicle,idx);
     const isFull=!canBookSlot(selectedVehicle,idx);
+    const myConsecutive = !b && hasConsecutiveConflict(selectedVehicle,idx);
     const past=isPast(slot.hour,slot.min)||weekend;
     let cls='free',txt='Disponibile',aria=`${formatTime(slot.hour,slot.min)} - Disponibile`;
     if(booked_count>0&&booked_count<max_allowed&&!past){
@@ -2906,16 +2924,17 @@ function renderGrid(){
           aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;
         }}
     else if(isFull&&!b&&!past){cls='occupied-other';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
+    else if(myConsecutive&&!past){cls='occupied-other';txt='Non prenotabile';aria=`${formatTime(slot.hour,slot.min)} - Non prenotabile: consecutivo a una tua prenotazione`;}
     const mineTitle = b && b.mine ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const adminTitle = b && !b.mine && isAdmin() ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
+    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past&&!myConsecutive)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
     const el=tr.querySelector('.slot');
     if(!past){
-      if(!isFull){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
+      if(!isFull&&!myConsecutive){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
       else if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
       else if(isAdmin()&&b&&!b.mine){el.addEventListener('click',()=>openAdminEdit(b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAdminEdit(b);}});}
-      // else: slot full due to cross-baia capacity with no booking on THIS vehicle → not clickable, no handler needed
+      // else: slot full due to cross-baia capacity or consecutive-slot rule → not clickable, no handler needed
     }
     tbody.appendChild(tr);
   });
@@ -3554,7 +3573,7 @@ async function loadBookingsForStep1(){
       currentBookings = await fetchBookings(selectedDate);
     }
     currentBookings.forEach(b=>{ b.mine = isBookingMine(b); });
-  } catch(e){ console.error('loadBookingsForStep1 error:', e); }
+  } catch(e){ console.error('loadBookingsForStep1 error:', e?.message||String(e)); }
   renderBaiaCards();
   renderAdminBookings();
   renderUserSchedule();
