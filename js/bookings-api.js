@@ -83,7 +83,7 @@ async function createBooking(vehicle_id, data, slot_index, nomeTrasportatore, de
   const isZini = !!trasportatoreScelto?.zini;
   if(vehicle_id==='baia-3' && !isAdmin() && !isZini){ throw new Error('La baia Depositi è riservata a ZINI Autotrasporti Srl.'); }
   if(hasConsecutiveConflict(vehicle_id, slot_index, nomeTrasportatore)){
-    throw new Error('Hai raggiunto il numero massimo di slot consecutivi su questa baia.');
+    throw new Error('Non puoi prenotare questo slot: hai già una prenotazione in questo orario, oppure hai raggiunto il numero massimo di slot consecutivi su questa baia.');
   }
   // Pre-check: cross-baia carrellista availability
   if(!canBookSlot(vehicle_id, slot_index)){
