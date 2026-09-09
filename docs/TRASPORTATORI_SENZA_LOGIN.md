@@ -14,9 +14,8 @@ vero con email e password.
 Nella prima versione la scelta del nome bastava da sola, senza alcuna
 verifica — chiunque poteva "diventare" un trasportatore con un clic. Su
 segnalazione esplicita ("se io entro e dico che sono un trasportatore posso
-modificare per dispetto"), ogni trasportatore ha ora una password fissa
-nel formato `Saica-<Nome trasportatore>` (es. `Saica-Zini`,
-`Saica-Tavola`), verificata sul database prima di:
+modificare per dispetto"), ogni trasportatore ha ora una password,
+verificata sul database prima di:
 - entrare come quel trasportatore ("Chi sei?");
 - creare una nuova prenotazione;
 - rivedere le proprie prenotazioni con i dettagli completi;
@@ -27,13 +26,18 @@ nel formato `Saica-<Nome trasportatore>` (es. `Saica-Zini`,
 L'amministratore resta esente da queste password (ha già il suo vero
 login).
 
-**Avviso di trasparenza, importante**: la password è fissa e segue una
-formula nota (`Saica-` + nome) — alza la barriera contro un clic
-casuale o un dispetto estemporaneo, ma non è una protezione forte contro
-chi conosce o indovina lo schema. Le password sono comunque salvate
-**cifrate** nel database (mai in chiaro) e verificate lato server ad ogni
-operazione, non solo all'ingresso — quindi non basta aggirare la
-schermata iniziale per bypassarle.
+**Le password non seguono più una formula legata al nome** (una prima
+versione usava `Saica-<Nome>`, scartata su richiesta perché prevedibile
+da chiunque conoscesse lo schema). Sono invece parola-comune + due cifre,
+facili da leggere/digitare ma senza relazione con il nome dell'azienda —
+consegnate al committente in chat, non scritte in questo repository per
+non renderle pubbliche insieme al codice sorgente. Per cambiarle in
+futuro: `update public.trasportatori set password_hash = crypt('nuova-password', gen_salt('bf')) where id = '...';`
+su Supabase.
+
+Restano comunque salvate **cifrate** nel database (mai in chiaro) e
+verificate lato server ad ogni operazione, non solo all'ingresso — quindi
+non basta aggirare la schermata iniziale per bypassarle.
 
 Un limite più profondo, già segnalato in `PIANO_REFACTORING.md` e non
 affrontato da questa modifica: il sito incorpora lato client una chiave
