@@ -1,40 +1,46 @@
-/* ===== AUTENTICAZIONE E IDENTITÀ UTENTE =====
-   Stato su chi sta usando l'app (utente loggato, ospite, modalità demo
-   offline) e le funzioni che parlano con l'autenticazione di Supabase.
+/* ===== AUTENTICAZIONE E IDENTITÀ =====
+   L'unico login vero resta quello dell'amministratore (email/password via
+   Supabase Auth). Chiunque altro (i trasportatori) non ha più un account:
+   si identifica scegliendo il proprio nome da un elenco fisso
+   (TRASPORTATORI, in js/config.js) invece di loggarsi o compilare un
+   modulo da ospite. La scelta viene ricordata in localStorage così le
+   visite successive dallo stesso browser vengono "riconosciute"
+   automaticamente (resta comunque modificabile in qualsiasi momento).
    Caricato con un normale <script> (non un modulo) dopo
    js/supabase-client.js e prima dello script principale: le dichiarazioni
-   top-level restano condivise. Comportamento invariato: codice spostato
-   senza modifiche. */
+   top-level restano condivise. */
 
 let offlineMode=false;
 let offlineDb={};
-let currentUser=null; // {id, email}
-let isGuest=false;
-// Guest bookings have no user_id (per DB schema), so "mine" is tracked via the
-// management_token returned on insert, saved locally in this browser only.
-function getGuestTokens(){
-  try{ return JSON.parse(localStorage.getItem('guestTokens')||'[]'); }catch(e){ return []; }
+let currentUser=null; // {id, email} — SOLO per l'admin, ora
+
+// Trasportatore corrente (oggetto da TRASPORTATORI, o null se non ancora
+// scelto su questo browser). Non è un'autenticazione vera: chiunque può
+// scegliere qualunque nome dall'elenco — è una semplificazione scelta
+// consapevolmente, non un controllo di sicurezza.
+let currentTrasportatore = null;
+
+function loadSavedTrasportatore(){
+  try{
+    const id = localStorage.getItem('trasportatoreId');
+    return TRASPORTATORI.find(t => t.id === id) || null;
+  }catch(e){ return null; }
 }
-function saveGuestToken(token){
-  if(!token) return;
-  const list = getGuestTokens();
-  if(!list.includes(token)){ list.push(token); localStorage.setItem('guestTokens', JSON.stringify(list)); }
+function saveTrasportatore(t){
+  currentTrasportatore = t || null;
+  try{
+    if(t) localStorage.setItem('trasportatoreId', t.id);
+    else localStorage.removeItem('trasportatoreId');
+  }catch(e){ /* localStorage non disponibile: la scelta vale solo per questa visita */ }
 }
+
 function isBookingMine(b){
-  if(currentUser) return b.user_id === currentUser.id;
-  if(isGuest) return !b.user_id && b.management_token && getGuestTokens().includes(b.management_token);
+  if(currentUser) return b.user_id === currentUser.id; // storico: vecchi account registrati
+  if(currentTrasportatore) return !b.user_id && b.nome && b.nome.trim().toLowerCase() === currentTrasportatore.nome.trim().toLowerCase();
   return false;
 }
 
-// Auth
-async function signUp(email, password, nome, reparto){
-  const { data, error } = await sbClient.auth.signUp({
-    email, password,
-    options: { data: { nome, reparto } }
-  });
-  if(error) throw new Error(error.message);
-  return data;
-}
+// Auth (solo per l'amministratore: non esiste più una registrazione)
 async function signIn(email, password){
   const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
   if(error) throw new Error(error.message);
@@ -43,7 +49,6 @@ async function signIn(email, password){
 async function signOut(){
   await sbClient.auth.signOut();
   currentUser = null;
-  isGuest = false;
 }
 async function getUser(){
   const { data: { user }, error } = await sbClient.auth.getUser();

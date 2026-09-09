@@ -58,15 +58,9 @@ async function refreshBookingsForDate(date){
     if(isAdmin()){
       const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', date);
       if(!error && data) fullRows = data;
-    } else if(currentUser){
-      const { data, error } = await sbClient.from('prenotazioni').select('*').eq('data', date).eq('user_id', currentUser.id);
+    } else if(currentTrasportatore){
+      const { data, error } = await sbClient.rpc('get_bookings_by_trasportatore', { p_nome: currentTrasportatore.nome, p_data: date });
       if(!error && data) fullRows = data;
-    } else if(isGuest){
-      const tokens = getGuestTokens();
-      if(tokens.length){
-        const { data, error } = await sbClient.rpc('guest_get_bookings_by_tokens', { p_tokens: tokens, p_data: date });
-        if(!error && data) fullRows = data;
-      }
     }
     fullRows.forEach(r => { byId[r.id] = r; });
   }catch(e){ /* dettagli non essenziali: la griglia resta comunque corretta */ }
@@ -75,16 +69,21 @@ async function refreshBookingsForDate(date){
   merged.forEach(b => { b.mine = isBookingMine(b); });
   return merged;
 }
-async function createBooking(vehicle_id, data, slot_index, nome, destinazione, targa, guestInfo){
+// nomeTrasportatore: il nome scelto dal menu a tendina (obbligatorio, sia
+// che a sceglierlo sia l'admin per conto di qualcuno, sia il trasportatore
+// stesso). Non esistono più account per i trasportatori: ogni nuova
+// prenotazione ha sempre user_id null.
+async function createBooking(vehicle_id, data, slot_index, nomeTrasportatore, destinazione, targa){
   // Re-fetch fresh bookings for accurate cross-baia check
   try {
     currentBookings = await refreshBookingsForDate(data);
   } catch(e) { /* use existing currentBookings if fetch fails */ }
 
-  const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
+  const trasportatoreScelto = TRASPORTATORI.find(t => t.nome === nomeTrasportatore);
+  const isZini = !!trasportatoreScelto?.zini;
   if(vehicle_id==='baia-3' && !isAdmin() && !isZini){ throw new Error('La baia Depositi è riservata a ZINI Autotrasporti Srl.'); }
-  if(hasConsecutiveConflict(vehicle_id, slot_index)){
-    throw new Error('Non puoi prenotare due slot consecutivi sulla stessa baia.');
+  if(hasConsecutiveConflict(vehicle_id, slot_index, nomeTrasportatore)){
+    throw new Error('Hai raggiunto il numero massimo di slot consecutivi su questa baia.');
   }
   // Pre-check: cross-baia carrellista availability
   if(!canBookSlot(vehicle_id, slot_index)){
@@ -98,15 +97,20 @@ async function createBooking(vehicle_id, data, slot_index, nome, destinazione, t
   if(offlineMode){
     const k=`${vehicle_id}_${data}_${slot_index}_${Date.now()}`;
     const id='offline-'+Date.now();
-    offlineDb[k]={id,vehicle_id,data,slot_index,nome,destinazione,targa,user_id:'offline'};
+    offlineDb[k]={id,vehicle_id,data,slot_index,nome:nomeTrasportatore,destinazione,targa,user_id:null};
     return [offlineDb[k]];
   }
-  const insertRow = guestInfo
-    ? { user_id: null, vehicle_id, data, slot_index, nome, destinazione, targa, telefono: guestInfo.telefono||null, azienda: guestInfo.azienda||null }
-    : { user_id: currentUser.id, vehicle_id, data, slot_index, nome, destinazione, targa };
-  const { data: res, error } = await sbClient.from('prenotazioni').insert(insertRow).select();
+  // create_prenotazione (RPC) inserisce e restituisce la riga in un solo
+  // passaggio: chi prenota senza account (ora il caso normale) può
+  // inserire ma non potrebbe rileggere la riga appena creata con una
+  // semplice insert().select(), perché non è il proprietario di alcun
+  // account — vedi docs/CORREZIONE_PRIVACY_PRENOTAZIONI.md.
+  const { data: res, error } = await sbClient.rpc('create_prenotazione', {
+    p_vehicle_id: vehicle_id, p_data: data, p_slot_index: slot_index,
+    p_nome: nomeTrasportatore, p_destinazione: destinazione, p_targa: targa
+  });
   if(error) throw new Error(error.code==='23505'?'Slot già occupato.':error.message);
-  return res;
+  return [res];
 }
 async function deleteBooking(id){
   if(offlineMode){
