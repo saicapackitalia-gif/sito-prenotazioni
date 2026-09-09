@@ -67,9 +67,11 @@ Zini (riservato alla baia Depositi), Tavola, CMF, Soc. Coop. Evolution,
 Autotrasporti Colombo, World Express. Per aggiungere/togliere un
 trasportatore, modificare l'array `TRASPORTATORI` in quel file.
 
-## Regola "slot consecutivi", ora per baia
+## Regola "slot consecutivi", ora per baia (aggiornata)
 
-- **Fogli**: nessuno slot consecutivo per lo stesso trasportatore (come prima).
+- **Fogli**: fino a 2 slot consecutivi ammessi per lo stesso trasportatore
+  (aggiornato da "zero consecutivi" su richiesta esplicita, per allinearla
+  a Scatole).
 - **Scatole**: fino a 2 slot consecutivi ammessi (es. 15:00 e 15:30), il 3°
   di fila viene bloccato.
 - **Depositi**: nessuna regola sui consecutivi (come prima).
@@ -80,6 +82,28 @@ Il limite per baia è configurato in due posti che devono restare
 sincronizzati: `js/config.js` (`VEHICLES[].maxConsecutiveSlots`, usato dal
 sito per l'anteprima nella griglia) e la colonna `mezzi.max_slot_consecutivi`
 su Supabase (usata dal trigger per l'applicazione reale).
+
+## Nuova regola: un solo posto per trasportatore nello stesso slot (Scatole)
+
+Scatole ammette 2 prenotazioni contemporanee nello stesso slot (2 mezzi in
+carico assieme). Prima di questa modifica, nulla impediva allo **stesso**
+trasportatore di prendere entrambi i posti dello stesso slot — su
+segnalazione esplicita, ora non può più: il secondo posto resta
+disponibile solo per un **trasportatore diverso**. Per Fogli/Depositi
+(capacità 1 per slot) questo controllo è ridondante con quello di capacità
+già esistente, ma non ha alcun effetto negativo — l'ho lasciato attivo
+ovunque per semplicità invece di limitarlo a una sola baia via codice.
+
+Implementato sia lato database (`verifica_slot_non_consecutivi`, un
+controllo aggiuntivo prima di quello sui consecutivi adiacenti) sia lato
+sito (`hasConsecutiveConflict` in `js/slots.js`, stessa funzione già usata
+per il controllo dei consecutivi — un secondo controllo aggiunto in testa).
+
+**Verificato**: CMF prenota uno slot su Scatole, poi prova a prendere anche
+il secondo posto dello stesso slot → respinto ("Hai già una prenotazione in
+questo orario su questa baia"); Tavola prova lo stesso slot subito dopo →
+riesce, perché il secondo posto è ancora libero per un trasportatore
+diverso. L'admin resta esente da questo controllo come dagli altri.
 
 ## Flusso
 

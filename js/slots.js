@@ -94,23 +94,33 @@ function totalBusyAtTime(hour, min){
   return totalBusyInRange(start, start+30);
 }
 
-// Stessa regola del trigger sul database trg_slot_non_consecutivi: lo stesso
-// trasportatore (identificato per nome, scelto dal menu a tendina — non più
-// da account o numero di telefono) non può superare il numero massimo di
-// slot CONSECUTIVI configurato per la baia (VEHICLES[].maxConsecutiveSlots:
-// 1 = nessuno slot adiacente ammesso, es. Fogli; 2 = ammesso un solo slot
-// adiacente, es. Scatole — così 15:00+15:30 vanno bene ma non un terzo slot
-// di fila). Nessun limite configurato = nessuna regola (es. Depositi).
-// L'admin è sempre esente. `nome`, se non passato esplicitamente, usa il
-// trasportatore corrente (identità scelta all'ingresso, vedi js/auth.js).
+// Stessa regola dei trigger sul database (verifica_slot_non_consecutivi):
+// lo stesso trasportatore (identificato per nome, scelto dal menu a
+// tendina — non più da account o numero di telefono) non può:
+//   1) avere più di una prenotazione nello STESSO slot_index (stessa baia,
+//      stesso giorno) — anche se la baia ammette più prenotazioni
+//      contemporanee in quello slot (es. Scatole, capacità 2): il secondo
+//      posto va lasciato a un trasportatore diverso, non preso dallo
+//      stesso. Per baie con capacità 1 (Fogli/Depositi) è ridondante col
+//      controllo di capacità, ma non fa danno;
+//   2) superare il numero massimo di slot CONSECUTIVI (adiacenti)
+//      configurato per la baia (VEHICLES[].maxConsecutiveSlots: es. 2 per
+//      Fogli e Scatole — 15:00+15:30 vanno bene ma non un terzo slot di
+//      fila). Nessun limite configurato = nessuna regola (es. Depositi).
+// L'admin è sempre esente da entrambe. `nome`, se non passato
+// esplicitamente, usa il trasportatore corrente (identità scelta
+// all'ingresso, vedi js/auth.js).
 function hasConsecutiveConflict(vehicleId, slotIdx, nome){
-  const v = VEHICLES.find(x => x.id === vehicleId);
-  const maxConsecutive = v && v.maxConsecutiveSlots;
-  if(!maxConsecutive) return false;
   if(isAdmin()) return false;
   const chi = (nome !== undefined ? nome : currentTrasportatore?.nome || '').trim().toLowerCase();
   if(!chi) return false; // identità non ancora nota: il controllo reale avviene alla conferma
   const isSameChi = (b) => b.vehicle_id === vehicleId && b.nome && b.nome.trim().toLowerCase() === chi;
+
+  if(currentBookings.some(b => isSameChi(b) && parseInt(b.slot_index) === slotIdx)) return true;
+
+  const v = VEHICLES.find(x => x.id === vehicleId);
+  const maxConsecutive = v && v.maxConsecutiveSlots;
+  if(!maxConsecutive) return false;
   let run = 1;
   let i = slotIdx - 1;
   while(currentBookings.some(b => isSameChi(b) && parseInt(b.slot_index) === i)){ run++; i--; }
