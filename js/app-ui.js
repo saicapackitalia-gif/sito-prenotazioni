@@ -281,9 +281,11 @@ function openBookingModal(idx,slot){
   document.getElementById('slot-info-box').innerHTML=slotInfoHtml(slot,vv?vv.name:'');
   const nomeSel = document.getElementById('field-nome');
   // Admin: sceglie ogni volta per chi sta prenotando. Trasportatore: il
-  // nome è già noto (scelto all'ingresso) — pre-selezionato ma comunque
-  // modificabile, per correggere una scelta sbagliata senza uscire.
+  // nome è fissato a quello verificato con password all'ingresso — per
+  // prenotare come un'altra azienda serve "Cambia" in alto (e la sua
+  // password), non basta scegliere un altro nome qui nella scheda.
   nomeSel.value = isAdmin() ? '' : (currentTrasportatore?.nome || '');
+  nomeSel.disabled = !isAdmin();
   document.getElementById('field-destinazione').value='';
   document.getElementById('field-targa').value='';
   document.getElementById('modal-overlay').classList.add('visible');
@@ -311,13 +313,6 @@ document.getElementById('modal-confirm').addEventListener('click',async()=>{
     if(nb){
       nb.mine=true;
       currentBookings.push(nb);
-      // Se un trasportatore diverso da quello ricordato ha appena
-      // prenotato (o è la prima volta su questo browser), lo ricordiamo:
-      // così le prossime visite lo "riconoscono" automaticamente.
-      if(!isAdmin()){
-        const t = TRASPORTATORI.find(t=>t.nome===nome);
-        if(t && t.id !== currentTrasportatore?.id) saveTrasportatore(t);
-      }
     }
     closeModal('modal-overlay');
     renderGrid(); loadBookingsForStep1(); updateStats();
@@ -433,16 +428,26 @@ function renderTrasportatoreChooser(){
   authMode='trasportatore';
   document.getElementById('auth-title').textContent='Chi sei?';
   const opzioni = TRASPORTATORI.map(t=>`<option value="${t.id}">${t.nome}</option>`).join('');
+  // Se questo browser ricorda già un trasportatore (scelto in una visita
+  // precedente), lo pre-seleziona per comodità — ma la password va
+  // comunque reinserita: non è mai stata salvata a lungo termine.
+  let idRicordato = '';
+  try{ idRicordato = localStorage.getItem('trasportatoreId') || ''; }catch(e){}
   document.getElementById('auth-body').innerHTML=`
     <div class="field">
       <label class="field-label" for="chooser-trasportatore">Trasportatore</label>
       <select class="field-input" id="chooser-trasportatore">
-        <option value="" disabled selected>Seleziona...</option>
+        <option value="" ${idRicordato?'':'disabled selected'}>Seleziona...</option>
         ${opzioni}
       </select>
     </div>
+    <div class="field">
+      <label class="field-label" for="chooser-password">Password</label>
+      <input type="password" class="field-input" id="chooser-password" autocomplete="current-password">
+    </div>
     <div class="error-msg" id="auth-error"></div>
   `;
+  if(idRicordato) document.getElementById('chooser-trasportatore').value = idRicordato;
   document.getElementById('auth-footer').innerHTML=`
     <button class="btn btn-primary" id="chooser-continue">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -450,13 +455,28 @@ function renderTrasportatoreChooser(){
     </button>
     <div class="auth-switch">Sei l'amministratore? <button onclick="renderAuthLogin()">Accedi</button></div>
   `;
-  document.getElementById('chooser-continue').addEventListener('click', ()=>{
+  const submit = async ()=>{
     const id = document.getElementById('chooser-trasportatore').value;
+    const password = document.getElementById('chooser-password').value;
     const t = TRASPORTATORI.find(t=>t.id===id);
     if(!t){ showAuthError('Seleziona un trasportatore dall\'elenco.'); return; }
-    saveTrasportatore(t);
-    startApp();
-  });
+    if(!password){ showAuthError('Inserisci la password.'); return; }
+    hideAuthError();
+    const btn = document.getElementById('chooser-continue');
+    btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Verifica...';
+    try{
+      const { data, error } = await sbClient.rpc('verifica_trasportatore', { p_id: t.id, p_password: password });
+      if(error || !data || !data.length){ throw new Error('Trasportatore o password non corretti.'); }
+      saveTrasportatore(t, password);
+      startApp();
+    }catch(e){
+      showAuthError('Trasportatore o password non corretti.');
+      btn.disabled=false;
+      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Continua';
+    }
+  };
+  document.getElementById('chooser-continue').addEventListener('click', submit);
+  document.getElementById('chooser-password').addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
 }
 
 function renderAuthLogin(){
@@ -619,9 +639,13 @@ initSupabaseClient();
     }
   } catch(e) { /* nessuna sessione admin valida: si prosegue come trasportatore */ }
 
+  // Riconosciuto solo se sono note ENTRAMBE identità (localStorage, a
+  // lungo termine) e password (sessionStorage, solo per questa scheda del
+  // browser) — altrimenti va rifatta la scelta con la password.
   const saved = loadSavedTrasportatore();
   if (saved) {
-    currentTrasportatore = saved;
+    currentTrasportatore = saved.t;
+    currentTrasportatorePassword = saved.pw;
     startApp();
   } else {
     showPage('page-login');
@@ -1159,7 +1183,7 @@ function initUserEditModal(){
   document.getElementById('user-edit-delete').addEventListener('click', async () => {
     if(!confirm('Eliminare questa prenotazione?')) return;
     try{
-      await deleteBooking(userEditBookingId);
+      await deleteBooking(userEditBookingId, document.getElementById('user-edit-nome').value.trim());
       toast('✓ Prenotazione eliminata','success');
       closeUserEdit();
       loadAndRender();

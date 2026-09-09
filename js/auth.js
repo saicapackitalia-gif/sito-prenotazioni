@@ -1,11 +1,16 @@
 /* ===== AUTENTICAZIONE E IDENTITÀ =====
    L'unico login vero resta quello dell'amministratore (email/password via
-   Supabase Auth). Chiunque altro (i trasportatori) non ha più un account:
-   si identifica scegliendo il proprio nome da un elenco fisso
-   (TRASPORTATORI, in js/config.js) invece di loggarsi o compilare un
-   modulo da ospite. La scelta viene ricordata in localStorage così le
-   visite successive dallo stesso browser vengono "riconosciute"
-   automaticamente (resta comunque modificabile in qualsiasi momento).
+   Supabase Auth). Chiunque altro (i trasportatori) non ha un account
+   personale: si identifica scegliendo il proprio nome da un elenco fisso
+   (TRASPORTATORI, in js/config.js) e inserendo la password di quel
+   trasportatore (verificata sul database — vedi
+   docs/TRASPORTATORI_SENZA_LOGIN.md — impedisce di scegliere semplicemente
+   "sono il trasportatore X" senza conoscerne la password). L'identità
+   scelta (solo l'id, non la password) viene ricordata in localStorage così
+   le visite successive dallo stesso browser vengono "riconosciute" e non
+   serve riselezionarla dal menu; la password viene invece tenuta solo in
+   sessionStorage (si perde chiudendo la scheda/il browser) così non resta
+   salvata a lungo termine sul dispositivo.
    Caricato con un normale <script> (non un modulo) dopo
    js/supabase-client.js e prima dello script principale: le dichiarazioni
    top-level restano condivise. */
@@ -15,23 +20,31 @@ let offlineDb={};
 let currentUser=null; // {id, email} — SOLO per l'admin, ora
 
 // Trasportatore corrente (oggetto da TRASPORTATORI, o null se non ancora
-// scelto su questo browser). Non è un'autenticazione vera: chiunque può
-// scegliere qualunque nome dall'elenco — è una semplificazione scelta
-// consapevolmente, non un controllo di sicurezza.
+// scelto/verificato su questo browser).
 let currentTrasportatore = null;
+// Password verificata per currentTrasportatore, tenuta solo in memoria +
+// sessionStorage (mai in localStorage): serve ad ogni prenotazione/modifica/
+// cancellazione, che il database verifica di nuovo comunque.
+let currentTrasportatorePassword = null;
 
 function loadSavedTrasportatore(){
   try{
     const id = localStorage.getItem('trasportatoreId');
-    return TRASPORTATORI.find(t => t.id === id) || null;
+    const t = TRASPORTATORI.find(t => t.id === id) || null;
+    if(!t) return null;
+    const pw = sessionStorage.getItem('trasportatorePw');
+    return pw ? { t, pw } : null; // senza password valida per questa sessione, va riverificato
   }catch(e){ return null; }
 }
-function saveTrasportatore(t){
+function saveTrasportatore(t, password){
   currentTrasportatore = t || null;
+  currentTrasportatorePassword = t ? (password||null) : null;
   try{
     if(t) localStorage.setItem('trasportatoreId', t.id);
     else localStorage.removeItem('trasportatoreId');
-  }catch(e){ /* localStorage non disponibile: la scelta vale solo per questa visita */ }
+    if(t && password) sessionStorage.setItem('trasportatorePw', password);
+    else sessionStorage.removeItem('trasportatorePw');
+  }catch(e){ /* storage non disponibile: la scelta vale solo per questa visita */ }
 }
 
 function isBookingMine(b){

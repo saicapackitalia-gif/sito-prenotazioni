@@ -1,20 +1,61 @@
-# Trasportatori senza login + regola slot consecutivi per baia
+# Trasportatori senza login + password per trasportatore + regola slot consecutivi per baia
 
 ## Cosa cambia
 
 Su richiesta, l'accesso per i trasportatori non passa più da un account
-(email/password) o da un modulo "ospite": si sceglie il proprio nome da un
-elenco fisso (menu a tendina), e il sito riconosce automaticamente
-quell'identità per applicare le regole di business. L'amministratore
-continua a fare login vero con email e password.
+(email/password personale) o da un modulo "ospite": si sceglie il proprio
+nome da un elenco fisso (menu a tendina) e si inserisce la password di
+quel trasportatore — il sito riconosce automaticamente quell'identità per
+applicare le regole di business. L'amministratore continua a fare login
+vero con email e password.
 
-**Avviso importante, già discusso e accettato**: questo NON è un sistema di
-autenticazione. Chiunque può scegliere qualunque nome dall'elenco — non c'è
-verifica che chi seleziona "Tavola" sia davvero un incaricato di Tavola. È
-una semplificazione consapevole per un ambiente controllato (i trasportatori
-che arrivano allo stabilimento sono comunque persone note), non un controllo
-di sicurezza. Se in futuro servisse un controllo più stretto, andrebbe
-ripensato da capo (es. un codice/PIN per azienda).
+## Password per trasportatore (aggiunta dopo la prima versione)
+
+Nella prima versione la scelta del nome bastava da sola, senza alcuna
+verifica — chiunque poteva "diventare" un trasportatore con un clic. Su
+segnalazione esplicita ("se io entro e dico che sono un trasportatore posso
+modificare per dispetto"), ogni trasportatore ha ora una password fissa
+nel formato `Saica-<Nome trasportatore>` (es. `Saica-Zini`,
+`Saica-Tavola`), verificata sul database prima di:
+- entrare come quel trasportatore ("Chi sei?");
+- creare una nuova prenotazione;
+- rivedere le proprie prenotazioni con i dettagli completi;
+- modificare o cancellare una prenotazione (e solo se è davvero la
+  propria: nemmeno con la password giusta si può toccare la prenotazione
+  di un trasportatore diverso — verificato con un test dedicato).
+
+L'amministratore resta esente da queste password (ha già il suo vero
+login).
+
+**Avviso di trasparenza, importante**: la password è fissa e segue una
+formula nota (`Saica-` + nome) — alza la barriera contro un clic
+casuale o un dispetto estemporaneo, ma non è una protezione forte contro
+chi conosce o indovina lo schema. Le password sono comunque salvate
+**cifrate** nel database (mai in chiaro) e verificate lato server ad ogni
+operazione, non solo all'ingresso — quindi non basta aggirare la
+schermata iniziale per bypassarle.
+
+Un limite più profondo, già segnalato in `PIANO_REFACTORING.md` e non
+affrontato da questa modifica: il sito incorpora lato client una chiave
+`service_role` che bypassa tutte queste protezioni per chi la estrae dal
+codice sorgente della pagina. La password ai trasportatori non chiude
+questa via più tecnica — resta un problema distinto, di dimensioni
+maggiori, da valutare separatamente se necessario.
+
+### Dove sono salvate le informazioni sul browser
+
+- **Identità scelta** (quale trasportatore): in `localStorage`, a lungo
+  termine — per questo le visite successive vengono "riconosciute" senza
+  dover riselezionare il nome dalla tendina.
+- **Password**: SOLO in `sessionStorage`, che si svuota chiudendo la
+  scheda/il browser — non resta salvata a lungo termine sul dispositivo.
+  Di conseguenza: ricaricare la pagina nella stessa scheda non richiede di
+  reinserirla; riaprire il sito in una scheda/browser nuovo sì (il nome
+  resta pre-selezionato per comodità, ma la password va reinserita).
+
+Se in futuro servisse un controllo più stretto (password non prevedibili,
+uniche per persona invece che per azienda, ecc.), andrebbe ripensato da
+capo.
 
 ## Elenco trasportatori (fisso, in `js/config.js`)
 
@@ -124,3 +165,29 @@ precedenti — vedi `docs/CORREZIONE_PRIVACY_PRENOTAZIONI.md`):
   identità riconosciuta automaticamente dopo un ricaricamento della
   pagina, flusso admin (login → aggiungi prenotazione → sceglie
   trasportatore da tendina → conferma) verificato per intero.
+
+## Verifica fatta per la password (aggiunta successiva)
+
+- **Database**: password giusta accettata, password sbagliata respinta con
+  errore chiaro (sia all'ingresso sia su creazione/lettura/modifica/
+  cancellazione); l'admin non ne ha bisogno; **anche con una password
+  valida ma di un trasportatore diverso, non si può modificare o
+  cancellare la prenotazione di un altro trasportatore** (verificato con
+  un tentativo esplicito: CMF con la propria password corretta non riesce
+  a toccare una prenotazione di Tavola). Migrazione corretta al volo dopo
+  aver trovato, testando, due problemi tecnici: la funzione `crypt()` di
+  PostgreSQL vive in uno schema (`extensions`) diverso da quello
+  configurato di default per le funzioni, e la ridefinizione delle
+  funzioni con un parametro in più aveva lasciato una versione vecchia
+  duplicata invece di sostituirla — entrambi corretti e riverificati
+  prima di considerare la migrazione conclusa.
+- **Sito**: password sbagliata all'ingresso → resta sulla schermata con
+  errore, non entra; password giusta → entra; il campo "Trasportatore"
+  nella scheda di prenotazione è bloccato (non modificabile) per chi non è
+  admin, proprio perché l'identità è già stata verificata con password
+  all'ingresso; ricaricare la pagina nella stessa scheda riconosce ancora
+  il trasportatore senza richiedere di nuovo la password (sessionStorage);
+  aprire il sito in un browser/contesto nuovo richiede scelta e password
+  da capo; un secondo trasportatore, con la propria password valida, vede
+  comunque la prenotazione altrui solo come "Occupato" senza alcun dato
+  personale in memoria.
