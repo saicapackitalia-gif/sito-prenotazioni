@@ -10,7 +10,7 @@
    complessità reale — vedi docs/PIANO_REFACTORING.md. Caricato come
    ultimo <script>, dopo config.js/supabase-client.js/auth.js/slots.js/
    bookings-api.js (di cui usa le funzioni/costanti condivise: VEHICLES,
-   sbClient/adminClient, currentUser/isGuest, currentBookings,
+   sbClient/adminClient, currentUser/currentTrasportatore, currentBookings,
    canBookSlot/hasConsecutiveConflict/slotTimeRange, createBooking/
    deleteBooking/updateBooking/fetchBookings, ecc.). Codice spostato senza
    modifiche da index.html. */
@@ -256,24 +256,40 @@ function slotInfoHtml(slot,vehicleName){
     <div class="slot-info-item"><div class="slot-info-item-label">Mezzo</div><div class="slot-info-item-value">${vehicleName}</div></div>
     <div class="slot-info-item"><div class="slot-info-item-label">Data</div><div class="slot-info-item-value">${selectedDate}</div></div>`;
 }
+// Riempie le tendine "Trasportatore" (nuova prenotazione + modifica admin)
+// con l'elenco fisso (TRASPORTATORI). Fatto una volta sola: le opzioni non
+// cambiano a runtime.
+(function initTrasportatoreSelects(){
+  // field-nome ha già in HTML l'opzione segnaposto "Seleziona...";
+  // admin-edit-nome no (riceve sempre subito un valore reale all'apertura).
+  ['field-nome','admin-edit-nome'].forEach(id=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    TRASPORTATORI.forEach(t=>{
+      const opt = document.createElement('option');
+      opt.value = t.nome; opt.textContent = t.nome;
+      sel.appendChild(opt);
+    });
+  });
+})();
+
 function openBookingModal(idx,slot){
   pendingSlot={idx,slot};
   const vv=VEHICLES.find(v=>v.id===selectedVehicle);
-  const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
-  if(vv && vv.id==='baia-3' && !isAdmin() && !isZini){ toast('La baia Depositi è riservata a ZINI Autotrasporti Srl.','error-t'); return; }
+  if(vv && vv.id==='baia-3' && !isAdmin() && !currentTrasportatore?.zini){ toast('La baia Depositi è riservata a ZINI Autotrasporti Srl.','error-t'); return; }
   document.getElementById('modal-subtitle').textContent=`${vv?vv.name:''} — ${formatDateIT(selectedDate)}`;
   document.getElementById('slot-info-box').innerHTML=slotInfoHtml(slot,vv?vv.name:'');
-  document.getElementById('field-nome').value=lastNome;
+  const nomeSel = document.getElementById('field-nome');
+  // Admin: sceglie ogni volta per chi sta prenotando. Trasportatore: il
+  // nome è fissato a quello verificato con password all'ingresso — per
+  // prenotare come un'altra azienda serve "Cambia" in alto (e la sua
+  // password), non basta scegliere un altro nome qui nella scheda.
+  nomeSel.value = isAdmin() ? '' : (currentTrasportatore?.nome || '');
+  nomeSel.disabled = !isAdmin();
   document.getElementById('field-destinazione').value='';
   document.getElementById('field-targa').value='';
-  const telWrap=document.getElementById('field-telefono-wrap');
-  const azWrap=document.getElementById('field-azienda-wrap');
-  if(telWrap) telWrap.style.display = isGuest ? '' : 'none';
-  if(azWrap) azWrap.style.display = isGuest ? '' : 'none';
-  const telField=document.getElementById('field-telefono'); if(telField) telField.value='';
-  const azField=document.getElementById('field-azienda'); if(azField) azField.value='';
   document.getElementById('modal-overlay').classList.add('visible');
-  setTimeout(()=>{const f=document.getElementById('field-nome');f.focus();},100);
+  setTimeout(()=>{ (isAdmin()||!currentTrasportatore ? nomeSel : document.getElementById('field-destinazione')).focus(); },100);
 }
 function closeModal(id){document.getElementById(id).classList.remove('visible');}
 document.getElementById('modal-close').addEventListener('click',()=>closeModal('modal-overlay'));
@@ -285,23 +301,18 @@ document.getElementById('modal-confirm').addEventListener('click',async()=>{
   const nome=document.getElementById('field-nome').value.trim();
   const destinazione=document.getElementById('field-destinazione').value.trim();
   const targa=document.getElementById('field-targa').value.trim().toUpperCase();
-  const telefono=isGuest?document.getElementById('field-telefono').value.trim():'';
-  const azienda=isGuest?document.getElementById('field-azienda').value.trim():'';
-  if(!nome){document.getElementById('field-nome').focus();toast('Inserisci il nome del trasportatore.','error-t');return;}
+  if(!nome){document.getElementById('field-nome').focus();toast('Seleziona il trasportatore.','error-t');return;}
   if(!destinazione){document.getElementById('field-destinazione').focus();toast('Inserisci la destinazione.','error-t');return;}
   if(!targa){document.getElementById('field-targa').focus();toast('Inserisci la targa del mezzo.','error-t');return;}
-  if(isGuest && !telefono){document.getElementById('field-telefono').focus();toast('Inserisci un numero di telefono.','error-t');return;}
   const btn=document.getElementById('modal-confirm');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Salvo...';
   try{
     if(!pendingSlot){toast('Errore: nessuno slot selezionato.','error-t');return;}
-  const res=await createBooking(selectedVehicle,selectedDate,pendingSlot.idx,nome,destinazione,targa,isGuest?{telefono,azienda}:null);
-    lastNome=nome; lastReparto='';
+    const res=await createBooking(selectedVehicle,selectedDate,pendingSlot.idx,nome,destinazione,targa);
     const nb=Array.isArray(res)?res[0]:res;
     if(nb){
       nb.mine=true;
       currentBookings.push(nb);
-      if(isGuest && nb.management_token) saveGuestToken(nb.management_token);
     }
     closeModal('modal-overlay');
     renderGrid(); loadBookingsForStep1(); updateStats();
@@ -378,12 +389,20 @@ if(datePicker){
   }));
 }
 
-// ===== LOGOUT =====
+// ===== LOGOUT / CAMBIA TRASPORTATORE =====
+// Stesso pulsante: per l'admin è un vero logout; per un trasportatore
+// "dimentica" la scelta fatta su questo browser e torna alla schermata di
+// selezione (utile se un altro autista/azienda usa lo stesso dispositivo).
 document.getElementById('btn-logout')&&document.getElementById('btn-logout').addEventListener('click',async()=>{
-  await signOut();
-  toast('Logout effettuato.');
+  if(isAdmin()){
+    await signOut();
+    toast('Logout effettuato.');
+  } else {
+    saveTrasportatore(null);
+    toast('Trasportatore dimenticato su questo dispositivo.');
+  }
   showPage('page-login');
-  renderAuthLogin();
+  renderTrasportatoreChooser();
 });
 
 // ===== SETTINGS =====
@@ -398,16 +417,75 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeModal('modal-overlay');closeModal('modal-del-overlay');}
 });
 
-// ===== AUTH UI =====
-let authMode='login'; // 'login' | 'register'
+// ===== SCELTA TRASPORTATORE / LOGIN ADMIN =====
+// Non esiste più un account per i trasportatori: la vista di default,
+// all'ingresso, chiede di scegliere il proprio nome da un elenco fisso
+// (TRASPORTATORI). L'unico vero login (email/password) resta riservato
+// all'amministratore, raggiungibile da un link discreto nella stessa vista.
+let authMode='trasportatore'; // 'trasportatore' | 'login'
+
+function renderTrasportatoreChooser(){
+  authMode='trasportatore';
+  document.getElementById('auth-title').textContent='Chi sei?';
+  const opzioni = TRASPORTATORI.map(t=>`<option value="${t.id}">${t.nome}</option>`).join('');
+  // Se questo browser ricorda già un trasportatore (scelto in una visita
+  // precedente), lo pre-seleziona per comodità — ma la password va
+  // comunque reinserita: non è mai stata salvata a lungo termine.
+  let idRicordato = '';
+  try{ idRicordato = localStorage.getItem('trasportatoreId') || ''; }catch(e){}
+  document.getElementById('auth-body').innerHTML=`
+    <div class="field">
+      <label class="field-label" for="chooser-trasportatore">Trasportatore</label>
+      <select class="field-input" id="chooser-trasportatore">
+        <option value="" ${idRicordato?'':'disabled selected'}>Seleziona...</option>
+        ${opzioni}
+      </select>
+    </div>
+    <div class="field">
+      <label class="field-label" for="chooser-password">Password</label>
+      <input type="password" class="field-input" id="chooser-password" autocomplete="current-password">
+    </div>
+    <div class="error-msg" id="auth-error"></div>
+  `;
+  if(idRicordato) document.getElementById('chooser-trasportatore').value = idRicordato;
+  document.getElementById('auth-footer').innerHTML=`
+    <button class="btn btn-primary" id="chooser-continue">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Continua
+    </button>
+    <div class="auth-switch">Sei l'amministratore? <button onclick="renderAuthLogin()">Accedi</button></div>
+  `;
+  const submit = async ()=>{
+    const id = document.getElementById('chooser-trasportatore').value;
+    const password = document.getElementById('chooser-password').value;
+    const t = TRASPORTATORI.find(t=>t.id===id);
+    if(!t){ showAuthError('Seleziona un trasportatore dall\'elenco.'); return; }
+    if(!password){ showAuthError('Inserisci la password.'); return; }
+    hideAuthError();
+    const btn = document.getElementById('chooser-continue');
+    btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Verifica...';
+    try{
+      const { data, error } = await sbClient.rpc('verifica_trasportatore', { p_id: t.id, p_password: password });
+      if(error || !data || !data.length){ throw new Error('Trasportatore o password non corretti.'); }
+      saveTrasportatore(t, password);
+      startApp();
+    }catch(e){
+      showAuthError('Trasportatore o password non corretti.');
+      btn.disabled=false;
+      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Continua';
+    }
+  };
+  document.getElementById('chooser-continue').addEventListener('click', submit);
+  document.getElementById('chooser-password').addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
+}
 
 function renderAuthLogin(){
   authMode='login';
-  document.getElementById('auth-title').textContent='Accedi';
+  document.getElementById('auth-title').textContent='Accesso amministratore';
   document.getElementById('auth-body').innerHTML=`
     <div class="field">
-      <label class="field-label" for="auth-email">Email aziendale</label>
-      <input type="email" class="field-input" id="auth-email" placeholder="mario.rossi@azienda.it" autocomplete="email">
+      <label class="field-label" for="auth-email">Email</label>
+      <input type="email" class="field-input" id="auth-email" placeholder="nome@azienda.it" autocomplete="email">
     </div>
     <div class="field">
       <label class="field-label" for="auth-pw">Password</label>
@@ -425,60 +503,15 @@ function renderAuthLogin(){
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Accedi
     </button>
-    <button class="btn btn-ghost" id="auth-guest" style="margin-top:8px;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      Prenota senza account
-    </button>
-    <div class="auth-switch">Non hai un account? <button onclick="renderAuthRegister()">Registrati</button></div>
+    <div class="auth-switch"><button onclick="renderTrasportatoreChooser()">← Torna alla scelta trasportatore</button></div>
   `;
   document.getElementById('auth-submit').addEventListener('click', doLogin);
-  document.getElementById('auth-guest').addEventListener('click', startGuestMode);
   document.getElementById('auth-pw').addEventListener('keydown',e=>{if(e.key==='Enter') doLogin();});
   setTimeout(()=>document.getElementById('auth-email').focus(),100);
 }
 
-function renderAuthRegister(){
-  authMode='register';
-  document.getElementById('auth-title').textContent='Registrati';
-  document.getElementById('auth-body').innerHTML=`
-    <div class="field">
-      <label class="field-label" for="reg-nome">Nome e Cognome *</label>
-      <input type="text" class="field-input" id="reg-nome" placeholder="Es. Mario Rossi" autocomplete="name">
-    </div>
-    <div class="field">
-      <label class="field-label" for="reg-reparto">Azienda *</label>
-      <input type="text" class="field-input" id="reg-reparto" placeholder="Es. Saica Pack, Trasporti Rossi...">
-    </div>
-    <div class="field">
-      <label class="field-label" for="reg-email">Email aziendale *</label>
-      <input type="email" class="field-input" id="reg-email" placeholder="mario.rossi@azienda.it" autocomplete="email">
-    </div>
-    <div class="field">
-      <label class="field-label" for="reg-pw">Password *</label>
-      <div class="password-wrapper">
-        <input type="password" class="field-input" id="reg-pw" placeholder="Min. 8 caratteri" autocomplete="new-password">
-        <button class="pw-toggle" type="button" onclick="togglePw('reg-pw',this)" aria-label="Mostra password">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-      </div>
-      <span class="field-hint">Minimo 8 caratteri</span>
-    </div>
-    <div class="error-msg" id="auth-error"></div>
-    <div class="success-msg" id="auth-success"></div>
-  `;
-  document.getElementById('auth-footer').innerHTML=`
-    <button class="btn btn-primary" id="auth-submit">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-      Crea account
-    </button>
-    <div class="auth-switch">Hai già un account? <button onclick="renderAuthLogin()">Accedi</button></div>
-  `;
-  document.getElementById('auth-submit').addEventListener('click', doRegister);
-  setTimeout(()=>document.getElementById('reg-nome').focus(),100);
-}
-
+window.renderTrasportatoreChooser=renderTrasportatoreChooser;
 window.renderAuthLogin=renderAuthLogin;
-window.renderAuthRegister=renderAuthRegister;
 window.togglePw=function(id,btn){
   const inp=document.getElementById(id);
   const show=inp.type==='password';
@@ -507,8 +540,11 @@ async function doLogin(){
   try{
     const r=await signIn(email,pw);
     const user = r.user || await getUser();
-    currentUser={id:user.id, email:user.email, nome:user.user_metadata?.nome||user.email.split('@')[0], reparto:user.user_metadata?.reparto||''};
-    lastNome=currentUser.nome; lastReparto='';
+    if(user.email !== ADMIN_EMAIL_CONST){
+      await signOut();
+      throw new Error('Questo accesso è riservato all\'amministratore.');
+    }
+    currentUser={id:user.id, email:user.email, nome:user.user_metadata?.nome||user.email.split('@')[0]};
     startApp();
   }catch(e){
     showAuthError(e.message.includes('Invalid')||e.message.includes('invalid')?'Email o password non corretti.':e.message);
@@ -517,52 +553,20 @@ async function doLogin(){
   }
 }
 
-async function doRegister(){
-  const nome=(document.getElementById('reg-nome')||{}).value?.trim();
-  const reparto=(document.getElementById('reg-reparto')||{}).value?.trim();
-  const email=(document.getElementById('reg-email')||{}).value?.trim();
-  const pw=(document.getElementById('reg-pw')||{}).value;
-  if(!nome||!reparto||!email||!pw){showAuthError('Compila tutti i campi obbligatori.');return;}
-  if(pw.length<8){showAuthError('La password deve avere almeno 8 caratteri.');return;}
-  hideAuthError();
-  const btn=document.getElementById('auth-submit');
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Creo account...';
-  try{
-    await signUp(email,pw,nome,reparto);
-    // Try immediate login
-    try{
-      const r=await signIn(email,pw);
-      const user = r.user || await getUser();
-      currentUser={id:user.id,email:user.email,nome,reparto};
-      lastNome=nome; lastReparto=reparto;
-      startApp();
-    }catch(e2){
-      // Email confirmation required
-      const s=document.getElementById('auth-success');
-      if(s){s.textContent='✓ Account creato! Controlla la tua email per confermare, poi accedi.';s.classList.add('show');}
-      btn.disabled=false;
-      btn.innerHTML='Crea account';
-      setTimeout(()=>renderAuthLogin(),2500);
-    }
-  }catch(e){
-    showAuthError(e.message.includes('already')||e.message.includes('exists')?'Email già registrata. Prova ad accedere.':e.message);
-    btn.disabled=false;
-    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg> Crea account';
-  }
-}
-
-function startGuestMode(){
-  isGuest = true;
-  currentUser = null;
-  startApp();
-}
-
 function startApp(){
   // Update user chip
   const avatar=document.getElementById('user-avatar');
   const emailLabel=document.getElementById('user-email-label');
-  if(avatar) avatar.textContent = isGuest ? 'O' : (currentUser?.nome||currentUser?.email||'?').charAt(0).toUpperCase();
-  if(emailLabel) emailLabel.textContent = isGuest ? 'Ospite' : (currentUser?.nome||currentUser?.email||'');
+  if(avatar) avatar.textContent = isAdmin() ? (currentUser?.nome||currentUser?.email||'?').charAt(0).toUpperCase() : (currentTrasportatore?.nome||'?').charAt(0).toUpperCase();
+  if(emailLabel) emailLabel.textContent = isAdmin() ? (currentUser?.nome||currentUser?.email||'') : (currentTrasportatore?.nome||'');
+  const logoutBtn = document.getElementById('btn-logout');
+  if(logoutBtn){
+    const label = isAdmin() ? 'Esci' : 'Cambia';
+    logoutBtn.setAttribute('aria-label', label);
+    logoutBtn.setAttribute('title', label);
+    const txt = logoutBtn.querySelector('.btn-text');
+    if(txt) txt.textContent = label;
+  }
   setDbStatus('ok');
   showPage('app-wrapper');
   renderTabs();
@@ -583,8 +587,7 @@ function startApp(){
 // ===== SETUP SCREEN =====
 document.getElementById('setup-skip').addEventListener('click',()=>{
   offlineMode=true; SB_URL=''; SB_KEY='';
-  currentUser={id:'offline',email:'demo@offline.it',nome:'Utente Demo',reparto:'Demo'};
-  lastNome='Utente Demo'; lastReparto='Demo';
+  currentTrasportatore = TRASPORTATORI[0];
   startApp();
 });
 
@@ -617,27 +620,36 @@ SB_KEY = SUPABASE_ANON_KEY_DEFAULT;
 offlineMode = false;
 initSupabaseClient();
 
-// Controlla sessione esistente → se loggato salta il login
+// Se c'è una sessione admin già attiva, salta dritto all'app da admin.
+// Altrimenti: se questo browser ha già scelto un trasportatore in passato,
+// lo "riconosce" ed entra direttamente con quell'identità; solo la primissima
+// volta (o dopo aver cambiato trasportatore) mostra la scelta dall'elenco.
 (async () => {
   try {
     const { data: { session } } = await sbClient.auth.getSession();
-    if (session && session.user) {
+    if (session && session.user && session.user.email === ADMIN_EMAIL_CONST) {
       const meta = session.user.user_metadata || {};
       currentUser = {
         id: session.user.id,
         email: session.user.email,
-        nome: meta.nome || session.user.email.split('@')[0],
-        reparto: meta.reparto || ''
+        nome: meta.nome || session.user.email.split('@')[0]
       };
-      lastNome = currentUser.nome;
       startApp();
-    } else {
-      showPage('page-login');
-      renderAuthLogin();
+      return;
     }
-  } catch(e) {
+  } catch(e) { /* nessuna sessione admin valida: si prosegue come trasportatore */ }
+
+  // Riconosciuto solo se sono note ENTRAMBE identità (localStorage, a
+  // lungo termine) e password (sessionStorage, solo per questa scheda del
+  // browser) — altrimenti va rifatta la scelta con la password.
+  const saved = loadSavedTrasportatore();
+  if (saved) {
+    currentTrasportatore = saved.t;
+    currentTrasportatorePassword = saved.pw;
+    startApp();
+  } else {
     showPage('page-login');
-    renderAuthLogin();
+    renderTrasportatoreChooser();
   }
 })();
 
@@ -774,8 +786,7 @@ function renderBaiaCards(){
   c.innerHTML = '';
   VEHICLES.forEach(v => {
     const isDepositi = v.id === 'baia-3';
-    const isZini = (currentUser?.user_metadata?.reparto || currentUser?.reparto || '').toLowerCase().includes('zini');
-    if(isDepositi && !isAdmin() && !isZini) return;
+    if(isDepositi && !isAdmin() && !currentTrasportatore?.zini) return;
     const card = document.createElement('button');
     card.className = 'baia-card';
     card.setAttribute('aria-label', 'Seleziona ' + v.name);
@@ -1172,7 +1183,7 @@ function initUserEditModal(){
   document.getElementById('user-edit-delete').addEventListener('click', async () => {
     if(!confirm('Eliminare questa prenotazione?')) return;
     try{
-      await deleteBooking(userEditBookingId);
+      await deleteBooking(userEditBookingId, document.getElementById('user-edit-nome').value.trim());
       toast('✓ Prenotazione eliminata','success');
       closeUserEdit();
       loadAndRender();

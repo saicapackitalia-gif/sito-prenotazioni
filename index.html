@@ -373,8 +373,8 @@ CREATE POLICY "delete_own" ON prenotazioni
           </select>
         </div>
         <div class="field">
-          <label class="field-label" for="admin-edit-nome">Nome trasportatore *</label>
-          <input type="text" class="field-input" id="admin-edit-nome" placeholder="Es. Mario Rossi">
+          <label class="field-label" for="admin-edit-nome">Trasportatore *</label>
+          <select class="field-input" id="admin-edit-nome"></select>
         </div>
         <div class="field">
           <label class="field-label" for="admin-edit-dest">Destinazione *</label>
@@ -413,8 +413,8 @@ CREATE POLICY "delete_own" ON prenotazioni
           <select class="field-input" id="user-edit-slot"></select>
         </div>
         <div class="field">
-          <label class="field-label" for="user-edit-nome">Nome trasportatore *</label>
-          <input type="text" class="field-input" id="user-edit-nome" placeholder="Es. Mario Rossi">
+          <label class="field-label" for="user-edit-nome">Trasportatore</label>
+          <input type="text" class="field-input" id="user-edit-nome" readonly>
         </div>
         <div class="field">
           <label class="field-label" for="user-edit-dest">Destinazione *</label>
@@ -457,8 +457,10 @@ CREATE POLICY "delete_own" ON prenotazioni
     <div class="modal-body">
       <div class="slot-info-box" id="slot-info-box"></div>
       <div class="field">
-        <label class="field-label" for="field-nome">Nome trasportatore *</label>
-        <input type="text" class="field-input" id="field-nome" placeholder="Es. Mario Rossi" autocomplete="name">
+        <label class="field-label" for="field-nome">Trasportatore *</label>
+        <select class="field-input" id="field-nome">
+          <option value="" disabled selected>Seleziona...</option>
+        </select>
       </div>
       <div class="field">
         <label class="field-label" for="field-destinazione">Destinazione *</label>
@@ -467,14 +469,6 @@ CREATE POLICY "delete_own" ON prenotazioni
       <div class="field">
         <label class="field-label" for="field-targa">Targa mezzo *</label>
         <input type="text" class="field-input" id="field-targa" placeholder="Es. AB123CD" style="text-transform:uppercase;" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="field" id="field-telefono-wrap" style="display:none;">
-        <label class="field-label" for="field-telefono">Telefono *</label>
-        <input type="tel" class="field-input" id="field-telefono" placeholder="Es. 333 1234567" autocomplete="tel">
-      </div>
-      <div class="field" id="field-azienda-wrap" style="display:none;">
-        <label class="field-label" for="field-azienda">Azienda</label>
-        <input type="text" class="field-input" id="field-azienda" placeholder="Es. Trasporti Rossi">
       </div>
     </div>
     <div class="modal-footer">
