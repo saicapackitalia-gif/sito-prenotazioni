@@ -26,14 +26,14 @@ verificata sul database prima di:
 L'amministratore resta esente da queste password (ha già il suo vero
 login).
 
-**Le password non seguono più una formula legata al nome** (una prima
-versione usava `Saica-<Nome>`, scartata su richiesta perché prevedibile
-da chiunque conoscesse lo schema). Sono invece parola-comune + due cifre,
-facili da leggere/digitare ma senza relazione con il nome dell'azienda —
-consegnate al committente in chat, non scritte in questo repository per
-non renderle pubbliche insieme al codice sorgente. Per cambiarle in
-futuro: `update public.trasportatori set password_hash = crypt('nuova-password', gen_salt('bf')) where id = '...';`
-su Supabase.
+**Le password non seguono una formula legata al nome** (una prima versione
+usava `Saica-<Nome>`, scartata su richiesta perché prevedibile da chiunque
+conoscesse lo schema). Sono scelte/comunicate direttamente dal
+committente, non scritte in questo repository per non renderle pubbliche
+insieme al codice sorgente — solo condivise in chat con chi deve
+distribuirle ai trasportatori. Per cambiarle in futuro:
+`update public.trasportatori set password_hash = crypt('nuova-password', gen_salt('bf')) where id = '...';`
+su Supabase (o chiedere di farlo qui).
 
 Restano comunque salvate **cifrate** nel database (mai in chiaro) e
 verificate lato server ad ogni operazione, non solo all'ingresso — quindi
