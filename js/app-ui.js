@@ -681,9 +681,14 @@ function renderAdminBookings(){
     const v = VEHICLES.find(v=>v.id===b.vehicle_id)||{icon:'🚪',name:b.vehicle_id};
     let time = '--:--';
     const idx = parseInt(b.slot_index);
-    if(!isNaN(idx) && SLOTS[idx]){
-      const s = SLOTS[idx];
-      time = formatTime(s.hour, s.min);
+    // Usa la griglia della baia DI QUESTA prenotazione (v), non la variabile
+    // globale SLOTS (che riflette solo la baia attualmente selezionata nella
+    // scheda) — altrimenti l'orario risulta sbagliato/assente per tutte le
+    // prenotazioni di baie diverse da quella aperta al momento. Stesso
+    // pattern già corretto altrove, vedi renderSchedulePreview più sotto.
+    if(!isNaN(idx) && v && v.id){
+      const vSlots = generateSlotsForVehicle(v);
+      if(vSlots[idx]) time = formatTime(vSlots[idx].hour, vSlots[idx].min);
     }
     const name = b.nome || b.trasportatore || b.user_nome || b.user_email || 'N/D';
     const targa = b.targa || '';
@@ -1231,7 +1236,13 @@ function openAdminEdit(booking){
   adminEditBookingId = booking.id;
   const currentIdx = parseInt(booking.slot_index);
   const v = VEHICLES.find(v=>v.id===booking.vehicle_id)||{name:booking.vehicle_id};
-  const timeStr = (!isNaN(currentIdx) && SLOTS[currentIdx]) ? formatTime(SLOTS[currentIdx].hour, SLOTS[currentIdx].min) : '';
+  // Griglia della baia DI QUESTA prenotazione (v), non la variabile globale
+  // SLOTS (riflette solo la baia attualmente selezionata nella scheda):
+  // altrimenti orario e tendina slot risultano sbagliati quando l'admin
+  // modifica una prenotazione di una baia diversa da quella aperta al
+  // momento. Stesso bug corretto in renderAdminBookings() più sopra.
+  const vSlots = v && v.id ? generateSlotsForVehicle(v) : SLOTS;
+  const timeStr = (!isNaN(currentIdx) && vSlots[currentIdx]) ? formatTime(vSlots[currentIdx].hour, vSlots[currentIdx].min) : '';
   document.getElementById('admin-edit-title').textContent = 'Modifica prenotazione';
   document.getElementById('admin-edit-subtitle').textContent = `${timeStr} · ${v.name}`;
 
@@ -1241,7 +1252,7 @@ function openAdminEdit(booking){
     .filter(b => b.vehicle_id === booking.vehicle_id && b.id !== booking.id)
     .map(b => parseInt(b.slot_index));
   slotSel.innerHTML = '';
-  SLOTS.forEach((s, idx) => {
+  vSlots.forEach((s, idx) => {
     if(!isBookableSlotIndex(booking.vehicle_id, idx)) return;
     if(idx !== currentIdx && occupiedByOthers.includes(idx)) return; // skip slots taken by others
     const opt = document.createElement('option');
@@ -1358,8 +1369,14 @@ function renderUserSchedule(){
       return { rows, from, to };
     }
 
-    function slotToTime(idx){
-      const s = SLOTS[idx];
+    // Richiede vehicleId: l'export copre più baie insieme (range di date,
+    // nessun filtro per baia), quindi non si può usare la variabile globale
+    // SLOTS (riflette solo la baia aperta al momento nella scheda) — stesso
+    // bug corretto in renderAdminBookings() più sopra.
+    function slotToTime(idx, vehicleId){
+      const v = VEHICLES.find(v=>v.id===vehicleId);
+      const vSlots = v ? generateSlotsForVehicle(v) : SLOTS;
+      const s = vSlots[idx];
       return s ? formatTime(s.hour, s.min) : '—';
     }
     function vehicleName(id){
@@ -1390,7 +1407,7 @@ function renderUserSchedule(){
         const row = [
           formatDateITShort(r.data),
           days[dt.getDay()],
-          slotToTime(r.slot_index),
+          slotToTime(r.slot_index, r.vehicle_id),
           vehicleName(r.vehicle_id),
           `"${(r.nome||'').replace(/"/g,'""')}"`,
           `"${(r.destinazione||'').replace(/"/g,'""')}"`,
@@ -1440,7 +1457,7 @@ function renderUserSchedule(){
         wsData.push([
           formatDateITShort(r.data),
           days[dt.getDay()],
-          slotToTime(r.slot_index),
+          slotToTime(r.slot_index, r.vehicle_id),
           vehicleName(r.vehicle_id),
           r.nome||'',
           r.destinazione||'',
