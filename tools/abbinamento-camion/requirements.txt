@@ -1,8 +1,0 @@
-# Obbligatorie
-pandas>=2.0
-openpyxl>=3.1
-
-# Opzionale: serve solo se NON si fornisce un proprio file --cap-coords con le
-# coordinate dei CAP. Richiede una connessione internet al primo utilizzo
-# (scarica i dati dei CAP italiani da GeoNames) e li mette poi in cache.
-pgeocode>=0.4
