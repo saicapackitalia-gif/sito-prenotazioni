@@ -162,6 +162,9 @@ sito-prenotazioni/
 │   ├── database.sql          # Setup PostgreSQL
 │   ├── package.json          # Dipendenze
 │   └── .env.example          # Template configurazione
+├── tools/
+│   └── abbinamento-camion/    # Tool standalone: abbinamento camion non pieni per zone limitrofe
+│                              # (script separato, non collegato al sito prenotazioni — vedi il suo README)
 └── README.md                 # Questo file
 ```
 
