@@ -675,8 +675,16 @@ function renderAdminBookings(){
     updateBulkBar();
     return;
   }
-  // Sort by slot_index
-  const sorted = [...filtered].sort((a,b)=>(a.slot_index||0)-(b.slot_index||0));
+  // Ordina per orario REALE (minuti da mezzanotte), non per slot_index grezzo:
+  // con filtro "Tutte" l'elenco mescola baie con step diversi (Fogli 45min,
+  // Scatole/Depositi 30min), quindi lo stesso slot_index corrisponde a orari
+  // diversi da baia a baia — ordinare per indice mescolava l'elenco. Stessa
+  // causa (griglia oraria specifica per baia) del bug --:-- corretto sopra.
+  const timeOf = (b) => {
+    const r = slotTimeRange(b.vehicle_id, parseInt(b.slot_index));
+    return r ? r.start : 0;
+  };
+  const sorted = [...filtered].sort((a,b)=>timeOf(a)-timeOf(b));
   list.innerHTML = sorted.map(b => {
     const v = VEHICLES.find(v=>v.id===b.vehicle_id)||{icon:'🚪',name:b.vehicle_id};
     let time = '--:--';
