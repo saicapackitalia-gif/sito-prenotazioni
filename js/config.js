@@ -49,9 +49,18 @@ const TRASPORTATORI = [
 const ADMIN_EMAIL_CONST = 'giacomo.rigamonti@saica.com';
 const ADMIN_UID = 'f3bb2b25-e625-4e9d-b902-bbc8e6ea8ff1';
 
-// URL del progetto Supabase e chiave pubblica "anon" (soggetta a RLS).
-// Sono i valori di default usati all'avvio; la pagina di setup permette
-// comunque di sovrascriverli a runtime (restano variabili `let` nello
-// script principale) — questi restano solo i valori di partenza.
+// URL del progetto Supabase e chiave pubblica (soggetta a RLS). Sono i
+// valori di default usati all'avvio; la pagina di setup permette comunque
+// di sovrascriverli a runtime (restano variabili `let` nello script
+// principale) — questi restano solo i valori di partenza.
+//
+// SICUREZZA: la chiave sotto è la "publishable key" del sistema NUOVO di
+// Supabase (prefisso sb_publishable_), non la vecchia "anon" (JWT lungo
+// che iniziava con eyJ...). Sostituita in seguito alla rimozione della
+// service_role (vedi sopra e docs/CORREZIONE_SERVICE_ROLE.md): la vecchia
+// coppia anon/service_role (le "Legacy API keys" su Supabase) va
+// disabilitata dal pannello Supabase DOPO che questa modifica sarà online,
+// per invalidare definitivamente anche la vecchia service_role già
+// trapelata pubblicamente.
 const SUPABASE_URL_DEFAULT = 'https://jmhwxpgwakrqmnwefqrs.supabase.co';
-const SUPABASE_ANON_KEY_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU';
+const SUPABASE_ANON_KEY_DEFAULT = 'sb_publishable_--odAgbAY5o48ExhsBlVTA_vNNWAzpD';
