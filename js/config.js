@@ -6,14 +6,18 @@
    successivo, esattamente come lo erano quando erano scritte nello stesso
    file — nessun comportamento cambiato, solo spostate qui per isolarle.
 
-   ATTENZIONE SICUREZZA (nota già presente nel progetto, non introdotta da
-   questo spostamento): SUPABASE_SERVICE_ROLE_KEY è una chiave che bypassa
-   le regole di sicurezza (RLS) del database ed è incorporata qui lato
-   client per scelta accettata in precedenza, per permettere alcune
-   operazioni admin (es. cancellare prenotazioni di altri utenti). È un
-   compromesso noto, da rivedere in futuro con policy RLS più granulari o
-   un endpoint backend — questo file la isola per renderla facile da
-   individuare, ma NON la rimuove né ne cambia l'uso. */
+   SICUREZZA: qui era incorporata in precedenza anche la chiave
+   service_role di Supabase (SUPABASE_SERVICE_ROLE_KEY / SB_SVC), che
+   bypassa completamente le regole RLS del database. Essendo servita al
+   browser di chiunque visitasse il sito (repository pubblico su GitHub
+   Pages), chiunque aprisse il sorgente della pagina aveva accesso
+   completo in lettura/scrittura/cancellazione a tutte le prenotazioni.
+   Rimossa: vedi js/supabase-client.js e docs/CORREZIONE_SERVICE_ROLE.md
+   per come le operazioni admin che la usavano sono state rifatte senza
+   di essa. La chiave stessa, essendo già stata pubblicamente esposta, va
+   comunque considerata compromessa e rigenerata dal pannello Supabase
+   (Project Settings → API) indipendentemente da questa modifica al
+   codice — la rimozione dal codice non invalida una chiave già trapelata. */
 
 // Baie di carico/scarico e relativi parametri (durata slot, orari, capacità,
 // massimo di slot consecutivi per lo stesso trasportatore — nessuna voce
@@ -45,14 +49,18 @@ const TRASPORTATORI = [
 const ADMIN_EMAIL_CONST = 'giacomo.rigamonti@saica.com';
 const ADMIN_UID = 'f3bb2b25-e625-4e9d-b902-bbc8e6ea8ff1';
 
-// Chiave service_role: bypassa le RLS del database, usata SOLO per le
-// operazioni admin che devono agire su prenotazioni di altri utenti
-// (es. cancellazione). Vedi nota di sicurezza sopra.
-const SB_SVC = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTU0MDA5NywiZXhwIjoyMDk3MTE2MDk3fQ.vHoh21d1itwUP7apg8QMwKVD_dxyJdct8TUgnmA-K_o';
-
-// URL del progetto Supabase e chiave pubblica "anon" (soggetta a RLS).
-// Sono i valori di default usati all'avvio; la pagina di setup permette
-// comunque di sovrascriverli a runtime (restano variabili `let` nello
-// script principale) — questi restano solo i valori di partenza.
+// URL del progetto Supabase e chiave pubblica (soggetta a RLS). Sono i
+// valori di default usati all'avvio; la pagina di setup permette comunque
+// di sovrascriverli a runtime (restano variabili `let` nello script
+// principale) — questi restano solo i valori di partenza.
+//
+// SICUREZZA: la chiave sotto è la "publishable key" del sistema NUOVO di
+// Supabase (prefisso sb_publishable_), non la vecchia "anon" (JWT lungo
+// che iniziava con eyJ...). Sostituita in seguito alla rimozione della
+// service_role (vedi sopra e docs/CORREZIONE_SERVICE_ROLE.md): la vecchia
+// coppia anon/service_role (le "Legacy API keys" su Supabase) va
+// disabilitata dal pannello Supabase DOPO che questa modifica sarà online,
+// per invalidare definitivamente anche la vecchia service_role già
+// trapelata pubblicamente.
 const SUPABASE_URL_DEFAULT = 'https://jmhwxpgwakrqmnwefqrs.supabase.co';
-const SUPABASE_ANON_KEY_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaHd4cGd3YWtycW1ud2VmcXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDAwOTcsImV4cCI6MjA5NzExNjA5N30.6JTiaa7UADSlUTd8wfJbumRpROWJTq7WBSlE9EpchZU';
+const SUPABASE_ANON_KEY_DEFAULT = 'sb_publishable_--odAgbAY5o48ExhsBlVTA_vNNWAzpD';
