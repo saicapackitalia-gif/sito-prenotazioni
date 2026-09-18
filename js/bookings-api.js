@@ -56,7 +56,10 @@ async function refreshBookingsForDate(date){
   try{
     let fullRows = [];
     if(isAdmin()){
-      const { data, error } = await adminClient.from('prenotazioni').select('*').eq('data', date);
+      // Nessuna chiave service_role necessaria: la policy RLS
+      // "select_own_or_admin" permette già all'admin autenticato di
+      // leggere tutte le righe con la normale chiave anon (sbClient).
+      const { data, error } = await sbClient.from('prenotazioni').select('*').eq('data', date);
       if(!error && data) fullRows = data;
     } else if(currentTrasportatore && currentTrasportatorePassword){
       const { data, error } = await sbClient.rpc('get_bookings_by_trasportatore', { p_nome: currentTrasportatore.nome, p_data: date, p_password: currentTrasportatorePassword });
@@ -115,25 +118,25 @@ async function createBooking(vehicle_id, data, slot_index, nomeTrasportatore, de
   if(error) throw new Error(error.code==='23505'?'Slot già occupato.':error.message);
   return [res];
 }
-// Cancellazione: l'admin bypassa la sicurezza con la chiave service_role
-// (come sempre); il trasportatore passa dalla funzione protetta da
-// password, che verifica anche che la prenotazione sia davvero la sua.
+// Cancellazione: l'admin passa dalla funzione admin_delete_booking (RPC,
+// SECURITY DEFINER) che verifica server-side che chi chiama sia davvero
+// autenticato come l'admin (vedi js/supabase-client.js) — non più una
+// chiave service_role incorporata nel codice pubblico, che avrebbe dato
+// a chiunque accesso completo al database. Il trasportatore passa dalla
+// funzione protetta da password, che verifica anche che la prenotazione
+// sia davvero la sua.
 async function deleteBooking(id, nomeTrasportatore){
   if(offlineMode){
     const k=Object.keys(offlineDb).find(k=>offlineDb[k].id===id);
     if(k) delete offlineDb[k]; return;
   }
   if(isAdmin()){
-    // using persistent adminClient (service_role)
-    const { error, count } = await adminClient
-      .from('prenotazioni')
-      .delete({ count: 'exact' })
-      .eq('id', String(id));
+    const { data, error } = await sbClient.rpc('admin_delete_booking', { p_id: id });
     if(error){
       console.error('[deleteBooking] error:', error);
       throw new Error(error.message);
     }
-    if(count === 0) console.warn('[deleteBooking] 0 rows deleted for id:', id);
+    if(!data) console.warn('[deleteBooking] 0 rows deleted for id:', id);
     return;
   }
   const { error } = await sbClient.rpc('trasportatore_delete_booking', {
@@ -143,13 +146,13 @@ async function deleteBooking(id, nomeTrasportatore){
 }
 async function updateBooking(id, nome, destinazione, targa, slot_index){
   if(isAdmin()){
-    // using persistent adminClient (service_role)
-    const patch = { nome, destinazione, targa };
-    if(slot_index !== undefined && slot_index !== null) patch.slot_index = parseInt(slot_index);
-    const { error } = await adminClient.from('prenotazioni').update(patch).eq('id', String(id));
+    const { error } = await sbClient.rpc('admin_update_booking', {
+      p_id: id, p_nome: nome, p_destinazione: destinazione, p_targa: targa,
+      p_slot_index: (slot_index !== undefined && slot_index !== null) ? parseInt(slot_index) : null
+    });
     if(error){
       console.error('[updateBooking] error:', error);
-      throw new Error(error.code==='23505'?'Slot già occupato. Scegline un altro.':error.message);
+      throw new Error(error.code==='23505' || error.message.includes('23505') ?'Slot già occupato. Scegline un altro.':error.message);
     }
     return;
   }

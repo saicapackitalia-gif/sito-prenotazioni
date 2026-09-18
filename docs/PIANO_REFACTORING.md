@@ -194,12 +194,12 @@ mano" nello sviluppo originale:
 
 ## 6. Rischi noti da tenere a mente, non affrontati in questo piano
 
-- **Chiave `service_role` incorporata lato client** (riga 2545): la
-  scomposizione la isola in un unico file (`config.js`) invece di lasciarla
-  sparsa, ma **non la rimuove** — è un problema di sicurezza indipendente
-  dalla riorganizzazione dei file, che richiede RLS granulari o un endpoint
-  backend dedicato. Segnalo che la modularizzazione da sola non lo risolve,
-  per evitare che venga percepito come "sistemato" per errore.
+- ~~**Chiave `service_role` incorporata lato client**~~ — **RISOLTO**, vedi
+  `docs/CORREZIONE_SERVICE_ROLE.md`. La chiave è stata rimossa dal codice
+  e le operazioni admin che la usavano (update/delete di prenotazioni
+  altrui) sono state rifatte con funzioni RPC che verificano server-side
+  l'identità di chi chiama, invece di bypassare le RLS incondizionatamente
+  per chiunque leggesse il sorgente della pagina.
 - **`VEHICLES` hardcoded nel JS** duplica i dati della tabella `mezzi` su
   Supabase: un cambio futuro di `slot_step_minuti`/`durata_slot_minuti` in
   DB richiede comunque un aggiornamento manuale sincronizzato del JS, come
@@ -207,10 +207,14 @@ mano" nello sviluppo originale:
   cambiare comportamento oltre lo scope richiesto — è un possibile
   miglioramento futuro da valutare separatamente.
 - File obsoleti in repo (`admin.html`, `booking.html`, `backend/`,
-  `README.md` — vedi §1): non li ho toccati. Se si vuole, propongo come
-  passo separato di aggiornare il `README.md` per riflettere l'architettura
-  reale (Supabase, non Node/PostgreSQL) e di decidere se archiviare o
-  rimuovere gli altri tre.
+  `README.md` — vedi §1): non li ho toccati inizialmente. **Aggiornamento**:
+  `backend/` è stato rimosso (vedi `docs/CORREZIONE_SERVICE_ROLE.md` —
+  conteneva credenziali reali in chiaro in `backend/.env`, committate fin
+  dal primo commit del repository). `admin.html`/`booking.html` restano:
+  non contengono segreti propri, puntano solo a un backend Node/Railway
+  ormai inesistente — proposta ancora valida: archiviarli o rimuoverli, e
+  aggiornare il `README.md` per riflettere l'architettura reale (Supabase,
+  non Node/PostgreSQL).
 
 ## 7. Stato di avanzamento
 

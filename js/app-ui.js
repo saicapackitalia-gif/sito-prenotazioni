@@ -10,7 +10,7 @@
    complessità reale — vedi docs/PIANO_REFACTORING.md. Caricato come
    ultimo <script>, dopo config.js/supabase-client.js/auth.js/slots.js/
    bookings-api.js (di cui usa le funzioni/costanti condivise: VEHICLES,
-   sbClient/adminClient, currentUser/currentTrasportatore, currentBookings,
+   sbClient, currentUser/currentTrasportatore, currentBookings,
    canBookSlot/hasConsecutiveConflict/slotTimeRange, createBooking/
    deleteBooking/updateBooking/fetchBookings, ecc.). Codice spostato senza
    modifiche da index.html. */
