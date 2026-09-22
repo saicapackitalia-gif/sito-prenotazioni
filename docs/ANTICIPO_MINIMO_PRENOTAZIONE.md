@@ -1,5 +1,16 @@
 # Anticipo minimo di prenotazione (Fogli/Scatole)
 
+> **Disattivata su richiesta il 22/09/2026** (poco dopo la correzione del
+> bug di scope descritto sotto). `mezzi.min_anticipo_minuti` è tornato a
+> NULL per `baia-1`/`baia-2`, e `VEHICLES[].minAnticipoMinuti` è stato
+> tolto da `js/config.js` — nessuno dei due valori è più configurato,
+> quindi sia il trigger sul database sia il controllo lato client
+> restituiscono "nessuna regola", esattamente come per Depositi. Il resto
+> di questo documento descrive la funzionalità così com'era quando attiva:
+> per riattivarla basta reimpostare i due valori (46 Fogli, 31 Scatole, o
+> altri) in questi due punti — il codice (funzione `isTooSoon`, trigger
+> `verifica_anticipo_minimo`) non è stato toccato/rimosso.
+
 > **Bug corretto il 22/09/2026, poche ore dopo la messa online**: un
 > trasportatore (Zini) segnalava di non riuscire a prenotare Scatole per un
 > orario ben oltre i 31 minuti richiesti. Non era la regola a bloccarlo: era
