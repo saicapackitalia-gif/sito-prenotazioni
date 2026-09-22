@@ -149,6 +149,31 @@ function canBookSlot(vehicleId, slotIdx){
   return true;
 }
 
+// Anticipo minimo di prenotazione (VEHICLES[].minAnticipoMinuti): un
+// trasportatore non può prenotare uno slot che inizia tra meno di N minuti
+// da adesso. L'admin è sempre esente. Nessun valore configurato per la
+// baia = nessuna regola (es. Depositi). Rispecchia lato client il trigger
+// "verifica_anticipo_minimo" sul database, che resta l'unica fonte
+// autorevole — questo è solo per il feedback immediato prima ancora di
+// contattare il server. Prende vehicleId/dataStr/slotIdx diretti (non lo
+// stato dell'interfaccia in js/app-ui.js) apposta: deve essere chiamabile
+// sia dalla griglia sia da createBooking() in js/bookings-api.js, caricato
+// PRIMA di js/app-ui.js — una funzione definita lì non sarebbe visibile
+// qui (è racchiuso in una IIFE).
+function isTooSoon(vehicleId, dataStr, slotIdx){
+  if(isAdmin()) return false;
+  const v = VEHICLES.find(x => x.id === vehicleId);
+  const minAnticipo = v && v.minAnticipoMinuti;
+  if(!minAnticipo) return false;
+  const target = slotTimeRange(vehicleId, slotIdx);
+  if(!target) return false;
+  const [yy, mm, dd] = dataStr.split('-').map(Number);
+  const slotDate = new Date(yy, mm - 1, dd, 0, 0, 0, 0);
+  slotDate.setMinutes(target.start);
+  const diffMinuti = (slotDate.getTime() - Date.now()) / 60000;
+  return diffMinuti < minAnticipo;
+}
+
 // Legacy compatibility: returns max allowed (used in render)
 function maxAllowedForSlot(vehicleId, slotIdx){
   const v = VEHICLES.find(x => x.id === vehicleId);

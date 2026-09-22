@@ -1,5 +1,23 @@
 # Anticipo minimo di prenotazione (Fogli/Scatole)
 
+> **Bug corretto il 22/09/2026, poche ore dopo la messa online**: un
+> trasportatore (Zini) segnalava di non riuscire a prenotare Scatole per un
+> orario ben oltre i 31 minuti richiesti. Non era la regola a bloccarlo: era
+> un errore JavaScript reale (`isTooSoon is not defined`) che mandava in
+> crash `createBooking()` PRIMA ancora di contattare il server, per
+> qualunque prenotazione su Fogli/Scatole, indipendentemente dall'orario.
+> Causa: `isTooSoon()` era stata definita dentro `js/app-ui.js`, che è
+> l'intero file racchiuso in una IIFE — non visibile da `js/bookings-api.js`
+> (un altro `<script>`, caricato prima), che la chiamava. La griglia
+> mostrava tutto correttamente (stessa IIFE di `renderGrid()`), ma
+> confermare la prenotazione falliva sempre. Corretto spostando la funzione
+> in `js/slots.js` (già globale, già usata da entrambi i file per lo stesso
+> motivo), con una firma basata su parametri diretti
+> (`vehicleId, dataStr, slotIdx`) invece che sullo stato dell'interfaccia.
+> Verificato con un test in browser headless: prenotazione ben nei tempi
+> (+3h) ora va a buon fine, prenotazione troppo vicina (+10 min) continua a
+> essere respinta correttamente con il messaggio giusto.
+
 ## Cosa fa
 
 Un trasportatore non può più prenotare (o spostare una prenotazione su) uno
