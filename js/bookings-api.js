@@ -88,6 +88,20 @@ async function createBooking(vehicle_id, data, slot_index, nomeTrasportatore, de
   if(hasConsecutiveConflict(vehicle_id, slot_index, nomeTrasportatore)){
     throw new Error('Non puoi prenotare questo slot: hai già una prenotazione in questo orario, oppure hai raggiunto il numero massimo di slot consecutivi su questa baia.');
   }
+  // Pre-check: anticipo minimo di prenotazione (VEHICLES[].minAnticipoMinuti).
+  // L'admin è esente (isTooSoon lo gestisce già). Il trigger sul database
+  // (verifica_anticipo_minimo) resta l'unica fonte autorevole: questo è
+  // solo per dare un messaggio immediato prima di contattare il server.
+  {
+    const vv = VEHICLES.find(x => x.id === vehicle_id);
+    if(vv && vv.minAnticipoMinuti){
+      const totalMin = vv.startHour*60 + slot_index*vv.slotStep;
+      const h = Math.floor(totalMin/60), m = totalMin%60;
+      if(isTooSoon(vehicle_id, h, m)){
+        throw new Error(`Non puoi prenotare questo slot: su questa baia serve almeno ${vv.minAnticipoMinuti} minuti di anticipo.`);
+      }
+    }
+  }
   // Pre-check: cross-baia carrellista availability
   if(!canBookSlot(vehicle_id, slot_index)){
     const target = slotTimeRange(vehicle_id, slot_index);

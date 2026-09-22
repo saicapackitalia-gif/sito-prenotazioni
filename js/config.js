@@ -21,12 +21,14 @@
 
 // Baie di carico/scarico e relativi parametri (durata slot, orari, capacità,
 // massimo di slot consecutivi per lo stesso trasportatore — nessuna voce
-// "maxConsecutiveSlots" vuol dire nessuna regola su quella baia, es. Depositi).
+// "maxConsecutiveSlots" vuol dire nessuna regola su quella baia, es. Depositi;
+// minAnticipoMinuti: anticipo minimo richiesto per prenotare uno slot,
+// nessun valore = nessuna regola, es. Depositi — l'admin è sempre esente).
 // Devono restare sincronizzati a mano con la tabella "mezzi" su Supabase:
 // vedi docs/PIANO_REFACTORING.md.
 const VEHICLES = [
-  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:45, startHour:6,  endHour:20, maxPerSlot:1, durataSlot:45, maxConsecutiveSlots:2},
-  {id:'baia-2', name:'Scatole',  icon:'📦', slotStep:30, startHour:6,  endHour:20, maxPerSlot:2, durataSlot:30, maxConsecutiveSlots:2},
+  {id:'baia-1', name:'Fogli',    icon:'📄', slotStep:45, startHour:6,  endHour:20, maxPerSlot:1, durataSlot:45, maxConsecutiveSlots:2, minAnticipoMinuti:46},
+  {id:'baia-2', name:'Scatole',  icon:'📦', slotStep:30, startHour:6,  endHour:20, maxPerSlot:2, durataSlot:30, maxConsecutiveSlots:2, minAnticipoMinuti:31},
   {id:'baia-3', name:'Depositi', icon:'🏭', slotStep:30, startHour:6,  endHour:10, maxPerSlot:1, durataSlot:30},
 ];
 
