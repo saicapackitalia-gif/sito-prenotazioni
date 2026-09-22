@@ -92,15 +92,9 @@ async function createBooking(vehicle_id, data, slot_index, nomeTrasportatore, de
   // L'admin è esente (isTooSoon lo gestisce già). Il trigger sul database
   // (verifica_anticipo_minimo) resta l'unica fonte autorevole: questo è
   // solo per dare un messaggio immediato prima di contattare il server.
-  {
+  if(isTooSoon(vehicle_id, data, slot_index)){
     const vv = VEHICLES.find(x => x.id === vehicle_id);
-    if(vv && vv.minAnticipoMinuti){
-      const totalMin = vv.startHour*60 + slot_index*vv.slotStep;
-      const h = Math.floor(totalMin/60), m = totalMin%60;
-      if(isTooSoon(vehicle_id, h, m)){
-        throw new Error(`Non puoi prenotare questo slot: su questa baia serve almeno ${vv.minAnticipoMinuti} minuti di anticipo.`);
-      }
-    }
+    throw new Error(`Non puoi prenotare questo slot: su questa baia serve almeno ${vv.minAnticipoMinuti} minuti di anticipo.`);
   }
   // Pre-check: cross-baia carrellista availability
   if(!canBookSlot(vehicle_id, slot_index)){

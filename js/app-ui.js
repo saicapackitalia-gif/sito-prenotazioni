@@ -65,25 +65,14 @@ function isPast(h,m){
   if(selectedDate>todayS) return false;
   return (h*60+m)<(now.getHours()*60+now.getMinutes());
 }
-// Anticipo minimo di prenotazione: alcune baie (VEHICLES[].minAnticipoMinuti)
-// richiedono che lo slot inizi tra almeno N minuti da adesso, per evitare che
-// un trasportatore prenoti proprio mentre è già arrivato allo stabilimento.
-// L'admin è sempre esente (può prenotare a qualsiasi orario). Nessun valore
-// configurato per la baia = nessuna regola (es. Depositi). Rispecchia lato
-// client il trigger "verifica_anticipo_minimo" sul database, che resta
-// l'unica fonte autorevole — questo è solo per il feedback immediato in
-// griglia, prima ancora di contattare il server.
-function isTooSoon(vehicleId, h, m){
-  if(isAdmin()) return false;
-  const v = VEHICLES.find(x => x.id === vehicleId);
-  const minAnticipo = v && v.minAnticipoMinuti;
-  if(!minAnticipo) return false;
-  const now = new Date(), todayS = formatDate(now);
-  if(selectedDate !== todayS) return false; // giorni futuri: anticipo sempre sufficiente
-  const minutiSlot = h*60+m;
-  const minutiOra = now.getHours()*60+now.getMinutes();
-  return (minutiSlot - minutiOra) < minAnticipo;
-}
+// isTooSoon(vehicleId, dataStr, slotIdx) è in js/slots.js: qui in app-ui.js
+// serviva anche a createBooking() (js/bookings-api.js), ma l'intero questo
+// file è racchiuso in una IIFE (vedi riga 18) — una funzione definita qui
+// non è visibile da un altro <script> caricato prima. Da qui il bug
+// "isTooSoon is not defined" al momento di confermare una prenotazione
+// (la griglia invece funzionava, perché richiamata da dentro questa stessa
+// IIFE). Spostata in slots.js, già globale e già in questa posizione per
+// lo stesso identico motivo (canBookSlot, hasConsecutiveConflict, ecc.).
 function isWeekend(dateStr){
   const d=new Date(dateStr+'T00:00:00');
   return d.getDay()===0||d.getDay()===6;
@@ -209,7 +198,7 @@ function renderGrid(){
     const isFull=!canBookSlot(selectedVehicle,idx);
     const myConsecutive = !b && hasConsecutiveConflict(selectedVehicle,idx);
     const past=isPast(slot.hour,slot.min)||weekend;
-    const troppoVicino = !b && !past && isTooSoon(selectedVehicle,slot.hour,slot.min);
+    const troppoVicino = !b && !past && isTooSoon(selectedVehicle,selectedDate,idx);
     let cls='free',txt='Disponibile',aria=`${formatTime(slot.hour,slot.min)} - Disponibile`;
     if(booked_count>0&&booked_count<max_allowed&&!past){
       cls='free'; txt=`Disponibile (${booked_count}/${max_allowed})`;
@@ -263,7 +252,7 @@ function updateStats(){
     if(!isBookableSlotIndex(selectedVehicle, idx)) return;
     if(isPast(slot.hour,slot.min) || isWeekend(selectedDate)) return;
     const b=map[idx];
-    if(!b){ if(!isTooSoon(selectedVehicle,slot.hour,slot.min)) free++; } else {booked++;if(b.mine) mine++;}
+    if(!b){ if(!isTooSoon(selectedVehicle,selectedDate,idx)) free++; } else {booked++;if(b.mine) mine++;}
   });
   const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   el('stat-free',free); el('stat-booked',booked); el('stat-mine',mine);
@@ -1167,7 +1156,7 @@ function openUserEditModal(idx, slot, booking){
     // troppo vicino: non è un cambio di slot, il trigger sul database non
     // lo blocca (vedi verifica_anticipo_minimo). Un ALTRO slot troppo
     // vicino invece va escluso, come già per gli slot pieni sopra.
-    if(i !== idx && isTooSoon(booking.vehicle_id, s.hour, s.min)) return;
+    if(i !== idx && isTooSoon(booking.vehicle_id, booking.data, i)) return;
     const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = formatTime(s.hour, s.min) + (i === idx ? ' (attuale)' : '');
