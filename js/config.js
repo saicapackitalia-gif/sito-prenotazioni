@@ -49,6 +49,7 @@ const TRASPORTATORI = [
   {id:'colombo',       nome:'Autotrasporti Colombo'},
   {id:'world-express', nome:'World Express'},
   {id:'vitrans',        nome:'Vitrans'},
+  {id:'tml',            nome:'TML'},
 ];
 
 // Identità dell'amministratore (usata per i controlli isAdmin()/esenzioni).
