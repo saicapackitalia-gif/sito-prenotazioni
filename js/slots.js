@@ -174,6 +174,39 @@ function isTooSoon(vehicleId, dataStr, slotIdx){
   return diffMinuti < minAnticipo;
 }
 
+// Anticipo massimo per prenotazioni fatte lo STESSO GIORNO, solo per i
+// trasportatori Tavola e Zini, solo su Fogli/Scatole: lo slot deve
+// iniziare entro 3 ore e 15 minuti da adesso, salvo la fascia 06:00-08:00
+// (sempre prenotabile liberamente). Prenotazioni per giorni futuri non
+// sono toccate. L'admin è sempre esente. Rispecchia lato client il
+// trigger "verifica_anticipo_massimo_stesso_giorno" sul database, che
+// resta l'unica fonte autorevole. Prende vehicleId/dataStr/slotIdx/nome
+// diretti (non lo stato dell'interfaccia), stesso motivo di isTooSoon
+// qui sopra — deve restare chiamabile da js/bookings-api.js.
+const ANTICIPO_MASSIMO_BAIE = ['baia-1', 'baia-2'];
+const ANTICIPO_MASSIMO_TRASPORTATORI = ['tavola', 'zini'];
+const ANTICIPO_MASSIMO_MINUTI = 195; // 3 ore e 15 minuti
+function isTooFarAheadToday(vehicleId, dataStr, slotIdx, nome){
+  if(isAdmin()) return false;
+  if(!ANTICIPO_MASSIMO_BAIE.includes(vehicleId)) return false;
+  const chi = (nome || '').trim().toLowerCase();
+  if(!ANTICIPO_MASSIMO_TRASPORTATORI.includes(chi)) return false;
+
+  const now = new Date();
+  const todayS = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  if(dataStr !== todayS) return false; // solo prenotazioni fatte per oggi
+
+  const target = slotTimeRange(vehicleId, slotIdx);
+  if(!target) return false;
+  if(target.start >= 360 && target.start < 480) return false; // fascia 06:00-08:00 sempre esente
+
+  const [yy, mm, dd] = dataStr.split('-').map(Number);
+  const slotDate = new Date(yy, mm - 1, dd, 0, 0, 0, 0);
+  slotDate.setMinutes(target.start);
+  const diffMinuti = (slotDate.getTime() - now.getTime()) / 60000;
+  return diffMinuti > ANTICIPO_MASSIMO_MINUTI;
+}
+
 // Legacy compatibility: returns max allowed (used in render)
 function maxAllowedForSlot(vehicleId, slotIdx){
   const v = VEHICLES.find(x => x.id === vehicleId);

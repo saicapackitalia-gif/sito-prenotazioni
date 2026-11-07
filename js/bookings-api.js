@@ -96,6 +96,14 @@ async function createBooking(vehicle_id, data, slot_index, nomeTrasportatore, de
     const vv = VEHICLES.find(x => x.id === vehicle_id);
     throw new Error(`Non puoi prenotare questo slot: su questa baia serve almeno ${vv.minAnticipoMinuti} minuti di anticipo.`);
   }
+  // Pre-check: anticipo massimo per prenotazioni fatte lo stesso giorno
+  // (solo Tavola/Zini, solo Fogli/Scatole, fascia 06:00-08:00 esente).
+  // L'admin è esente (isTooFarAheadToday lo gestisce già). Il trigger sul
+  // database (verifica_anticipo_massimo_stesso_giorno) resta l'unica
+  // fonte autorevole: questo è solo per il messaggio immediato.
+  if(isTooFarAheadToday(vehicle_id, data, slot_index, nomeTrasportatore)){
+    throw new Error('Non puoi prenotare questo slot: per Tavola e Zini, oggi su questa baia si può prenotare solo entro 3 ore e 15 minuti dall\'orario selezionato (fuori dalla fascia 06:00-08:00).');
+  }
   // Pre-check: cross-baia carrellista availability
   if(!canBookSlot(vehicle_id, slot_index)){
     const target = slotTimeRange(vehicle_id, slot_index);

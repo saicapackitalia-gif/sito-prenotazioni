@@ -199,6 +199,7 @@ function renderGrid(){
     const myConsecutive = !b && hasConsecutiveConflict(selectedVehicle,idx);
     const past=isPast(slot.hour,slot.min)||weekend;
     const troppoVicino = !b && !past && isTooSoon(selectedVehicle,selectedDate,idx);
+    const troppoLontanoOggi = !b && !past && isTooFarAheadToday(selectedVehicle,selectedDate,idx,currentTrasportatore?.nome);
     let cls='free',txt='Disponibile',aria=`${formatTime(slot.hour,slot.min)} - Disponibile`;
     if(booked_count>0&&booked_count<max_allowed&&!past){
       cls='free'; txt=`Disponibile (${booked_count}/${max_allowed})`;
@@ -227,13 +228,14 @@ function renderGrid(){
     else if(isFull&&!b&&!past){cls='occupied-other';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
     else if(myConsecutive&&!past){cls='occupied-other';txt='Non prenotabile';aria=`${formatTime(slot.hour,slot.min)} - Non prenotabile: consecutivo a una tua prenotazione`;}
     else if(troppoVicino){cls='occupied-other';txt='Anticipo minimo';aria=`${formatTime(slot.hour,slot.min)} - Non prenotabile: anticipo minimo non rispettato su questa baia`;}
+    else if(troppoLontanoOggi){cls='occupied-other';txt='Non prenotabile oggi';aria=`${formatTime(slot.hour,slot.min)} - Non prenotabile oggi: oltre 3 ore e 15 minuti di anticipo su questa baia`;}
     const mineTitle = b && b.mine ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const adminTitle = b && !b.mine && isAdmin() ? `title="${b.nome} → ${b.destinazione} | ${b.targa}"` : '';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past&&!myConsecutive&&!troppoVicino)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
+    tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past&&!myConsecutive&&!troppoVicino&&!troppoLontanoOggi)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
     const el=tr.querySelector('.slot');
     if(!past){
-      if(!isFull&&!myConsecutive&&!troppoVicino){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
+      if(!isFull&&!myConsecutive&&!troppoVicino&&!troppoLontanoOggi){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
       else if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
       else if(isAdmin()&&b&&!b.mine){el.addEventListener('click',()=>openAdminEdit(b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAdminEdit(b);}});}
       // else: slot full due to cross-baia capacity or consecutive-slot rule → not clickable, no handler needed
@@ -252,7 +254,7 @@ function updateStats(){
     if(!isBookableSlotIndex(selectedVehicle, idx)) return;
     if(isPast(slot.hour,slot.min) || isWeekend(selectedDate)) return;
     const b=map[idx];
-    if(!b){ if(!isTooSoon(selectedVehicle,selectedDate,idx)) free++; } else {booked++;if(b.mine) mine++;}
+    if(!b){ if(!isTooSoon(selectedVehicle,selectedDate,idx) && !isTooFarAheadToday(selectedVehicle,selectedDate,idx,currentTrasportatore?.nome)) free++; } else {booked++;if(b.mine) mine++;}
   });
   const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   el('stat-free',free); el('stat-booked',booked); el('stat-mine',mine);
@@ -1157,6 +1159,7 @@ function openUserEditModal(idx, slot, booking){
     // lo blocca (vedi verifica_anticipo_minimo). Un ALTRO slot troppo
     // vicino invece va escluso, come già per gli slot pieni sopra.
     if(i !== idx && isTooSoon(booking.vehicle_id, booking.data, i)) return;
+    if(i !== idx && isTooFarAheadToday(booking.vehicle_id, booking.data, i, booking.nome)) return;
     const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = formatTime(s.hour, s.min) + (i === idx ? ' (attuale)' : '');
