@@ -95,14 +95,14 @@ qui sistemato riguarda solo il "come" il sito farà le cose da ora in poi,
 non annulla l'esposizione già avvenuta. Consiglio di fare queste cose il
 prima possibile, indipendentemente da quando questa PR verrà messa online:
 
-1. **Chiave `service_role` di Supabase** — su
-   supabase.com/dashboard → progetto → *Project Settings → API* →
-   rigenerare (o resettare il JWT secret del progetto, che rigenera insieme
-   sia la chiave `anon` sia la `service_role`). Dopo la rigenerazione del
-   JWT secret andrà aggiornata anche `SUPABASE_ANON_KEY_DEFAULT` in
-   `js/config.js` con la nuova chiave anon, altrimenti il sito smette di
-   funzionare. La nuova chiave service_role invece non va più incorporata
-   da nessuna parte: dopo questa correzione il sito non ne ha più bisogno.
+1. ✅ **FATTO (18/09/2026)** — ~~Chiave `service_role` di Supabase~~. Il
+   progetto è passato al sistema nuovo di chiavi Supabase (`sb_publishable_...`
+   al posto della vecchia `anon`, aggiornata in `js/config.js`), poi le
+   "Legacy anon, service_role API keys" sono state disabilitate dal
+   pannello Supabase (Project Settings → API). La vecchia chiave
+   `service_role` che era incorporata nel codice pubblico **non è più
+   valida**: anche chi la recuperasse dalla cronologia Git non potrebbe
+   più usarla.
 2. **API key Resend** trovata in `backend/.env` — va revocata sul pannello
    resend.com (Settings → API Keys). Il backend che la usava risulta
    dismesso, quindi con ogni probabilità basta eliminarla senza sostituirla.
