@@ -213,11 +213,17 @@ function renderGrid(){
         else {cls='past';txt='Occupato';aria=`${formatTime(slot.hour,slot.min)} - Slot occupato`;}
       } else {cls='past';txt='—';}
     }
-    else if(isFull&&b){if(b.mine){
+    // b.mine va controllato prima di isFull: su una baia con più posti per
+    // slot (es. Scatole, max 2), una propria prenotazione deve restare
+    // evidenziata e modificabile anche quando lo slot non è ancora pieno
+    // (altrimenti risulterebbe genericamente "Disponibile (x/max)" e il
+    // clic aprirebbe "Nuova prenotazione" invece di "Modifica").
+    else if(b&&b.mine){
           cls='mine';
-          txt=`✓ ${b.destinazione||b.targa||b.nome}`;
+          txt=`✓ ${b.destinazione||b.targa||b.nome}${!isFull?` (${booked_count}/${max_allowed})`:''}`;
           aria=`${formatTime(slot.hour,slot.min)} - Mia prenotazione: ${b.destinazione||''} (${b.targa||''})`;
-        } else if(isAdmin()){
+        }
+    else if(isFull&&b){if(isAdmin()){
           cls='booked';
           txt=`${b.nome}`;
           aria=`${formatTime(slot.hour,slot.min)} - ${b.nome} | ${b.destinazione} | ${b.targa}`;
@@ -237,8 +243,8 @@ function renderGrid(){
     tr.innerHTML=`<td><span class="time-label">${formatTime(slot.hour,slot.min)}</span></td><td class="slot-cell"><div class="slot ${cls}" tabindex="${past?'-1':'0'}" role="${(!b&&!past&&!myConsecutive&&!troppoVicino&&!troppoLontanoOggi&&!troppoPrestoFaital)||(b&&b.mine&&!past)?'button':'cell'}" aria-label="${aria}" data-idx="${idx}" ${mineTitle||adminTitle}><span class="slot-time">${formatTime(slot.hour,slot.min)}</span><span class="slot-label">${txt}</span></div></td>`;
     const el=tr.querySelector('.slot');
     if(!past){
-      if(!isFull&&!myConsecutive&&!troppoVicino&&!troppoLontanoOggi&&!troppoPrestoFaital){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
-      else if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
+      if(b&&b.mine){el.addEventListener('click',()=>openUserEditModal(idx,slot,b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openUserEditModal(idx,slot,b);}});}
+      else if(!isFull&&!myConsecutive&&!troppoVicino&&!troppoLontanoOggi&&!troppoPrestoFaital){el.addEventListener('click',()=>openBookingModal(idx,slot));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBookingModal(idx,slot);}});}
       else if(isAdmin()&&b&&!b.mine){el.addEventListener('click',()=>openAdminEdit(b));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAdminEdit(b);}});}
       // else: slot full due to cross-baia capacity or consecutive-slot rule → not clickable, no handler needed
     }
