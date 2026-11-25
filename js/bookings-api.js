@@ -104,6 +104,13 @@ async function createBooking(vehicle_id, data, slot_index, nomeTrasportatore, de
   if(isTooFarAheadToday(vehicle_id, data, slot_index, nomeTrasportatore)){
     throw new Error('Non puoi prenotare questo slot: per Tavola e Zini, oggi su questa baia si può prenotare solo entro 3 ore e 15 minuti dall\'orario selezionato (fuori dalla fascia 06:00-08:00).');
   }
+  // Pre-check: Faital può prenotare Scatole solo con almeno 2 giorni di
+  // anticipo. L'admin è esente (isTooSoonFaitalScatole lo gestisce già).
+  // Il trigger sul database (verifica_anticipo_minimo_giorni_faital)
+  // resta l'unica fonte autorevole.
+  if(isTooSoonFaitalScatole(vehicle_id, data, nomeTrasportatore)){
+    throw new Error('Non puoi prenotare questo slot: Faital può prenotare Scatole solo con almeno 2 giorni di anticipo.');
+  }
   // Pre-check: cross-baia carrellista availability
   if(!canBookSlot(vehicle_id, slot_index)){
     const target = slotTimeRange(vehicle_id, slot_index);
