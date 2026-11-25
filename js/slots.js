@@ -207,6 +207,27 @@ function isTooFarAheadToday(vehicleId, dataStr, slotIdx, nome){
   return diffMinuti > ANTICIPO_MASSIMO_MINUTI;
 }
 
+// Faital può prenotare Scatole solo con almeno 2 giorni di anticipo
+// (calendario, non ore): non per oggi né per domani. Nessun'altra baia è
+// coinvolta. L'admin è sempre esente. Rispecchia lato client il trigger
+// "verifica_anticipo_minimo_giorni_faital" sul database, che resta
+// l'unica fonte autorevole.
+function isTooSoonFaitalScatole(vehicleId, dataStr, nome){
+  if(isAdmin()) return false;
+  if(vehicleId !== 'baia-2') return false;
+  const chi = (nome || '').trim().toLowerCase();
+  if(chi !== 'faital') return false;
+
+  const now = new Date();
+  const oggi = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const minimo = new Date(oggi);
+  minimo.setDate(minimo.getDate() + 2);
+
+  const [yy, mm, dd] = dataStr.split('-').map(Number);
+  const data = new Date(yy, mm - 1, dd);
+  return data < minimo;
+}
+
 // Legacy compatibility: returns max allowed (used in render)
 function maxAllowedForSlot(vehicleId, slotIdx){
   const v = VEHICLES.find(x => x.id === vehicleId);
